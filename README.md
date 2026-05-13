@@ -184,3 +184,9 @@ npm run dev
 - **JPA `ddl-auto: update`** — 实体变更后自动同步表结构，生产环境建议改为 `validate` 并配合 Flyway/Liquibase 迁移
 - **开发模式** — 前端无需后端即可通过 `DevBar` 工具栏切换模拟用户身份，通过 `localStorage` 注入测试 token
 - **验证码** — 当前验证码仅输出到后端日志（见 `VerificationCodeService`），实际对接邮箱时需修改逻辑
+
+
+
+
+
+Test_5_13
