@@ -118,7 +118,7 @@ export default function AdminPage() {
                 <span className="tag subtle">UC-28</span>
               </div>
               <p className="muted">新增、修改、删除题库与试题，预留批量导入接口。</p>
-              <button className="btn outline small" type="button" disabled>开发中</button>
+              <Link className="btn primary small" to="/admin/question-banks">进入管理</Link>
             </div>
           </div>
         </section>

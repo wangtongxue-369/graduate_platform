@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+
 @RestController
 @RequestMapping("/api/practice")
 public class PracticeController {
@@ -55,6 +57,22 @@ public class PracticeController {
     @GetMapping("/statistics")
     public ApiResponse<?> statistics(@RequestParam(defaultValue = "day") String granularity, Authentication auth) {
         return ApiResponse.ok(practiceService.getStatistics(currentUserId(auth), granularity));
+    }
+
+    @GetMapping("/history")
+    public ApiResponse<?> history(@RequestParam(required = false) String mode,
+                                   @RequestParam(required = false) String target,
+                                   @RequestParam(required = false) String subject,
+                                   @RequestParam(required = false) String dateFrom,
+                                   @RequestParam(required = false) String dateTo,
+                                   @RequestParam(defaultValue = "1") int page,
+                                   @RequestParam(defaultValue = "20") int size,
+                                   Authentication auth) {
+        LocalDateTime from = dateFrom != null ? LocalDateTime.parse(dateFrom + "T00:00:00") : null;
+        LocalDateTime to = dateTo != null ? LocalDateTime.parse(dateTo + "T23:59:59") : null;
+        return ApiResponse.ok(practiceService.getHistory(
+            currentUserId(auth), mode, target, subject, from, to, page, size
+        ));
     }
 
     private Long currentUserId(Authentication auth) {

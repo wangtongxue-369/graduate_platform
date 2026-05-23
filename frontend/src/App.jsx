@@ -7,6 +7,9 @@ import CommunityPage from './pages/CommunityPage.jsx'
 import CommunityDetailPage from './pages/CommunityDetailPage.jsx'
 import PracticePage from './pages/PracticePage.jsx'
 import PracticeDetailPage from './pages/PracticeDetailPage.jsx'
+import PracticeHistoryPage from './pages/PracticeHistoryPage.jsx'
+import WrongQuestionPage from './pages/WrongQuestionPage.jsx'
+import PracticeStatisticsPage from './pages/PracticeStatisticsPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
@@ -56,6 +59,8 @@ import ReportPage from './pages/admin/ReportPage.jsx'
 import EmploymentManagementPage from './pages/admin/EmploymentManagementPage.jsx'
 import AdminKaoyanDataPage from './pages/admin/AdminKaoyanDataPage.jsx'
 import AdminMaterialReviewPage from './pages/admin/AdminMaterialReviewPage.jsx'
+import AdminQuestionBankPage from './pages/admin/AdminQuestionBankPage.jsx'
+import AdminQuestionsPage from './pages/admin/AdminQuestionsPage.jsx'
 
 export default function App() {
   return (
@@ -68,6 +73,9 @@ export default function App() {
       <Route path="/community/:id" element={<CommunityDetailPage />} />
       <Route path="/practice" element={<PracticePage />} />
       <Route path="/practice/:id" element={<PracticeDetailPage />} />
+      <Route path="/practice/history" element={<PracticeHistoryPage />} />
+      <Route path="/practice/wrong-questions" element={<WrongQuestionPage />} />
+      <Route path="/practice/statistics" element={<PracticeStatisticsPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/profile" element={<ProfilePage />} />
@@ -117,6 +125,8 @@ export default function App() {
       <Route path="/admin/employment" element={<EmploymentManagementPage />} />
       <Route path="/admin/kaoyan-data" element={<AdminKaoyanDataPage />} />
       <Route path="/admin/material-review" element={<AdminMaterialReviewPage />} />
+      <Route path="/admin/question-banks" element={<AdminQuestionBankPage />} />
+      <Route path="/admin/question-banks/:bankId/questions" element={<AdminQuestionsPage />} />
     </Routes>
     </>
   )

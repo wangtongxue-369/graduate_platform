@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "questions")
+@Table(name = "questions", indexes = {
+    @Index(name = "idx_q_bank_id", columnList = "bank_id"),
+    @Index(name = "idx_q_bank_active_status", columnList = "bank_id,active,status")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -38,6 +41,8 @@ public class Question {
     private Integer year;
 
     private String status; // draft / published / disabled
+
+    private Integer versionNo; // 题目版本号，与快照对齐
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bank_id", nullable = false)

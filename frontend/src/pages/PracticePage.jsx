@@ -142,6 +142,11 @@ function PracticePage() {
             <p className="eyebrow">题目练习</p>
             <h2>题库分类管理 + 多模式练习 + 结果统计反馈</h2>
             <p className="muted">按方向、科目、章节、题型、难度和年份筛选题库，进入章节、随机或模拟练习。</p>
+            <div className="nav-links">
+              <Link className="btn ghost small" to="/practice/history">练习历史</Link>
+              <Link className="btn ghost small" to="/practice/wrong-questions">错题本</Link>
+              <Link className="btn ghost small" to="/practice/statistics">统计分析</Link>
+            </div>
           </div>
 
           <div className="grid-two">
@@ -231,11 +236,14 @@ function PracticePage() {
             <div className="feature-card">
               <div className="track-head">
                 <div className="card-title">统计分析</div>
-                <select value={granularity} onChange={(event) => setGranularity(event.target.value)}>
-                  {granularityOptions.map((item) => (
-                    <option key={item.value} value={item.value}>{item.label}</option>
-                  ))}
-                </select>
+                <div className="track-actions">
+                  <select value={granularity} onChange={(event) => setGranularity(event.target.value)}>
+                    {granularityOptions.map((item) => (
+                      <option key={item.value} value={item.value}>{item.label}</option>
+                    ))}
+                  </select>
+                  <Link className="btn ghost small" to="/practice/statistics">查看详情</Link>
+                </div>
               </div>
               <div className="mini-grid">
                 <Metric value={`${statistics?.averageAccuracy ?? 0}%`} label="平均正确率" />
@@ -256,7 +264,10 @@ function PracticePage() {
             </div>
 
             <div className="feature-card">
-              <div className="card-title">错题本</div>
+              <div className="track-head">
+                <div className="card-title">错题本</div>
+                <Link className="btn ghost small" to="/practice/wrong-questions">查看详情</Link>
+              </div>
               <div className="wrong-list">
                 {wrongQuestions.slice(0, 6).map((item) => (
                   <div className="wrong-item" key={item.id}>

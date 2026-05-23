@@ -133,6 +133,14 @@ export const practiceApi = {
   statistics(granularity = 'day', token) {
     return request(`/api/practice/statistics?granularity=${granularity}`, { token })
   },
+  history(filters = {}, token) {
+    const search = new URLSearchParams()
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') search.set(key, String(value))
+    })
+    const query = search.toString()
+    return request(`/api/practice/history${query ? `?${query}` : ''}`, { token })
+  },
   submitAttempt(questionId, payload, token) {
     return request(`/api/questions/${questionId}/attempt`, {
       method: 'POST',
@@ -814,5 +822,40 @@ export const adminApi = {
   },
   deleteKaoyanScoreLine(id, token) {
     return request(`/api/admin/kaoyan/score-lines/${id}`, { method: 'DELETE', token })
+  },
+}
+
+export const adminQuestionBankApi = {
+  banks(page = 0, size = 20, token) {
+    return request(`/api/admin/question-banks?page=${page}&size=${size}`, { token })
+  },
+  createBank(payload, token) {
+    return request('/api/admin/question-banks', { method: 'POST', body: payload, token })
+  },
+  updateBank(id, payload, token) {
+    return request(`/api/admin/question-banks/${id}`, { method: 'PUT', body: payload, token })
+  },
+  deleteBank(id, token) {
+    return request(`/api/admin/question-banks/${id}`, { method: 'DELETE', token })
+  },
+  questions(bankId, page = 0, size = 20, token) {
+    return request(`/api/admin/question-banks/${bankId}/questions?page=${page}&size=${size}`, { token })
+  },
+  createQuestion(bankId, payload, token) {
+    return request(`/api/admin/question-banks/${bankId}/questions`, { method: 'POST', body: payload, token })
+  },
+  updateQuestion(id, payload, token) {
+    return request(`/api/admin/questions/${id}`, { method: 'PUT', body: payload, token })
+  },
+  deleteQuestion(id, token) {
+    return request(`/api/admin/questions/${id}`, { method: 'DELETE', token })
+  },
+  batchCreateQuestions(bankId, questions, token) {
+    return request(`/api/admin/question-banks/${bankId}/questions/batch`, {
+      method: 'POST', body: { questions }, token,
+    })
+  },
+  snapshots(questionId, token) {
+    return request(`/api/admin/questions/${questionId}/snapshots`, { token })
   },
 }

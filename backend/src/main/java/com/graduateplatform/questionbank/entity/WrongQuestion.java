@@ -9,7 +9,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
     name = "wrong_questions",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "question_id"})
+    uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "question_id"}),
+    indexes = @Index(name = "idx_wq_user_id", columnList = "user_id")
 )
 @Data
 @NoArgsConstructor
@@ -35,6 +36,24 @@ public class WrongQuestion {
     private String lastAnswer;
 
     private LocalDateTime lastWrongAt;
+
+    // ===== 错题快照字段（不依赖 Question 主表当前值） =====
+
+    @Column(columnDefinition = "TEXT")
+    private String snapshotStem;
+
+    private String snapshotTarget;
+
+    private String snapshotSubject;
+
+    private String snapshotChapter;
+
+    private String snapshotKnowledgePoint;
+
+    private String snapshotQuestionType;
+
+    @Version
+    private Long version; // 乐观锁，防止并发重复记录
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
