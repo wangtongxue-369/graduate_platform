@@ -630,6 +630,61 @@ export const kaoyanApi = {
   },
 }
 
+export const mentorApi = {
+  mentorsPage(params = {}) {
+    const search = new URLSearchParams()
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') search.set(k, v)
+    })
+    return request(`/api/kaoyan/mentors/page?${search.toString()}`)
+  },
+  mentorDetail(id) {
+    return request(`/api/kaoyan/mentors/${id}`)
+  },
+  myProfile(token) {
+    return request('/api/kaoyan/mentors/me', { token })
+  },
+  saveProfile(payload, token) {
+    return request('/api/kaoyan/mentors', { method: 'POST', body: payload, token })
+  },
+  deleteProfile(token) {
+    return request('/api/kaoyan/mentors/me', { method: 'DELETE', token })
+  },
+  createSession(payload, token) {
+    return request('/api/kaoyan/mentors/counseling/sessions', { method: 'POST', body: payload, token })
+  },
+  sentSessions(params = {}, token) {
+    const search = new URLSearchParams()
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') search.set(k, v)
+    })
+    return request(`/api/kaoyan/mentors/counseling/sessions/sent?${search.toString()}`, { token })
+  },
+  receivedSessions(params = {}, token) {
+    const search = new URLSearchParams()
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '') search.set(k, v)
+    })
+    return request(`/api/kaoyan/mentors/counseling/sessions/received?${search.toString()}`, { token })
+  },
+  sessionMessages(sessionId, token) {
+    return request(`/api/kaoyan/mentors/counseling/sessions/${sessionId}/messages`, { token })
+  },
+  sendMessage(sessionId, content, token) {
+    return request(`/api/kaoyan/mentors/counseling/sessions/${sessionId}/messages`, {
+      method: 'POST',
+      body: { content },
+      token,
+    })
+  },
+  markAsRead(sessionId, token) {
+    return request(`/api/kaoyan/mentors/counseling/sessions/${sessionId}/messages/read`, { method: 'PUT', token })
+  },
+  unreadCount(token) {
+    return request('/api/kaoyan/mentors/counseling/unread-count', { token })
+  },
+}
+
 export const studyRoomApi = {
   createRoom(payload, token) {
     return request('/api/kaoyan/study-rooms', { method: 'POST', body: payload, token })

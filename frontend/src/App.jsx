@@ -26,6 +26,8 @@ import MaterialDetailPage from './pages/kaoyan/MaterialDetailPage.jsx'
 import MyMaterialsPage from './pages/kaoyan/MyMaterialsPage.jsx'
 import StudyRoomPage from './pages/kaoyan/StudyRoomPage.jsx'
 import ConsultPage from './pages/kaoyan/ConsultPage.jsx'
+import MentorListPage from './pages/kaoyan/MentorListPage.jsx'
+import MessagesPage from './pages/kaoyan/MessagesPage.jsx'
 
 // 考公考编方向专属页面
 import KaogongPage from './pages/kaogong/KaogongPage.jsx'
@@ -92,6 +94,8 @@ export default function App() {
       <Route path="/kaoyan/materials/my" element={<MyMaterialsPage />} />
       <Route path="/kaoyan/studyroom" element={<StudyRoomPage />} />
       <Route path="/kaoyan/consult" element={<ConsultPage />} />
+      <Route path="/kaoyan/mentors" element={<MentorListPage />} />
+      <Route path="/kaoyan/messages" element={<MessagesPage />} />
 
       {/* 考公考编方向专属 */}
       <Route path="/kaogong" element={<KaogongPage />} />
