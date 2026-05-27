@@ -14,6 +14,44 @@ import {
 } from '../constants/postEditor.js'
 import '../App.css'
 
+const demoPost = {
+  id: 'demo-post',
+  title: '2026 考研复试经验整理',
+  content: `# 复试经验总览
+
+这是我把初试到复试之间的准备过程整理成的一份长文，方便后续继续补充。
+
+## 节奏安排
+
+- 第 1 周：梳理简历与项目
+- 第 2 周：模拟英文问答
+- 第 3 周：准备专业课高频题
+
+> 建议把每次模拟后的问题单独记下来，下一轮只攻克这些薄弱点。
+
+### 资料清单
+
+| 类型 | 内容 | 备注 |
+| --- | --- | --- |
+| 英语 | 自我介绍 / 常见问答 | 每天 20 分钟 |
+| 专业课 | 核心概念与开放题 | 结合报考方向整理 |
+| 综合面试 | 项目、竞赛、科研 | 强调结果与反思 |
+
+\`\`\`text
+每天花 30 分钟把回答录音一遍，第二天再回听。
+\`\`\`
+
+最后，祝大家都能顺利上岸。`,
+  categoryCode: 'kaoyan',
+  category: '考研',
+  tags: '复试,经验分享,面试',
+  visibility: 'public',
+  anonymous: false,
+  status: 'PUBLISHED',
+  updatedAt: '2026-05-27T14:30:00',
+  sourceFileName: '2026-fushi-notes.md',
+}
+
 const statusLabelMap = {
   DRAFT: '草稿',
   PENDING: '待审核',
@@ -243,9 +281,67 @@ function replaceRange(text, startOffset, endOffset, replacement) {
   return normalized.slice(0, startOffset) + nextReplacement + normalized.slice(endOffset)
 }
 
+function blockOverlapsRange(block, range) {
+  if (!range) return false
+  return block.endOffset > range.startOffset && block.startOffset < range.endOffset
+}
+
+function buildRenderSegments(blocks, activeRange, activeDraft) {
+  if (!activeRange) {
+    return blocks.map((block) => ({
+      type: 'block',
+      key: `block-${block.id}-${block.startOffset}`,
+      block,
+    }))
+  }
+
+  const segments = []
+  let activeInserted = false
+
+  for (const block of blocks) {
+    if (!activeInserted && block.startOffset >= activeRange.endOffset) {
+      segments.push({
+        type: 'active',
+        key: `active-${activeRange.startOffset}`,
+        text: activeDraft,
+      })
+      activeInserted = true
+    }
+
+    if (blockOverlapsRange(block, activeRange)) {
+      if (!activeInserted) {
+        segments.push({
+          type: 'active',
+          key: `active-${activeRange.startOffset}`,
+          text: activeDraft,
+        })
+        activeInserted = true
+      }
+      continue
+    }
+
+    segments.push({
+      type: 'block',
+      key: `block-${block.id}-${block.startOffset}`,
+      block,
+    })
+  }
+
+  if (!activeInserted) {
+    segments.push({
+      type: 'active',
+      key: `active-${activeRange.startOffset}`,
+      text: activeDraft,
+    })
+  }
+
+  return segments
+}
+
 export default function PostEditPage() {
   const { postId } = useParams()
-  const { token, isAuthed } = useAuth()
+  const { token, isAuthed, loading: authLoading } = useAuth()
+  const isDevPreview = token === 'dev-token'
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -260,8 +356,9 @@ export default function PostEditPage() {
   const [metaDraft, setMetaDraft] = useState(() => buildMetaDraft())
   const [metaError, setMetaError] = useState('')
 
-  const [renderEditMode, setRenderEditMode] = useState(false)
-  const [activeBlockId, setActiveBlockId] = useState(null)
+  const [renderEditMode, setRenderEditMode] = useState(true)
+  const [showSourcePane, setShowSourcePane] = useState(false)
+  const [activeBlockRange, setActiveBlockRange] = useState(null)
   const [activeBlockDraft, setActiveBlockDraft] = useState('')
 
   const sourceScrollRef = useRef(null)
@@ -276,9 +373,9 @@ export default function PostEditPage() {
     statusLabelMap[(postMeta?.status || '').toUpperCase()] || (postMeta?.status || '未知状态')
   const tagList = useMemo(() => parseTagList(postForm.tags), [postForm.tags])
   const markdownBlocks = useMemo(() => parseMarkdownBlocks(postForm.content), [postForm.content])
-  const activeBlock = useMemo(
-    () => markdownBlocks.find((block) => block.id === activeBlockId) || null,
-    [activeBlockId, markdownBlocks],
+  const renderSegments = useMemo(
+    () => buildRenderSegments(markdownBlocks, activeBlockRange, activeBlockDraft),
+    [activeBlockDraft, activeBlockRange, markdownBlocks],
   )
 
   useEffect(() => {
@@ -289,6 +386,15 @@ export default function PostEditPage() {
       setLoading(true)
       setLoadError('')
       try {
+        if (isDevPreview) {
+          if (!active) return
+          const nextForm = buildPostForm(demoPost)
+          setPostMeta({ ...demoPost, id: postId || demoPost.id })
+          setPostForm(nextForm)
+          setMetaDraft(buildMetaDraft(nextForm))
+          return
+        }
+
         const data = await userApi.myPostDetail(postId, token)
         if (!active) return
 
@@ -311,7 +417,7 @@ export default function PostEditPage() {
     return () => {
       active = false
     }
-  }, [postId, token])
+  }, [isDevPreview, postId, token])
 
   useEffect(() => {
     if (!metaModalOpen) return undefined
@@ -332,34 +438,49 @@ export default function PostEditPage() {
     function handleKeydown(event) {
       if (event.key !== 'Escape') return
       event.preventDefault()
-      if (activeBlockId !== null) {
-        setActiveBlockId(null)
+      if (activeBlockRange !== null) {
+        setActiveBlockRange(null)
         setActiveBlockDraft('')
-      } else {
-        setRenderEditMode(false)
       }
     }
 
     window.addEventListener('keydown', handleKeydown)
     return () => window.removeEventListener('keydown', handleKeydown)
-  }, [activeBlockId, renderEditMode])
+  }, [activeBlockRange, renderEditMode])
 
   useEffect(() => {
     if (!renderEditMode) {
-      setActiveBlockId(null)
+      setActiveBlockRange(null)
       setActiveBlockDraft('')
     }
   }, [renderEditMode])
 
   useEffect(() => {
-    if (!renderEditMode || activeBlockId === null) return
-    if (!activeBlock) {
-      setActiveBlockId(null)
-      setActiveBlockDraft('')
-      return
-    }
+    if (!renderEditMode || activeBlockRange === null) return
     blockEditorRef.current?.focus()
-  }, [activeBlock, activeBlockId, renderEditMode])
+  }, [activeBlockRange, renderEditMode])
+
+  useEffect(() => {
+    if (!renderEditMode || activeBlockRange === null) return
+
+    const editor = blockEditorRef.current
+    if (!editor) return
+
+    editor.style.height = '0px'
+    editor.style.height = `${Math.max(editor.scrollHeight, 120)}px`
+  }, [activeBlockDraft, activeBlockRange, renderEditMode])
+
+  if (authLoading) {
+    return (
+      <div className="app">
+        <Navbar />
+        <main className="shell post-editor-shell">
+          <section className="feature-card">正在恢复登录状态...</section>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
 
   if (!isAuthed) {
     return <Navigate to="/login" replace />
@@ -400,31 +521,43 @@ export default function PostEditPage() {
     setRenderEditMode((current) => !current)
   }
 
+  function toggleSourcePane() {
+    setShowSourcePane((current) => !current)
+  }
+
   function activateBlock(block) {
-    setActiveBlockId(block.id)
+    setActiveBlockRange({
+      startOffset: block.startOffset,
+      endOffset: block.endOffset,
+    })
     setActiveBlockDraft(block.text)
     setActionError('')
     setSaveMessage('')
   }
 
   function updateActiveBlockDraft(value) {
-    if (!activeBlock) return
+    if (!activeBlockRange) return
 
     const nextDraft = normalizeMarkdown(value)
     setActiveBlockDraft(nextDraft)
     setActionError('')
     setSaveMessage('')
+    setActiveBlockRange((current) =>
+      current
+        ? {
+            ...current,
+            endOffset: current.startOffset + nextDraft.length,
+          }
+        : current,
+    )
 
     setPostForm((current) => {
       const normalizedContent = normalizeMarkdown(current.content)
-      const currentBlocks = parseMarkdownBlocks(normalizedContent)
-      const currentActiveBlock = currentBlocks.find((block) => block.id === activeBlock.id)
-      if (!currentActiveBlock) return current
 
       const nextContent = replaceRange(
         normalizedContent,
-        currentActiveBlock.startOffset,
-        currentActiveBlock.endOffset,
+        activeBlockRange.startOffset,
+        activeBlockRange.endOffset,
         nextDraft,
       )
       return { ...current, content: nextContent }
@@ -505,6 +638,26 @@ export default function PostEditPage() {
         anonymous: postForm.anonymous,
       }
 
+      if (isDevPreview) {
+        setPostForm((current) => ({
+          ...current,
+          title,
+          content,
+          tags: payload.tags,
+        }))
+        setPostMeta((current) => ({
+          ...(current || demoPost),
+          ...payload,
+          title,
+          content,
+          tags: payload.tags,
+          category: getCategoryName(payload.categoryCode),
+          updatedAt: new Date().toISOString(),
+        }))
+        setSaveMessage('当前为开发预览模式，内容已在前端本地更新。')
+        return
+      }
+
       const updated = await userApi.updateMyPost(postId, payload, token)
       setPostForm((current) => ({
         ...current,
@@ -530,7 +683,7 @@ export default function PostEditPage() {
     <div className="app">
       <Navbar />
 
-      <main className="container post-editor-shell">
+      <main className="shell post-editor-shell">
         <section className="post-editor-topbar">
           <div className="post-editor-topbar-main">
             <Link className="post-editor-back" to="/profile">
@@ -539,7 +692,7 @@ export default function PostEditPage() {
             <div className="post-editor-heading">
               <span className="eyebrow">Markdown 编辑</span>
               <h1>{postForm.title.trim() || '未命名帖子'}</h1>
-              <p className="muted">正文支持双栏同步与渲染区块级编辑，元信息仍在弹窗维护。</p>
+              <p className="muted">默认采用渲染态就地编辑，按需再展开 Markdown 源码，体验更接近 Typora / Obsidian 的 Live Preview。</p>
             </div>
           </div>
           <div className="post-editor-topbar-actions">
@@ -583,28 +736,39 @@ export default function PostEditPage() {
               </span>
               <span className="post-editor-chip">行数：{postLineCount}</span>
               <span className="post-editor-chip">更新：{formatDateTime(postMeta?.updatedAt)}</span>
+              {isDevPreview ? <span className="post-editor-chip">开发预览模式</span> : null}
             </section>
 
             <form id="post-editor-form" className="post-editor-grid" onSubmit={handleSave}>
               <section className={`feature-card post-editor-workspace${renderEditMode ? ' is-render-edit' : ''}`}>
                 <div className="post-editor-workspace-head">
                   <div className="post-editor-workspace-head-item">
-                    <span className="eyebrow">Source</span>
-                    <h2>Markdown 源码</h2>
+                    <span className="eyebrow">Live Canvas</span>
+                    <h2>{renderEditMode ? '所见即所得编辑' : '实时渲染预览'}</h2>
+                    <p className="muted">
+                      {renderEditMode
+                        ? '点击右侧文稿中的任意标题、段落或列表即可直接改写，适合长文润色与结构调整。'
+                        : '当前是纯预览模式。重新开启渲染编辑后，就可以像在文档里一样直接修改内容。'}
+                    </p>
                   </div>
-                  <div className="post-editor-workspace-head-item align-right">
-                    <span className="eyebrow">Preview</span>
-                    <div className="post-editor-preview-head-row">
-                      <h2>渲染预览</h2>
-                      <button className="btn ghost small" type="button" onClick={toggleRenderEditMode}>
-                        {renderEditMode ? '退出渲染编辑' : '渲染区直接编辑'}
-                      </button>
-                    </div>
+                  <div className="post-editor-toolbar">
+                    <button className="btn outline small" type="button" onClick={toggleSourcePane}>
+                      {showSourcePane ? '隐藏源码' : '显示源码'}
+                    </button>
+                    <button className="btn ghost small" type="button" onClick={toggleRenderEditMode}>
+                      {renderEditMode ? '切换为纯预览' : '开启渲染编辑'}
+                    </button>
                   </div>
                 </div>
 
-                <div className="post-editor-workspace-grid">
+                <div className={`post-editor-workspace-grid${showSourcePane ? '' : ' is-source-hidden'}`}>
                   <section className="post-editor-source-pane">
+                    <div className="post-editor-pane-head">
+                      <span>Markdown 源码</span>
+                      <span className="field-tip">
+                        {renderEditMode ? '当前作为只读参考，关闭渲染编辑后可直接在这里改写。' : '适合批量调整格式、引用与代码块。'}
+                      </span>
+                    </div>
                     <textarea
                       ref={sourceScrollRef}
                       className={`post-editor-sync-textarea${renderEditMode ? ' is-readonly' : ''}`}
@@ -617,6 +781,7 @@ export default function PostEditPage() {
                         blockEditorRef.current?.focus()
                       }}
                       placeholder="在这里编辑 Markdown..."
+                      aria-label="Markdown 源码编辑器"
                       required
                     ></textarea>
                   </section>
@@ -642,7 +807,11 @@ export default function PostEditPage() {
                       {renderEditMode ? (
                         <div className="post-editor-render-blocks">
                           <div className="post-editor-render-tip">
-                            点击任意块直接编辑，其他块保持渲染。按 <kbd>Esc</kbd> 可退出当前块。
+                            {showSourcePane
+                              ? '点击任意块直接编辑，左侧源码会同步映射当前结果。按 '
+                              : '点击任意块直接编辑；如需查看原始 Markdown，可先展开源码面板。按 '}
+                            <kbd>Esc</kbd>
+                            {' '}可退出当前块。
                           </div>
 
                           {markdownBlocks.length === 0 ? (
@@ -652,37 +821,54 @@ export default function PostEditPage() {
                               value={postForm.content}
                               onChange={(event) => updateContent(event.target.value)}
                               placeholder="开始输入 Markdown..."
+                              aria-label="空白 Markdown 内容编辑器"
                             ></textarea>
                           ) : (
-                            markdownBlocks.map((block) => {
-                              const isActive = activeBlockId === block.id
-                              return (
-                                <section
-                                  className={`post-editor-render-block${isActive ? ' is-active' : ''}`}
-                                  key={block.id}
-                                  onClick={() => {
-                                    if (isActive) return
-                                    activateBlock(block)
-                                  }}
-                                >
-                                  {isActive ? (
+                            renderSegments.map((segment, segmentIndex) => {
+                              if (segment.type === 'active') {
+                                return (
+                                  <section
+                                    className="post-editor-render-block is-active"
+                                    key={segment.key}
+                                  >
                                     <textarea
                                       ref={blockEditorRef}
                                       className="post-editor-block-editor"
-                                      value={activeBlockDraft}
+                                      value={segment.text}
                                       onChange={(event) => updateActiveBlockDraft(event.target.value)}
                                       onClick={(event) => event.stopPropagation()}
+                                      aria-label="编辑当前 Markdown 内容块"
                                       onKeyDown={(event) => {
                                         if (event.key === 'Escape') {
                                           event.preventDefault()
-                                          setActiveBlockId(null)
+                                          setActiveBlockRange(null)
                                           setActiveBlockDraft('')
                                         }
                                       }}
                                     ></textarea>
-                                  ) : (
-                                    <MarkdownContent content={block.text} />
-                                  )}
+                                  </section>
+                                )
+                              }
+
+                              const { block } = segment
+                              return (
+                                <section
+                                  className="post-editor-render-block"
+                                  key={segment.key}
+                                  role="button"
+                                  tabIndex={0}
+                                  aria-label={`编辑第 ${segmentIndex + 1} 个内容块`}
+                                  aria-pressed={false}
+                                  onClick={() => {
+                                    activateBlock(block)
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (event.key !== 'Enter' && event.key !== ' ') return
+                                    event.preventDefault()
+                                    activateBlock(block)
+                                  }}
+                                >
+                                  <MarkdownContent content={block.text} />
                                 </section>
                               )
                             })
