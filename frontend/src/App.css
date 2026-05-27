@@ -2337,6 +2337,7 @@
   .admin-data-row {
     grid-template-columns: 1fr;
   }
+}
 
 /* ========== Tabs ========== */
 
@@ -2584,6 +2585,499 @@
   margin: 0;
 }
 
+/* ========== Post Editor ========== */
+
+.post-editor-shell {
+  padding-top: 48px;
+  gap: 28px;
+}
+
+.post-editor-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px 32px;
+  border: 1px solid rgba(15, 118, 110, 0.14);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at top left, rgba(240, 253, 250, 0.92), rgba(240, 253, 250, 0) 38%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(247, 250, 249, 0.96));
+  box-shadow: 0 22px 48px rgba(13, 27, 26, 0.08);
+}
+
+.post-editor-topbar-main {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.post-editor-back {
+  width: fit-content;
+  color: #0f766e;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.post-editor-back:hover {
+  text-decoration: underline;
+}
+
+.post-editor-heading {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.post-editor-heading h1 {
+  margin: 0;
+  font-size: clamp(2rem, 3vw, 3rem);
+  line-height: 1.05;
+}
+
+.post-editor-heading .muted {
+  max-width: 780px;
+  line-height: 1.7;
+}
+
+.post-editor-topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.post-editor-status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.post-editor-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+  color: #21413d;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 10px 24px rgba(13, 27, 26, 0.04);
+}
+
+.post-editor-grid {
+  display: grid;
+}
+
+.post-editor-workspace {
+  gap: 22px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 28px;
+}
+
+.post-editor-workspace-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px 0;
+}
+
+.post-editor-workspace-head-item {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.post-editor-workspace-head-item h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.post-editor-workspace-head-item .muted {
+  max-width: 680px;
+  line-height: 1.7;
+}
+
+.post-editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.post-editor-workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.72fr) minmax(0, 1.28fr);
+  align-items: stretch;
+  min-height: 72vh;
+  border-top: 1px solid rgba(15, 118, 110, 0.08);
+}
+
+.post-editor-workspace-grid.is-source-hidden {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.post-editor-workspace-grid.is-source-hidden .post-editor-source-pane {
+  display: none;
+}
+
+.post-editor-source-pane,
+.post-editor-preview-pane {
+  min-height: 0;
+}
+
+.post-editor-source-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  border-right: 1px solid rgba(15, 118, 110, 0.08);
+  background:
+    linear-gradient(180deg, rgba(244, 249, 248, 0.98), rgba(248, 250, 249, 0.92));
+}
+
+.post-editor-pane-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid rgba(15, 118, 110, 0.08);
+}
+
+.post-editor-pane-head span:first-child {
+  font-size: 13px;
+  font-weight: 700;
+  color: #153330;
+}
+
+.post-editor-sync-textarea,
+.post-editor-block-editor {
+  width: 100%;
+  min-height: 0;
+  border: none;
+  resize: none;
+  outline: none;
+  background: transparent;
+  color: #16312f;
+}
+
+.post-editor-sync-textarea {
+  height: 100%;
+  padding: 20px;
+  font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.post-editor-sync-textarea.is-readonly {
+  color: #6d847f;
+  cursor: default;
+}
+
+.post-editor-sync-textarea::placeholder,
+.post-editor-block-editor::placeholder {
+  color: #90a5a0;
+}
+
+.post-editor-preview-pane {
+  overflow: auto;
+  background:
+    linear-gradient(180deg, rgba(249, 246, 239, 0.92), rgba(246, 243, 236, 0.98));
+}
+
+.post-editor-preview-doc {
+  width: min(860px, calc(100% - 40px));
+  min-height: 100%;
+  margin: 24px auto;
+  padding: clamp(24px, 3.4vw, 40px);
+  border-radius: 28px;
+  border: 1px solid rgba(15, 118, 110, 0.09);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 252, 247, 0.92));
+  box-shadow:
+    0 24px 48px rgba(13, 27, 26, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.post-editor-preview-header {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 22px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid rgba(15, 118, 110, 0.08);
+}
+
+.post-editor-preview-header h2 {
+  margin: 0;
+  font-size: clamp(2rem, 2.6vw, 2.8rem);
+  line-height: 1.08;
+  color: #102725;
+}
+
+.post-editor-paper-meta,
+.post-editor-meta-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.post-editor-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.08);
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.post-editor-live-preview-layer {
+  display: grid;
+  gap: 18px;
+}
+
+.post-editor-render-blocks {
+  display: grid;
+  gap: 16px;
+}
+
+.post-editor-render-tip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 0 2px 14px;
+  border-left: 2px solid rgba(15, 118, 110, 0.16);
+  color: #5b7571;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.post-editor-render-tip kbd {
+  min-width: 28px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f766e;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.post-editor-render-block {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  margin: 0 -4px;
+  padding: 8px 12px 8px 16px;
+  border: 1px solid transparent;
+  border-left: 2px solid transparent;
+  border-radius: 14px;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+  cursor: text;
+  outline: none;
+}
+
+.post-editor-render-block:hover,
+.post-editor-render-block:focus-visible {
+  border-color: rgba(15, 118, 110, 0.08);
+  border-left-color: rgba(15, 118, 110, 0.26);
+  background: rgba(248, 251, 250, 0.82);
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.05);
+}
+
+.post-editor-render-block::before {
+  content: '点按编辑';
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  padding: 0;
+  background: transparent;
+  color: rgba(15, 118, 110, 0.72);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+
+.post-editor-render-block:hover::before,
+.post-editor-render-block:focus-visible::before {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.post-editor-render-block.is-active {
+  padding: 12px 14px 14px 18px;
+  border-color: rgba(15, 118, 110, 0.12);
+  border-left-color: #0f766e;
+  background: linear-gradient(180deg, rgba(252, 255, 254, 0.98), rgba(240, 253, 250, 0.9));
+  box-shadow: 0 14px 26px rgba(15, 118, 110, 0.08);
+}
+
+.post-editor-render-block.is-active::before {
+  content: '编辑中';
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.post-editor-block-editor {
+  min-height: 120px;
+  padding: 0;
+  overflow: hidden;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.9;
+  caret-color: #0f766e;
+  tab-size: 2;
+}
+
+.post-editor-empty {
+  display: grid;
+  place-items: center;
+  min-height: 320px;
+  padding: 32px 24px;
+  border: 1px dashed rgba(15, 118, 110, 0.18);
+  border-radius: 22px;
+  background: rgba(244, 251, 250, 0.65);
+  color: #557470;
+  text-align: center;
+  line-height: 1.7;
+}
+
+.post-editor-success {
+  margin-top: 16px;
+}
+
+.post-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 22px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(15, 118, 110, 0.1);
+}
+
+.post-editor-note {
+  color: #4f6f6a;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.post-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.post-editor-meta-modal {
+  width: min(720px, 94vw);
+}
+
+.post-editor-meta-summary {
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(244, 251, 250, 0.74);
+  border: 1px solid rgba(15, 118, 110, 0.08);
+}
+
+@media (max-width: 1100px) {
+  .post-editor-workspace-grid,
+  .post-editor-workspace-grid.is-source-hidden {
+    grid-template-columns: 1fr;
+  }
+
+  .post-editor-source-pane {
+    border-right: none;
+    border-bottom: 1px solid rgba(15, 118, 110, 0.08);
+  }
+
+  .post-editor-workspace-grid.is-source-hidden .post-editor-source-pane {
+    display: none;
+  }
+
+  .post-editor-preview-doc {
+    width: min(100%, calc(100% - 24px));
+    margin: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .post-editor-shell {
+    padding-top: 24px;
+    gap: 20px;
+  }
+
+  .post-editor-topbar,
+  .post-editor-footer {
+    padding: 20px;
+  }
+
+  .post-editor-topbar,
+  .post-editor-workspace-head,
+  .post-editor-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .post-editor-topbar-actions,
+  .post-editor-toolbar,
+  .post-editor-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .post-editor-topbar-actions .btn,
+  .post-editor-toolbar .btn,
+  .post-editor-actions .btn {
+    flex: 1 1 160px;
+  }
+
+  .post-editor-workspace-head {
+    padding: 20px 20px 0;
+  }
+
+  .post-editor-workspace-grid {
+    min-height: auto;
+  }
+
+  .post-editor-preview-doc {
+    padding: 22px 18px;
+    border-radius: 22px;
+  }
+
+  .post-editor-render-block::before {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .post-editor-render-block,
+  .post-editor-render-block::before {
+    transition: none;
+  }
+}
+
 .modal-body {
   display: grid;
   gap: 1rem;
@@ -2721,6 +3215,7 @@
   gap: 12px;
 }
 
+@media (max-width: 640px) {
   .admin-row-actions {
     justify-content: flex-start;
     flex-wrap: wrap;
