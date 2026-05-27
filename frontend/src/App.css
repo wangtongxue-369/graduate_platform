@@ -2083,6 +2083,18 @@
   background: rgba(240, 253, 250, 0.78);
 }
 
+.study-row.is-overdue,
+.project-card.is-overdue {
+  border-color: rgba(220, 38, 38, 0.32);
+  background: rgba(254, 242, 242, 0.86);
+}
+
+.study-row.is-due-soon,
+.project-card.is-due-soon {
+  border-color: rgba(245, 158, 11, 0.34);
+  background: rgba(255, 251, 235, 0.88);
+}
+
 .study-row-main {
   display: grid;
   gap: 8px;
@@ -2145,6 +2157,40 @@
 .tag.danger {
   background: rgba(220, 38, 38, 0.1);
   color: #b91c1c;
+}
+
+.tag.warning {
+  background: rgba(245, 158, 11, 0.16);
+  color: #92400e;
+}
+
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.project-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 8px 22px rgba(13, 27, 26, 0.06);
+}
+
+.project-card h3 {
+  margin: 0;
+}
+
+.project-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .experience-card {
