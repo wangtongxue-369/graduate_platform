@@ -157,73 +157,139 @@ public class DataInitializer implements CommandLineRunner {
 
 
     private void initEmploymentData() {
+        updateLegacyEmploymentSeedData();
+
         java.time.LocalDateTime fairStart = java.time.LocalDateTime.now().plusDays(7).withHour(14).withMinute(0).withSecond(0).withNano(0);
-        if (!careerFairRepository.existsByTitleAndCompanyNameAndStartTime("Internet Campus Career Fair", "Future Tech", fairStart)) {
+        boolean hasInternetFair = careerFairRepository.existsByTitleAndCompanyName("Internet Campus Career Fair", "Future Tech")
+            || careerFairRepository.existsByTitleAndCompanyName("互联网校园招聘宣讲会", "未来科技");
+        if (!hasInternetFair) {
             careerFairRepository.save(CareerFair.builder()
-                .title("Internet Campus Career Fair")
-                .companyName("Future Tech")
-                .city("Shanghai")
-                .industry("Internet")
-                .targetRoles("Backend,Frontend,Product")
-                .location("Student Center A101")
+                .title("互联网校园招聘宣讲会")
+                .companyName("未来科技")
+                .city("上海")
+                .industry("互联网")
+                .targetRoles("后端,前端,产品")
+                .location("学生中心 A101")
                 .startTime(fairStart)
                 .endTime(fairStart.plusHours(2))
                 .applyDeadline(fairStart.plusDays(3))
                 .applyUrl("https://jobs.example.com/future-tech")
-                .description("Campus recruitment briefing and online application guidance.")
+                .description("面向应届毕业生介绍校园招聘岗位、培养计划和线上申请流程。")
                 .active(true)
                 .build());
         }
 
-        if (!careerFairRepository.existsByTitleAndCompanyNameAndStartTime("Smart Manufacturing Fair", "Harbor Equipment Group", fairStart.plusDays(3))) {
+        boolean hasManufacturingFair = careerFairRepository.existsByTitleAndCompanyName("Smart Manufacturing Fair", "Harbor Equipment Group")
+            || careerFairRepository.existsByTitleAndCompanyName("智能制造专场招聘会", "港湾装备集团");
+        if (!hasManufacturingFair) {
             careerFairRepository.save(CareerFair.builder()
-                .title("Smart Manufacturing Fair")
-                .companyName("Harbor Equipment Group")
-                .city("Suzhou")
-                .industry("Manufacturing")
-                .targetRoles("QA,Embedded,Supply Chain")
-                .location("Career Center 2F")
+                .title("智能制造专场招聘会")
+                .companyName("港湾装备集团")
+                .city("苏州")
+                .industry("智能制造")
+                .targetRoles("质量工程,嵌入式,供应链")
+                .location("就业指导中心 2 楼")
                 .startTime(fairStart.plusDays(3))
                 .endTime(fairStart.plusDays(3).plusHours(3))
                 .applyDeadline(fairStart.plusDays(6))
                 .applyUrl("https://jobs.example.com/manufacturing")
-                .description("Joint smart manufacturing recruitment event.")
+                .description("联合多部门发布智能制造岗位，说明招聘流程、岗位要求和网申安排。")
                 .active(true)
                 .build());
         }
 
-        if (!jobPostingRepository.existsByTitleAndCompanyName("Java Backend Engineer", "Future Tech")) {
+        boolean hasBackendJob = jobPostingRepository.existsByTitleAndCompanyName("Java Backend Engineer", "Future Tech")
+            || jobPostingRepository.existsByTitleAndCompanyName("Java 后端工程师", "未来科技");
+        if (!hasBackendJob) {
             jobPostingRepository.save(JobPosting.builder()
-                .title("Java Backend Engineer")
-                .companyName("Future Tech")
-                .city("Shanghai")
-                .industry("Internet")
-                .roleType("Backend")
+                .title("Java 后端工程师")
+                .companyName("未来科技")
+                .city("上海")
+                .industry("互联网")
+                .roleType("后端")
                 .salaryRange("18k-25k")
-                .educationRequirement("Bachelor or above")
-                .majorKeywords("Computer Science,Software Engineering,Information Systems")
+                .educationRequirement("本科及以上")
+                .majorKeywords("计算机科学,软件工程,信息系统")
                 .skillTags("Java,Spring Boot,MySQL,Redis")
-                .description("Build backend services for campus recruitment products.")
+                .description("参与校园招聘产品的后端服务建设，负责接口开发、数据处理与系统稳定性优化。")
                 .applyUrl("https://jobs.example.com/java-backend")
                 .active(true)
                 .build());
         }
 
-        if (!jobPostingRepository.existsByTitleAndCompanyName("Product Operations Trainee", "Harbor Equipment Group")) {
+        boolean hasOperationsJob = jobPostingRepository.existsByTitleAndCompanyName("Product Operations Trainee", "Harbor Equipment Group")
+            || jobPostingRepository.existsByTitleAndCompanyName("产品运营管培生", "港湾装备集团");
+        if (!hasOperationsJob) {
             jobPostingRepository.save(JobPosting.builder()
-                .title("Product Operations Trainee")
-                .companyName("Harbor Equipment Group")
-                .city("Suzhou")
-                .industry("Manufacturing")
-                .roleType("Product Operations")
+                .title("产品运营管培生")
+                .companyName("港湾装备集团")
+                .city("苏州")
+                .industry("智能制造")
+                .roleType("产品运营")
                 .salaryRange("10k-15k")
-                .educationRequirement("Bachelor or above")
-                .majorKeywords("Management,Automation,Computer Science")
-                .skillTags("Data Analysis,Communication,Project Management")
-                .description("Analyze product operations and join the graduate trainee program.")
+                .educationRequirement("本科及以上")
+                .majorKeywords("管理学,自动化,计算机科学")
+                .skillTags("数据分析,沟通协调,项目管理")
+                .description("负责产品运营数据分析、流程协同和项目跟进，参与制造业校招生管培培养计划。")
                 .applyUrl("https://jobs.example.com/product-operation")
                 .active(true)
                 .build());
+        }
+    }
+
+    private void updateLegacyEmploymentSeedData() {
+        for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("Internet Campus Career Fair", "Future Tech")) {
+            fair.setTitle("互联网校园招聘宣讲会");
+            fair.setCompanyName("未来科技");
+            fair.setCity("上海");
+            fair.setIndustry("互联网");
+            fair.setTargetRoles("后端,前端,产品");
+            fair.setLocation("学生中心 A101");
+            fair.setApplyUrl("https://jobs.example.com/future-tech");
+            fair.setDescription("面向应届毕业生介绍校园招聘岗位、培养计划和线上申请流程。");
+            careerFairRepository.save(fair);
+        }
+
+        for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("Smart Manufacturing Fair", "Harbor Equipment Group")) {
+            fair.setTitle("智能制造专场招聘会");
+            fair.setCompanyName("港湾装备集团");
+            fair.setCity("苏州");
+            fair.setIndustry("智能制造");
+            fair.setTargetRoles("质量工程,嵌入式,供应链");
+            fair.setLocation("就业指导中心 2 楼");
+            fair.setApplyUrl("https://jobs.example.com/manufacturing");
+            fair.setDescription("联合多部门发布智能制造岗位，说明招聘流程、岗位要求和网申安排。");
+            careerFairRepository.save(fair);
+        }
+
+        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("Java Backend Engineer", "Future Tech")) {
+            job.setTitle("Java 后端工程师");
+            job.setCompanyName("未来科技");
+            job.setCity("上海");
+            job.setIndustry("互联网");
+            job.setRoleType("后端");
+            job.setSalaryRange("18k-25k");
+            job.setEducationRequirement("本科及以上");
+            job.setMajorKeywords("计算机科学,软件工程,信息系统");
+            job.setSkillTags("Java,Spring Boot,MySQL,Redis");
+            job.setDescription("参与校园招聘产品的后端服务建设，负责接口开发、数据处理与系统稳定性优化。");
+            job.setApplyUrl("https://jobs.example.com/java-backend");
+            jobPostingRepository.save(job);
+        }
+
+        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("Product Operations Trainee", "Harbor Equipment Group")) {
+            job.setTitle("产品运营管培生");
+            job.setCompanyName("港湾装备集团");
+            job.setCity("苏州");
+            job.setIndustry("智能制造");
+            job.setRoleType("产品运营");
+            job.setSalaryRange("10k-15k");
+            job.setEducationRequirement("本科及以上");
+            job.setMajorKeywords("管理学,自动化,计算机科学");
+            job.setSkillTags("数据分析,沟通协调,项目管理");
+            job.setDescription("负责产品运营数据分析、流程协同和项目跟进，参与制造业校招生管培培养计划。");
+            job.setApplyUrl("https://jobs.example.com/product-operation");
+            jobPostingRepository.save(job);
         }
     }
 
