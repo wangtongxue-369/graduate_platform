@@ -29,6 +29,11 @@ public class QuestionBank {
 
     private String difficulty; // easy / middle / hard
 
+    private String status; // active / inactive
+
+    @Builder.Default
+    private Boolean active = true;
+
     @OneToMany(mappedBy = "bank", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Question> questions = new ArrayList<>();
