@@ -43,6 +43,15 @@ public class AdminQuestionBankController {
         return ApiResponse.ok(null, "题库删除成功");
     }
 
+    @PutMapping("/{id}/status")
+    public ApiResponse<?> toggleBankStatus(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        String status = (String) body.get("status");
+        if (status == null || (!"active".equals(status) && !"inactive".equals(status))) {
+            return ApiResponse.fail("状态值无效，仅支持 active/inactive");
+        }
+        return ApiResponse.ok(service.toggleBankStatus(id, status), status.equals("active") ? "题库已启用" : "题库已停用");
+    }
+
     // ==================== 题目 ====================
 
     @GetMapping("/{bankId}/questions")

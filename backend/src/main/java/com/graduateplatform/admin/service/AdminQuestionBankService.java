@@ -59,6 +59,11 @@ public class AdminQuestionBankService {
         questionBankService.deleteBank(id);
     }
 
+    @Transactional
+    public BankResponse toggleBankStatus(Long id, String status) {
+        return questionBankService.toggleBankStatus(id, status);
+    }
+
     // ==================== 题目管理 ====================
 
     @Transactional(readOnly = true)
@@ -79,6 +84,18 @@ public class AdminQuestionBankService {
     @Transactional
     public void deleteQuestion(Long id) {
         questionService.deleteQuestion(id);
+    }
+
+    @Transactional
+    public QuestionResponse toggleQuestionStatus(Long id, String status) {
+        return questionService.toggleQuestionStatus(id, status);
+    }
+
+    // ==================== 批量操作 ====================
+
+    @Transactional
+    public Map<String, Object> batchUpdateQuestions(List<Long> ids, Map<String, Object> updates) {
+        return questionService.batchUpdateQuestions(ids, updates);
     }
 
     // ==================== 批量导入 ====================
