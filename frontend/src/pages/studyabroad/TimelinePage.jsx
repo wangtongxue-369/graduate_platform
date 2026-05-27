@@ -12,12 +12,22 @@ import {
 import '../../App.css'
 
 const statusLabels = {
-  todo: 'Todo',
-  doing: 'Doing',
-  done: 'Done',
+  todo: '待开始',
+  doing: '进行中',
+  done: '已完成',
 }
 
-const phases = ['All phases', 'Language test', 'School selection', 'Documents', 'Submission', 'Interview', 'Visa']
+const phaseOptions = [
+  { value: 'all', label: '全部阶段' },
+  { value: 'Language test', label: '语言考试' },
+  { value: 'School selection', label: '选校定位' },
+  { value: 'Documents', label: '文书材料' },
+  { value: 'Submission', label: '网申提交' },
+  { value: 'Interview', label: '面试' },
+  { value: 'Visa', label: '签证' },
+]
+
+const phaseLabelMap = Object.fromEntries(phaseOptions.map((item) => [item.value, item.label]))
 
 const emptyForm = {
   applicationId: '',
@@ -34,6 +44,19 @@ function daysLeft(dateText) {
   today.setHours(0, 0, 0, 0)
   const target = new Date(`${dateText}T00:00:00`)
   return Math.ceil((target - today) / 86400000)
+}
+
+function deadlineText(left) {
+  if (left < 0) return `已逾期 ${Math.abs(left)} 天`
+  if (left === 0) return '今天截止'
+  if (left <= 7) return `${left} 天内截止`
+  return `${left} 天后截止`
+}
+
+function urgencyClass(left) {
+  if (left < 0) return 'danger'
+  if (left <= 7) return 'warning'
+  return 'subtle'
 }
 
 function createId() {
@@ -66,13 +89,26 @@ function toTimelinePayload(item, canUseRemote) {
   }
 }
 
+function formFromItem(item) {
+  return {
+    applicationId: item.applicationId ? String(item.applicationId) : '',
+    title: item.title || '',
+    country: item.country || 'UK',
+    school: item.school || '',
+    phase: item.phase || 'Documents',
+    dueDate: item.dueDate || '2026-09-01',
+    note: item.note || '',
+  }
+}
+
 export default function TimelinePage() {
   const { token } = useAuth()
   const [items, setItems] = useState(() => getTimelineItems())
   const [applications, setApplications] = useState(() => getApplicationItems())
-  const [phase, setPhase] = useState('All phases')
+  const [phase, setPhase] = useState('all')
   const [syncNote, setSyncNote] = useState('')
   const [form, setForm] = useState(emptyForm)
+  const [editingId, setEditingId] = useState(null)
 
   const canUseRemote = Boolean(token && token !== 'dev-token')
 
@@ -91,11 +127,11 @@ export default function TimelinePage() {
         if (active) {
           setApplications(remoteApplications)
           setItems(remoteItems)
-          setSyncNote('Loaded timeline and application projects from backend.')
+          setSyncNote('已从后端加载时间线和申请项目。')
         }
       } catch (error) {
         if (active) {
-          setSyncNote(error.message || 'Backend unavailable. Showing local demo timeline.')
+          setSyncNote(error.message || '后端暂不可用，当前展示本地演示时间线。')
         }
       }
     }
@@ -111,18 +147,38 @@ export default function TimelinePage() {
     saveTimelineItems(nextItems)
   }
 
+  function updateForm(field, value) {
+    setForm((current) => ({ ...current, [field]: value }))
+  }
+
+  function handleApplicationChange(value) {
+    const app = findApplication(applications, value)
+    setForm((current) => ({
+      ...current,
+      applicationId: value,
+      country: app?.country || current.country,
+      school: app?.school || current.school,
+    }))
+  }
+
+  function resetForm() {
+    setForm(emptyForm)
+    setEditingId(null)
+  }
+
   const filteredItems = useMemo(() => {
-    const nextItems = phase === 'All phases'
+    const nextItems = phase === 'all'
       ? items
       : items.filter((item) => item.phase === phase)
-    return [...nextItems].sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    return [...nextItems].sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
   }, [items, phase])
 
   const stats = useMemo(() => {
     const done = items.filter((item) => item.status === 'done').length
     const doing = items.filter((item) => item.status === 'doing').length
+    const overdue = items.filter((item) => item.status !== 'done' && daysLeft(item.dueDate) < 0).length
     const rate = items.length ? Math.round((done / items.length) * 100) : 0
-    return { done, doing, rate }
+    return { done, doing, overdue, rate }
   }, [items])
 
   function enrichWithApplication(payload) {
@@ -134,35 +190,59 @@ export default function TimelinePage() {
     }
   }
 
-  async function addItem(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     const title = form.title.trim()
-    if (!title) return
+    if (!title) {
+      setSyncNote('请填写时间线事项标题。')
+      return
+    }
 
+    const existing = items.find((item) => item.id === editingId)
     const payload = {
       applicationId: normalizeApplicationId(form.applicationId, canUseRemote),
       title,
-      country: form.country.trim() || 'Unspecified',
-      school: form.school.trim() || 'School TBD',
+      country: form.country.trim() || '未指定',
+      school: form.school.trim() || '待定院校',
       phase: form.phase,
       dueDate: form.dueDate,
-      status: 'todo',
-      note: form.note.trim() || 'No note',
+      status: existing?.status || 'todo',
+      note: form.note.trim() || '暂无备注',
     }
 
     if (canUseRemote) {
       try {
-        const created = await studyAbroadApi.createTimeline(payload, token)
-        setItems([...items, created].sort((a, b) => a.dueDate.localeCompare(b.dueDate)))
-        setSyncNote('Timeline item saved to backend.')
+        const saved = editingId
+          ? await studyAbroadApi.updateTimeline(editingId, payload, token)
+          : await studyAbroadApi.createTimeline(payload, token)
+        setItems((current) => {
+          const next = editingId
+            ? current.map((item) => (item.id === editingId ? saved : item))
+            : [...current, saved]
+          return next.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
+        })
+        setSyncNote(editingId ? '时间线事项已更新。' : '时间线事项已保存到后端。')
       } catch (error) {
-        setSyncNote(error.message || 'Backend save failed.')
+        setSyncNote(error.message || '保存失败。')
         return
       }
     } else {
-      updateLocalItems([...items, { id: createId(), ...enrichWithApplication(payload) }])
+      const saved = {
+        id: editingId || createId(),
+        ...enrichWithApplication(payload),
+      }
+      const next = editingId
+        ? items.map((item) => (item.id === editingId ? saved : item))
+        : [...items, saved]
+      updateLocalItems(next.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate))))
+      setSyncNote(editingId ? '本地时间线事项已更新。' : '本地时间线事项已创建。')
     }
-    setForm({ ...emptyForm, applicationId: form.applicationId })
+    resetForm()
+  }
+
+  function startEdit(item) {
+    setEditingId(item.id)
+    setForm(formFromItem(item))
   }
 
   async function cycleStatus(targetId) {
@@ -176,9 +256,9 @@ export default function TimelinePage() {
       try {
         const updated = await studyAbroadApi.updateTimeline(targetId, toTimelinePayload(nextItem, canUseRemote), token)
         setItems(items.map((item) => (item.id === targetId ? updated : item)))
-        setSyncNote('Timeline status synced to backend.')
+        setSyncNote('时间线状态已同步。')
       } catch (error) {
-        setSyncNote(error.message || 'Status sync failed.')
+        setSyncNote(error.message || '状态同步失败。')
       }
       return
     }
@@ -187,17 +267,19 @@ export default function TimelinePage() {
   }
 
   async function removeItem(targetId) {
+    if (!window.confirm('确认删除这个时间线事项吗？')) return
     if (canUseRemote) {
       try {
         await studyAbroadApi.deleteTimeline(targetId, token)
         setItems(items.filter((item) => item.id !== targetId))
-        setSyncNote('Timeline item deleted from backend.')
+        setSyncNote('时间线事项已删除。')
       } catch (error) {
-        setSyncNote(error.message || 'Delete failed.')
+        setSyncNote(error.message || '删除失败。')
       }
       return
     }
     updateLocalItems(items.filter((item) => item.id !== targetId))
+    setSyncNote('本地时间线事项已删除。')
   }
 
   return (
@@ -207,112 +289,104 @@ export default function TimelinePage() {
         <section className="section">
           <div className="detail-header">
             <div>
-              <p className="eyebrow">Study Abroad · Timeline</p>
-              <h2>Application Timeline</h2>
-              <p className="muted">Create timeline tasks and bind them to specific application projects.</p>
+              <p className="eyebrow">留学 · 时间线</p>
+              <h2>申请时间线</h2>
+              <p className="muted">创建、编辑并推进语言考试、文书、网申、面试和签证节点。</p>
             </div>
-            <Link className="btn ghost" to="/studyabroad">Back to dashboard</Link>
+            <Link className="btn ghost" to="/studyabroad">返回工作台</Link>
           </div>
 
           <div className="grid-two">
-            <form className="feature-card" onSubmit={addItem}>
-              <div className="card-title">New Timeline Item</div>
+            <form className="feature-card" onSubmit={handleSubmit}>
+              <div className="section-head compact">
+                <h2>{editingId ? '编辑时间线事项' : '新增时间线事项'}</h2>
+                <button className="btn outline small" type="button" onClick={resetForm}>清空</button>
+              </div>
               <label className="field">
-                <span>Application Project</span>
-                <select
-                  value={form.applicationId}
-                  onChange={(event) => setForm({ ...form, applicationId: event.target.value })}
-                >
-                  <option value="">General / not linked</option>
+                <span>关联申请项目</span>
+                <select value={form.applicationId} onChange={(event) => handleApplicationChange(event.target.value)}>
+                  <option value="">通用事项 / 不关联项目</option>
                   {applications.map((item) => (
                     <option key={item.id} value={String(item.id)}>{appLabel(item)}</option>
                   ))}
                 </select>
               </label>
               <label className="field">
-                <span>Item Title</span>
+                <span>事项标题</span>
                 <input
                   type="text"
                   value={form.title}
-                  placeholder="Example: Finish second PS draft"
-                  onChange={(event) => setForm({ ...form, title: event.target.value })}
+                  placeholder="例如：完成第二版 PS"
+                  onChange={(event) => updateForm('title', event.target.value)}
                 />
               </label>
               <div className="grid-two compact">
                 <label className="field">
-                  <span>Country / Region</span>
-                  <input
-                    type="text"
-                    value={form.country}
-                    onChange={(event) => setForm({ ...form, country: event.target.value })}
-                  />
+                  <span>国家 / 地区</span>
+                  <input type="text" value={form.country} onChange={(event) => updateForm('country', event.target.value)} />
                 </label>
                 <label className="field">
-                  <span>Target School</span>
+                  <span>目标院校</span>
                   <input
                     type="text"
                     value={form.school}
-                    placeholder="Can be left blank"
-                    onChange={(event) => setForm({ ...form, school: event.target.value })}
+                    placeholder="选择项目后自动带出"
+                    onChange={(event) => updateForm('school', event.target.value)}
                   />
                 </label>
               </div>
               <div className="grid-two compact">
                 <label className="field">
-                  <span>Phase</span>
-                  <select value={form.phase} onChange={(event) => setForm({ ...form, phase: event.target.value })}>
-                    {phases.slice(1).map((item) => (
-                      <option key={item} value={item}>{item}</option>
+                  <span>阶段</span>
+                  <select value={form.phase} onChange={(event) => updateForm('phase', event.target.value)}>
+                    {phaseOptions.slice(1).map((item) => (
+                      <option key={item.value} value={item.value}>{item.label}</option>
                     ))}
                   </select>
                 </label>
                 <label className="field">
-                  <span>Due Date</span>
-                  <input
-                    type="date"
-                    value={form.dueDate}
-                    onChange={(event) => setForm({ ...form, dueDate: event.target.value })}
-                  />
+                  <span>截止日期</span>
+                  <input type="date" value={form.dueDate} onChange={(event) => updateForm('dueDate', event.target.value)} />
                 </label>
               </div>
               <label className="field">
-                <span>Note</span>
+                <span>备注</span>
                 <textarea
                   rows="3"
                   value={form.note}
-                  placeholder="Write materials, reminders, or next actions"
-                  onChange={(event) => setForm({ ...form, note: event.target.value })}
+                  placeholder="记录材料要求、负责人或下一步动作"
+                  onChange={(event) => updateForm('note', event.target.value)}
                 />
               </label>
-              <button className="btn primary" type="submit">Add Item</button>
+              <button className="btn primary" type="submit">{editingId ? '保存修改' : '添加事项'}</button>
             </form>
 
             <div className="feature-card metrics">
-              <div className="card-title">Progress</div>
+              <div className="card-title">进度概览</div>
               <div className="mini-grid">
                 <div className="mini-card">
                   <div className="mini-value">{items.length}</div>
-                  <div className="mini-label">Total</div>
+                  <div className="mini-label">全部事项</div>
                 </div>
                 <div className="mini-card">
                   <div className="mini-value">{stats.doing}</div>
-                  <div className="mini-label">Doing</div>
+                  <div className="mini-label">进行中</div>
                 </div>
                 <div className="mini-card">
-                  <div className="mini-value">{stats.done}</div>
-                  <div className="mini-label">Done</div>
+                  <div className="mini-value">{stats.overdue}</div>
+                  <div className="mini-label">已逾期</div>
                 </div>
               </div>
               <div className="progress-block">
-                <div className="progress-label">Completion {stats.rate}%</div>
+                <div className="progress-label">完成度 {stats.rate}%</div>
                 <div className="progress-bar"><span style={{ width: `${stats.rate}%` }} /></div>
               </div>
               {syncNote ? <div className="notice-box"><p className="muted">{syncNote}</p></div> : null}
               <label className="field">
-                <span>Phase Filter</span>
+                <span>阶段筛选</span>
                 <select value={phase} onChange={(event) => setPhase(event.target.value)}>
-                  {phases.map((item) => (
-                    <option key={item} value={item}>{item}</option>
+                  {phaseOptions.map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
                   ))}
                 </select>
               </label>
@@ -323,14 +397,14 @@ export default function TimelinePage() {
             {filteredItems.map((item) => {
               const left = daysLeft(item.dueDate)
               return (
-                <article className="study-row" key={item.id}>
+                <article className={`study-row ${item.status !== 'done' && left < 0 ? 'is-overdue' : item.status !== 'done' && left <= 7 ? 'is-due-soon' : ''}`} key={item.id}>
                   <div className={`study-status ${item.status}`}>{statusLabels[item.status]}</div>
                   <div className="study-row-main">
                     <div className="study-row-title">{item.title}</div>
                     <div className="detail-meta">
                       <span>{item.country}</span>
                       <span>{item.school}</span>
-                      <span>{item.phase}</span>
+                      <span>{phaseLabelMap[item.phase] || item.phase}</span>
                       <span>{item.dueDate}</span>
                     </div>
                     {item.applicationSchool ? (
@@ -342,15 +416,10 @@ export default function TimelinePage() {
                     <p className="muted">{item.note}</p>
                   </div>
                   <div className="study-row-side">
-                    <span className={`tag ${left < 0 ? 'danger' : 'subtle'}`}>
-                      {left < 0 ? `${Math.abs(left)} days overdue` : `${left} days left`}
-                    </span>
-                    <button className="btn ghost small" type="button" onClick={() => cycleStatus(item.id)}>
-                      Switch Status
-                    </button>
-                    <button className="btn outline small" type="button" onClick={() => removeItem(item.id)}>
-                      Delete
-                    </button>
+                    <span className={`tag ${item.status === 'done' ? 'subtle' : urgencyClass(left)}`}>{deadlineText(left)}</span>
+                    <button className="btn ghost small" type="button" onClick={() => cycleStatus(item.id)}>切换状态</button>
+                    <button className="btn outline small" type="button" onClick={() => startEdit(item)}>编辑</button>
+                    <button className="btn outline small" type="button" onClick={() => removeItem(item.id)}>删除</button>
                   </div>
                 </article>
               )
