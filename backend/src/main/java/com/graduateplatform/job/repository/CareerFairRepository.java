@@ -18,5 +18,18 @@ public interface CareerFairRepository extends JpaRepository<CareerFair, Long> {
                                 @Param("industry") String industry,
                                 @Param("keyword") String keyword);
 
+    List<CareerFair> findByTitleAndCompanyName(String title, String companyName);
+
+    boolean existsByTitleAndCompanyName(String title, String companyName);
+
     boolean existsByTitleAndCompanyNameAndStartTime(String title, String companyName, LocalDateTime startTime);
+
+    @Query("SELECT COUNT(f) > 0 FROM CareerFair f WHERE f.title = :title " +
+           "AND f.companyName = :companyName " +
+           "AND ((:startTime IS NULL AND f.startTime IS NULL) OR f.startTime = :startTime) " +
+           "AND (:excludeId IS NULL OR f.id <> :excludeId)")
+    boolean existsDuplicate(@Param("title") String title,
+                            @Param("companyName") String companyName,
+                            @Param("startTime") LocalDateTime startTime,
+                            @Param("excludeId") Long excludeId);
 }

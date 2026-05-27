@@ -19,7 +19,13 @@ public class EmploymentController {
     @GetMapping("/fairs")
     public ApiResponse<?> fairs(@RequestParam(required = false) String city,
                                 @RequestParam(required = false) String industry,
-                                @RequestParam(required = false) String keyword) {
+                                @RequestParam(required = false) String keyword,
+                                @RequestParam(required = false) Integer page,
+                                @RequestParam(required = false) Integer size,
+                                @RequestParam(defaultValue = "false") boolean includeExpired) {
+        if (page != null || size != null) {
+            return ApiResponse.ok(employmentService.listFairsPage(city, industry, keyword, includeExpired, page, size));
+        }
         return ApiResponse.ok(employmentService.listFairs(city, industry, keyword));
     }
 

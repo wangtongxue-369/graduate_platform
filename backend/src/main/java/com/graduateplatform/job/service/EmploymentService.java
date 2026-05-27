@@ -49,9 +49,44 @@ public class EmploymentService {
     }
 
     @Transactional(readOnly = true)
+    public Map<String, Object> listFairsPage(String city, String industry, String keyword,
+                                             boolean includeExpired, Integer page, Integer size) {
+        int pageNumber = Math.max(page == null ? 1 : page, 1);
+        int pageSize = Math.min(Math.max(size == null ? 6 : size, 1), 50);
+        LocalDateTime now = LocalDateTime.now();
+        List<CareerFair> fairs = fairRepository.findActive(blankToNull(city), blankToNull(industry), blankToNull(keyword))
+            .stream()
+            .filter(fair -> includeExpired || !isFairExpired(fair, now))
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    this::fairDedupKey,
+                    fair -> fair,
+                    (left, right) -> betterFairForList(left, right, now),
+                    LinkedHashMap::new
+                )
+            )
+            .values()
+            .stream()
+            .sorted(fairListComparator(now))
+            .toList();
+        int fromIndex = Math.min((pageNumber - 1) * pageSize, fairs.size());
+        int toIndex = Math.min(fromIndex + pageSize, fairs.size());
+        List<CareerFair> pageItems = fairs.subList(fromIndex, toIndex);
+        int totalPages = Math.max(1, (int) Math.ceil((double) fairs.size() / pageSize));
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("items", pageItems.stream().map(fair -> toFairMap(fair, now)).toList());
+        result.put("page", pageNumber);
+        result.put("size", pageSize);
+        result.put("totalPages", totalPages);
+        result.put("totalItems", fairs.size());
+        result.put("includeExpired", includeExpired);
+        return result;
+    }
+
+    @Transactional(readOnly = true)
     public Map<String, Object> fairDetail(Long id) {
         CareerFair fair = fairRepository.findById(id).filter(CareerFair::getActive)
-            .orElseThrow(() -> new BusinessException("Career fair not found or inactive"));
+            .orElseThrow(() -> new BusinessException("招聘会不存在或已停用"));
         return toFairMap(fair);
     }
 
@@ -64,7 +99,7 @@ public class EmploymentService {
     @Transactional(readOnly = true)
     public Map<String, Object> postingDetail(Long id) {
         JobPosting job = jobRepository.findById(id).filter(JobPosting::getActive)
-            .orElseThrow(() -> new BusinessException("Job posting not found"));
+            .orElseThrow(() -> new BusinessException("岗位不存在或已停用"));
         return toJobMap(job);
     }
 
@@ -139,8 +174,8 @@ public class EmploymentService {
         User user = ensureUser(userId);
         ApplicationRecord record = ApplicationRecord.builder()
             .user(user)
-            .companyName(trimRequired(req.getCompanyName(), "Company name is required"))
-            .jobTitle(trimRequired(req.getJobTitle(), "required field missing"))
+            .companyName(trimRequired(req.getCompanyName(), "公司名称不能为空"))
+            .jobTitle(trimRequired(req.getJobTitle(), "必填字段不能为空"))
             .jobPosting(resolveJob(req.getJobPostingId()))
             .status(normalizeStatus(req.getStatus()))
             .appliedAt(req.getAppliedAt())
@@ -154,9 +189,9 @@ public class EmploymentService {
     public Map<String, Object> updateApplication(Long userId, Long id, ApplicationRecordRequest req) {
         ensureUser(userId);
         ApplicationRecord record = applicationRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new BusinessException("Application record not found or not owned by current user"));
-        record.setCompanyName(trimRequired(req.getCompanyName(), "Company name is required"));
-        record.setJobTitle(trimRequired(req.getJobTitle(), "required field missing"));
+            .orElseThrow(() -> new BusinessException("投递记录不存在或不属于当前用户"));
+        record.setCompanyName(trimRequired(req.getCompanyName(), "公司名称不能为空"));
+        record.setJobTitle(trimRequired(req.getJobTitle(), "必填字段不能为空"));
         record.setJobPosting(resolveJob(req.getJobPostingId()));
         record.setStatus(normalizeStatus(req.getStatus()));
         record.setAppliedAt(req.getAppliedAt() == null ? record.getAppliedAt() : req.getAppliedAt());
@@ -169,7 +204,7 @@ public class EmploymentService {
     public Map<String, Object> deleteApplication(Long userId, Long id) {
         ensureUser(userId);
         ApplicationRecord record = applicationRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new BusinessException("Application record not found or not owned by current user"));
+            .orElseThrow(() -> new BusinessException("投递记录不存在或不属于当前用户"));
         applicationRepository.delete(record);
         return Map.of("deleted", true, "id", id);
     }
@@ -185,7 +220,7 @@ public class EmploymentService {
     public Map<String, Object> markNotificationRead(Long userId, Long notificationId) {
         ensureUser(userId);
         EmploymentNotification notification = notificationRepository.findByIdAndUserId(notificationId, userId)
-            .orElseThrow(() -> new BusinessException("Notification not found or not owned by current user"));
+            .orElseThrow(() -> new BusinessException("通知不存在或不属于当前用户"));
         notification.setReadFlag(true);
         notification.setReadAt(LocalDateTime.now());
         return toNotificationMap(notificationRepository.save(notification));
@@ -200,6 +235,7 @@ public class EmploymentService {
 
     @Transactional
     public Map<String, Object> createFair(CareerFairRequest req) {
+        validateFairDuplicate(null, req);
         CareerFair fair = new CareerFair();
         applyFair(fair, req);
         return toFairMap(fairRepository.save(fair));
@@ -207,14 +243,15 @@ public class EmploymentService {
 
     @Transactional
     public Map<String, Object> updateFair(Long id, CareerFairRequest req) {
-        CareerFair fair = fairRepository.findById(id).orElseThrow(() -> new BusinessException("Career fair not found"));
+        CareerFair fair = fairRepository.findById(id).orElseThrow(() -> new BusinessException("招聘会不存在"));
+        validateFairDuplicate(id, req);
         applyFair(fair, req);
         return toFairMap(fairRepository.save(fair));
     }
 
     @Transactional
     public Map<String, Object> deleteFair(Long id) {
-        CareerFair fair = fairRepository.findById(id).orElseThrow(() -> new BusinessException("Career fair not found"));
+        CareerFair fair = fairRepository.findById(id).orElseThrow(() -> new BusinessException("招聘会不存在"));
         fairRepository.delete(fair);
         return Map.of("deleted", true, "id", id);
     }
@@ -235,14 +272,14 @@ public class EmploymentService {
 
     @Transactional
     public Map<String, Object> updateJob(Long id, JobPostingRequest req) {
-        JobPosting job = jobRepository.findById(id).orElseThrow(() -> new BusinessException("record not found"));
+        JobPosting job = jobRepository.findById(id).orElseThrow(() -> new BusinessException("岗位不存在"));
         applyJob(job, req);
         return toJobMap(jobRepository.save(job));
     }
 
     @Transactional
     public Map<String, Object> deleteJob(Long id) {
-        JobPosting job = jobRepository.findById(id).orElseThrow(() -> new BusinessException("record not found"));
+        JobPosting job = jobRepository.findById(id).orElseThrow(() -> new BusinessException("岗位不存在"));
         jobRepository.delete(job);
         return Map.of("deleted", true, "id", id);
     }
@@ -273,8 +310,8 @@ public class EmploymentService {
     }
 
     private void applyFair(CareerFair fair, CareerFairRequest req) {
-        fair.setTitle(trimRequired(req.getTitle(), "Title is required"));
-        fair.setCompanyName(trimRequired(req.getCompanyName(), "Company name is required"));
+        fair.setTitle(trimRequired(req.getTitle(), "招聘会标题不能为空"));
+        fair.setCompanyName(trimRequired(req.getCompanyName(), "公司名称不能为空"));
         fair.setCity(trim(req.getCity()));
         fair.setIndustry(trim(req.getIndustry()));
         fair.setTargetRoles(trim(req.getTargetRoles()));
@@ -287,9 +324,17 @@ public class EmploymentService {
         fair.setActive(req.getActive() == null || req.getActive());
     }
 
+    private void validateFairDuplicate(Long currentId, CareerFairRequest req) {
+        String title = trimRequired(req.getTitle(), "招聘会标题不能为空");
+        String companyName = trimRequired(req.getCompanyName(), "公司名称不能为空");
+        if (fairRepository.existsDuplicate(title, companyName, req.getStartTime(), currentId)) {
+            throw new BusinessException("相同标题、公司和开始时间的招聘会已存在");
+        }
+    }
+
     private void applyJob(JobPosting job, JobPostingRequest req) {
-        job.setTitle(trimRequired(req.getTitle(), "required field missing"));
-        job.setCompanyName(trimRequired(req.getCompanyName(), "Company name is required"));
+        job.setTitle(trimRequired(req.getTitle(), "岗位名称不能为空"));
+        job.setCompanyName(trimRequired(req.getCompanyName(), "公司名称不能为空"));
         job.setCity(trim(req.getCity()));
         job.setIndustry(trim(req.getIndustry()));
         job.setRoleType(trim(req.getRoleType()));
@@ -304,18 +349,19 @@ public class EmploymentService {
 
     private NotificationSource resolveNotificationSource(String type, Long id) {
         if ("FAIR".equals(type)) {
-            CareerFair fair = fairRepository.findById(id).orElseThrow(() -> new BusinessException("Career fair not found"));
-            return new NotificationSource("New career fair: " + fair.getTitle(),
-                fair.getCompanyName() + " will host a career fair in " + nullSafe(fair.getCity()) + ". Open the employment page for details.",
+            CareerFair fair = fairRepository.findById(id).orElseThrow(() -> new BusinessException("招聘会不存在"));
+            String cityText = hasText(fair.getCity()) ? "在" + fair.getCity() : "";
+            return new NotificationSource("新的招聘会：" + fair.getTitle(),
+                fair.getCompanyName() + "将" + cityText + "举办招聘会，请进入就业页面查看详情。",
                 fair.getCity(), fair.getIndustry(), fair.getTargetRoles());
         }
         if ("JOB".equals(type)) {
-            JobPosting job = jobRepository.findById(id).orElseThrow(() -> new BusinessException("record not found"));
-            return new NotificationSource("new matched item: " + job.getTitle(),
-                job.getCompanyName() + " posted " + job.getTitle() + ". Open the employment page for details.",
+            JobPosting job = jobRepository.findById(id).orElseThrow(() -> new BusinessException("岗位不存在"));
+            return new NotificationSource("新的匹配岗位：" + job.getTitle(),
+                job.getCompanyName() + "发布了" + job.getTitle() + "岗位，请进入就业页面查看详情。",
                 job.getCity(), job.getIndustry(), job.getRoleType());
         }
-        throw new BusinessException("Notification source must be FAIR or JOB");
+        throw new BusinessException("通知来源必须是 FAIR 或 JOB");
     }
 
     private Map<String, Object> recommendationMap(JobPosting job, User user, JobSubscriptionPreference pref,
@@ -323,23 +369,23 @@ public class EmploymentService {
         int score = 0;
         List<String> reasons = new ArrayList<>();
         if (matchesText(job.getCity(), city) || (pref != null && matchesAny(pref.getCities(), job.getCity()))) {
-            score += 20; reasons.add("city match");
+            score += 20; reasons.add("城市匹配");
         }
         if (matchesText(job.getIndustry(), industry) || (pref != null && matchesAny(pref.getIndustries(), job.getIndustry()))) {
-            score += 20; reasons.add("industry match");
+            score += 20; reasons.add("行业匹配");
         }
         if (matchesText(job.getRoleType(), roleType) || (pref != null && matchesAny(pref.getRoleTypes(), job.getRoleType()))) {
-            score += 20; reasons.add("role match");
+            score += 20; reasons.add("岗位匹配");
         }
         if (matchesAny(job.getMajorKeywords(), user.getMajor())) {
-            score += 20; reasons.add("major match");
+            score += 20; reasons.add("专业匹配");
         }
         if (resume != null && (matchesAny(job.getSkillTags(), resume.getSkills()) || matchesAny(job.getSkillTags(), resume.getProjects()))) {
-            score += 20; reasons.add("skill match");
+            score += 20; reasons.add("技能匹配");
         }
         if (score == 0 && pref == null && resume == null && hasText(user.getTarget()) && "job".equals(user.getTarget())) {
             score = 5;
-            reasons.add("job direction fallback");
+            reasons.add("就业方向兜底推荐");
         }
         Map<String, Object> map = toJobMap(job);
         map.put("matchScore", score);
@@ -360,19 +406,23 @@ public class EmploymentService {
     }
 
     private User ensureUser(Long userId) {
-        if (userId == null) throw new BusinessException("login required");
-        return userRepository.findById(userId).orElseThrow(() -> new BusinessException("record not found"));
+        if (userId == null) throw new BusinessException("请先登录");
+        return userRepository.findById(userId).orElseThrow(() -> new BusinessException("记录不存在"));
     }
 
     private String normalizeStatus(String status) {
         String normalized = hasText(status) ? status.trim() : "APPLIED";
         if (!VALID_STATUSES.contains(normalized)) {
-            throw new BusinessException("invalid status");
+            throw new BusinessException("投递状态无效");
         }
         return normalized;
     }
 
     private Map<String, Object> toFairMap(CareerFair fair) {
+        return toFairMap(fair, LocalDateTime.now());
+    }
+
+    private Map<String, Object> toFairMap(CareerFair fair, LocalDateTime now) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", fair.getId());
         map.put("title", fair.getTitle());
@@ -388,7 +438,87 @@ public class EmploymentService {
         map.put("description", fair.getDescription());
         map.put("active", fair.getActive());
         map.put("createdAt", toString(fair.getCreatedAt()));
+        map.put("expired", isFairExpired(fair, now));
+        map.put("statusLabel", fairStatusLabel(fair, now));
+        map.put("applicationClosed", isApplicationClosed(fair, now));
+        map.put("applyStatusLabel", applyStatusLabel(fair, now));
         return map;
+    }
+
+    private boolean isFairExpired(CareerFair fair, LocalDateTime now) {
+        return fair.getEndTime() != null && fair.getEndTime().isBefore(now);
+    }
+
+    private String fairStatusLabel(CareerFair fair, LocalDateTime now) {
+        if (fair.getStartTime() != null && fair.getEndTime() != null
+            && !fair.getStartTime().isAfter(now) && !fair.getEndTime().isBefore(now)) {
+            return "进行中";
+        }
+        if (fair.getStartTime() != null && fair.getStartTime().isAfter(now)) {
+            return "未开始";
+        }
+        if (fair.getEndTime() != null && fair.getEndTime().isBefore(now)) {
+            return "已结束";
+        }
+        return "时间待定";
+    }
+
+    private boolean isApplicationClosed(CareerFair fair, LocalDateTime now) {
+        return fair.getApplyDeadline() != null && fair.getApplyDeadline().isBefore(now);
+    }
+
+    private String applyStatusLabel(CareerFair fair, LocalDateTime now) {
+        if (fair.getApplyDeadline() == null) {
+            return hasText(fair.getApplyUrl()) ? "可网申" : "网申待公布";
+        }
+        return fair.getApplyDeadline().isBefore(now) ? "网申已截止" : "可网申";
+    }
+
+    private String fairDedupKey(CareerFair fair) {
+        return normalizedKey(fair.getTitle()) + "|" +
+            normalizedKey(fair.getCompanyName()) + "|" +
+            normalizedKey(fair.getLocation()) + "|" +
+            normalizedKey(fair.getApplyUrl());
+    }
+
+    private String normalizedKey(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private CareerFair betterFairForList(CareerFair left, CareerFair right, LocalDateTime now) {
+        return fairListComparator(now).compare(left, right) <= 0 ? left : right;
+    }
+
+    private Comparator<CareerFair> fairListComparator(LocalDateTime now) {
+        return Comparator
+            .comparingInt((CareerFair fair) -> fairStatusRank(fair, now))
+            .thenComparing(fair -> fairSortTime(fair, now), Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(CareerFair::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()));
+    }
+
+    private int fairStatusRank(CareerFair fair, LocalDateTime now) {
+        if (fair.getStartTime() != null && fair.getEndTime() != null
+            && !fair.getStartTime().isAfter(now) && !fair.getEndTime().isBefore(now)) {
+            return 0;
+        }
+        if (fair.getStartTime() != null && fair.getStartTime().isAfter(now)) {
+            return 1;
+        }
+        if (fair.getEndTime() != null && fair.getEndTime().isBefore(now)) {
+            return 2;
+        }
+        return 3;
+    }
+
+    private LocalDateTime fairSortTime(CareerFair fair, LocalDateTime now) {
+        if (fair.getStartTime() != null && fair.getStartTime().isAfter(now)) {
+            return fair.getStartTime();
+        }
+        if (fair.getStartTime() != null && fair.getEndTime() != null
+            && !fair.getStartTime().isAfter(now) && !fair.getEndTime().isBefore(now)) {
+            return fair.getEndTime();
+        }
+        return fair.getEndTime() != null ? fair.getEndTime() : fair.getStartTime();
     }
 
     private Map<String, Object> toJobMap(JobPosting job) {
@@ -511,10 +641,6 @@ public class EmploymentService {
             }
         }
         return false;
-    }
-
-    private String nullSafe(String value) {
-        return value == null ? "" : value;
     }
 
     private record NotificationSource(String title, String content, String city, String industry, String roleType) {}

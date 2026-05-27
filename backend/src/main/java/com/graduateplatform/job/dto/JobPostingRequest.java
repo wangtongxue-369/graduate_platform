@@ -5,9 +5,9 @@ import lombok.Data;
 
 @Data
 public class JobPostingRequest {
-    @NotBlank(message = "Job title is required")
+    @NotBlank(message = "岗位名称不能为空")
     private String title;
-    @NotBlank(message = "Company name is required")
+    @NotBlank(message = "公司名称不能为空")
     private String companyName;
     private String city;
     private String industry;
