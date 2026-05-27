@@ -38,9 +38,9 @@ public class QuestionBankService {
         List<QuestionBank> banks;
         String normalizedTarget = normalize(target);
         if (normalizedTarget != null) {
-            banks = repository.findByTarget(normalizedTarget);
+            banks = repository.findByTargetAndActiveTrue(normalizedTarget);
         } else {
-            banks = repository.findAll();
+            banks = repository.findByActiveTrue();
         }
         String normalizedSubject = normalize(subject);
         String normalizedDifficulty = normalize(difficulty);
@@ -104,6 +104,8 @@ public class QuestionBankService {
             .subject(nullable(subject))
             .difficulty(nullable(difficulty))
             .description(nullable(description))
+            .status("active")
+            .active(true)
             .build();
 
         bank = repository.save(bank);
@@ -136,11 +138,38 @@ public class QuestionBankService {
         QuestionBank bank = repository.findById(id)
             .orElseThrow(() -> new BusinessException("题库不存在"));
 
+        // 逻辑删除：标记为停用，保留历史记录可追溯
+        bank.setActive(false);
+        bank.setStatus("inactive");
+
         bank.getQuestions().forEach(q -> {
             q.setActive(false);
             q.setStatus("disabled");
         });
-        repository.delete(bank);
+        repository.save(bank);
+    }
+
+    @Transactional
+    @CacheEvict(value = "questionBank:options", allEntries = true)
+    public BankResponse toggleBankStatus(Long id, String status) {
+        QuestionBank bank = repository.findById(id)
+            .orElseThrow(() -> new BusinessException("题库不存在"));
+
+        boolean active = "active".equals(status);
+        bank.setStatus(status);
+        bank.setActive(active);
+
+        // 启用题库时不同步启用题目（题目状态由题目管理独立控制）
+        if (!active) {
+            // 停用题库时同步停用所有题目，确保练习侧不可见
+            bank.getQuestions().forEach(q -> {
+                q.setActive(false);
+                q.setStatus("disabled");
+            });
+        }
+
+        repository.save(bank);
+        return BankResponse.from(bank);
     }
 
     // ==================== 辅助 ====================

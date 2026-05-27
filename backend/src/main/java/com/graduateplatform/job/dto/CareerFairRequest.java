@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 
 @Data
 public class CareerFairRequest {
-    @NotBlank(message = "Fair title is required")
+    @NotBlank(message = "招聘会标题不能为空")
     private String title;
-    @NotBlank(message = "Company name is required")
+    @NotBlank(message = "公司名称不能为空")
     private String companyName;
     private String city;
     private String industry;

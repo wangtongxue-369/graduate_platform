@@ -893,6 +893,11 @@ export const adminQuestionBankApi = {
   deleteBank(id, token) {
     return request(`/api/admin/question-banks/${id}`, { method: 'DELETE', token })
   },
+  toggleBankStatus(id, status, token) {
+    return request(`/api/admin/question-banks/${id}/status`, {
+      method: 'PUT', body: { status }, token,
+    })
+  },
   questions(bankId, page = 0, size = 20, token) {
     return request(`/api/admin/question-banks/${bankId}/questions?page=${page}&size=${size}`, { token })
   },
@@ -905,6 +910,11 @@ export const adminQuestionBankApi = {
   deleteQuestion(id, token) {
     return request(`/api/admin/questions/${id}`, { method: 'DELETE', token })
   },
+  toggleQuestionStatus(id, status, token) {
+    return request(`/api/admin/questions/${id}/status`, {
+      method: 'PUT', body: { status }, token,
+    })
+  },
   batchCreateQuestions(bankId, questions, token) {
     return request(`/api/admin/question-banks/${bankId}/questions/batch`, {
       method: 'POST', body: { questions }, token,
@@ -912,5 +922,10 @@ export const adminQuestionBankApi = {
   },
   snapshots(questionId, token) {
     return request(`/api/admin/questions/${questionId}/snapshots`, { token })
+  },
+  batchUpdateQuestions(ids, updates, token) {
+    return request('/api/admin/questions/batch', {
+      method: 'PUT', body: { ids, updates }, token,
+    })
   },
 }

@@ -11,6 +11,8 @@ public record BankResponse(
     String subject,
     String difficulty,
     String description,
+    String status,
+    Boolean active,
     Long questionCount,
     Long chapterCount,
     List<String> supportedModes
@@ -18,12 +20,14 @@ public record BankResponse(
     public static BankResponse from(QuestionBank bank) {
         return new BankResponse(bank.getId(), bank.getName(), bank.getTarget(),
             bank.getSubject(), bank.getDifficulty(), bank.getDescription(),
+            bank.getStatus(), bank.getActive(),
             null, null, null);
     }
 
     public static BankResponse withQuestionCount(QuestionBank bank, Long questionCount) {
         return new BankResponse(bank.getId(), bank.getName(), bank.getTarget(),
             bank.getSubject(), bank.getDifficulty(), bank.getDescription(),
+            bank.getStatus(), bank.getActive(),
             questionCount, null, null);
     }
 
@@ -31,6 +35,7 @@ public record BankResponse(
                                            Long chapterCount, List<String> supportedModes) {
         return new BankResponse(bank.getId(), bank.getName(), bank.getTarget(),
             bank.getSubject(), bank.getDifficulty(), bank.getDescription(),
+            bank.getStatus(), bank.getActive(),
             questionCount, chapterCount, supportedModes);
     }
 }

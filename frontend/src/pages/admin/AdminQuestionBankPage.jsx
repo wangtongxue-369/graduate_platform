@@ -68,6 +68,18 @@ export default function AdminQuestionBankPage() {
     }
   }
 
+  const handleToggleStatus = async (bank) => {
+    const newStatus = bank.active !== false ? 'inactive' : 'active'
+    const action = newStatus === 'active' ? '启用' : '停用'
+    if (!window.confirm(`确定${action}题库「${bank.name}」吗？${newStatus === 'inactive' ? '停用后该题库将不可用于新练习。' : ''}`)) return
+    try {
+      await adminQuestionBankApi.toggleBankStatus(bank.id, newStatus, token)
+      loadBanks()
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
   return (
     <div className="app">
       <Navbar />
@@ -146,6 +158,7 @@ export default function AdminQuestionBankPage() {
                 <th>科目</th>
                 <th>难度</th>
                 <th>题目数</th>
+                <th>状态</th>
                 <th>操作</th>
               </tr>
             </thead>
@@ -159,14 +172,22 @@ export default function AdminQuestionBankPage() {
                   <td>{bank.difficulty || '-'}</td>
                   <td>{bank.questionCount}</td>
                   <td>
+                    <span style={{ color: bank.active !== false ? 'var(--green, #16a34a)' : 'var(--red, #dc2626)' }}>
+                      {bank.active !== false ? '启用' : '停用'}
+                    </span>
+                  </td>
+                  <td>
                     <Link className="btn primary small" to={`/admin/question-banks/${bank.id}/questions`}>管理试题</Link>
                     <button className="btn outline small" type="button" onClick={() => openEdit(bank)} style={{ marginLeft: '0.25rem' }}>编辑</button>
+                    <button className="btn outline small" type="button" onClick={() => handleToggleStatus(bank)} style={{ marginLeft: '0.25rem' }}>
+                      {bank.active !== false ? '停用' : '启用'}
+                    </button>
                     <button className="btn danger small" type="button" onClick={() => handleDelete(bank.id, bank.name)} style={{ marginLeft: '0.25rem' }}>删除</button>
                   </td>
                 </tr>
               ))}
               {banks.length === 0 && (
-                <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>暂无题库</td></tr>
+                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>暂无题库</td></tr>
               )}
             </tbody>
           </table>

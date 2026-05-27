@@ -152,6 +152,19 @@ public class QuestionService {
 
     @Transactional
     @CacheEvict(value = "questionBank:options", allEntries = true)
+    public QuestionResponse toggleQuestionStatus(Long id, String status) {
+        Question question = questionRepository.findById(id)
+            .orElseThrow(() -> new BusinessException("题目不存在"));
+
+        boolean active = "published".equals(status);
+        question.setStatus(status);
+        question.setActive(active);
+        questionRepository.save(question);
+        return QuestionResponse.from(question);
+    }
+
+    @Transactional
+    @CacheEvict(value = "questionBank:options", allEntries = true)
     public Map<String, Object> batchCreateQuestions(Long bankId, List<Map<String, Object>> questions) {
         QuestionBank bank = bankRepository.findById(bankId)
             .orElseThrow(() -> new BusinessException("题库不存在"));
@@ -202,6 +215,60 @@ public class QuestionService {
         result.put("created", created);
         result.put("failed", errors.size());
         result.put("total", questions.size());
+        result.put("errors", errors);
+        return result;
+    }
+
+    // ==================== 批量操作 ====================
+
+    @Transactional
+    @CacheEvict(value = "questionBank:options", allEntries = true)
+    public Map<String, Object> batchUpdateQuestions(List<Long> ids, Map<String, Object> updates) {
+        int updated = 0;
+        List<Map<String, String>> errors = new ArrayList<>();
+
+        for (int i = 0; i < ids.size(); i++) {
+            Long id = ids.get(i);
+            try {
+                Question question = questionRepository.findById(id)
+                    .orElseThrow(() -> new BusinessException("题目不存在: id=" + id));
+
+                // Save snapshot before batch update
+                saveSnapshot(question);
+
+                if (updates.containsKey("status")) {
+                    String status = (String) updates.get("status");
+                    question.setStatus(status);
+                    question.setActive("published".equals(status));
+                }
+                if (updates.containsKey("chapter")) {
+                    question.setChapter(nullable(updates.get("chapter")));
+                }
+                if (updates.containsKey("difficulty")) {
+                    question.setDifficulty(nullable(updates.get("difficulty")));
+                }
+                if (updates.containsKey("bankId")) {
+                    Long newBankId = ((Number) updates.get("bankId")).longValue();
+                    QuestionBank newBank = bankRepository.findById(newBankId)
+                        .orElseThrow(() -> new BusinessException("目标题库不存在: id=" + newBankId));
+                    question.setBank(newBank);
+                }
+
+                question.setVersionNo(question.getVersionNo() == null ? 1 : question.getVersionNo() + 1);
+                questionRepository.save(question);
+                updated++;
+            } catch (Exception e) {
+                Map<String, String> err = new LinkedHashMap<>();
+                err.put("id", String.valueOf(id));
+                err.put("error", e.getMessage());
+                errors.add(err);
+            }
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("updated", updated);
+        result.put("failed", errors.size());
+        result.put("total", ids.size());
         result.put("errors", errors);
         return result;
     }
