@@ -393,6 +393,7 @@ function ProfilePage() {
                 <>
                   <ul className="feature-list compact">
                     <li>昵称：{profile?.name || user?.name || '未设置'}</li>
+                    <li>用户名：{profile?.username || user?.username || '未设置'}</li>
                     <li>手机号：{profile?.phone || '未绑定'}</li>
                     <li>邮箱：{profile?.email || user?.email || '未设置'}</li>
                     <li>学校：{profile?.school || '未设置'}</li>

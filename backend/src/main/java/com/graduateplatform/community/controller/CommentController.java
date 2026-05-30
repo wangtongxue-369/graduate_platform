@@ -1,7 +1,9 @@
 package com.graduateplatform.community.controller;
 
-import com.graduateplatform.community.dto.CreateCommentRequest;
 import com.graduateplatform.common.dto.ApiResponse;
+import com.graduateplatform.community.dto.CreateCommentRequest;
+import com.graduateplatform.community.dto.ReportCommentRequest;
+import com.graduateplatform.community.dto.UpdateCommentRequest;
 import com.graduateplatform.community.service.CommentService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
@@ -30,6 +32,41 @@ public class CommentController {
             return ApiResponse.fail("未登录或登录已失效");
         }
         return ApiResponse.ok(commentService.createComment(postId, req, currentUserId), "评论成功");
+    }
+
+    @PutMapping("/{postId}/comments/{commentId}")
+    public ApiResponse<?> update(@PathVariable Long postId,
+                                 @PathVariable Long commentId,
+                                 @Valid @RequestBody UpdateCommentRequest req,
+                                 Authentication auth) {
+        Long currentUserId = getCurrentUserId(auth);
+        if (currentUserId == null) {
+            return ApiResponse.fail("未登录或登录已失效");
+        }
+        return ApiResponse.ok(commentService.updateComment(postId, commentId, req, currentUserId), "评论已更新");
+    }
+
+    @DeleteMapping("/{postId}/comments/{commentId}")
+    public ApiResponse<?> delete(@PathVariable Long postId,
+                                 @PathVariable Long commentId,
+                                 Authentication auth) {
+        Long currentUserId = getCurrentUserId(auth);
+        if (currentUserId == null) {
+            return ApiResponse.fail("未登录或登录已失效");
+        }
+        return ApiResponse.ok(commentService.deleteComment(postId, commentId, currentUserId, isAdmin(auth)), "评论已删除");
+    }
+
+    @PostMapping("/{postId}/comments/{commentId}/report")
+    public ApiResponse<?> report(@PathVariable Long postId,
+                                 @PathVariable Long commentId,
+                                 @Valid @RequestBody ReportCommentRequest req,
+                                 Authentication auth) {
+        Long currentUserId = getCurrentUserId(auth);
+        if (currentUserId == null) {
+            return ApiResponse.fail("未登录或登录已失效");
+        }
+        return ApiResponse.ok(commentService.reportComment(postId, commentId, currentUserId, req.getReason()), "评论举报已提交");
     }
 
     private Long getCurrentUserId(Authentication auth) {

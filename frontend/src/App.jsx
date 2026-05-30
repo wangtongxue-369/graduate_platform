@@ -12,6 +12,7 @@ import WrongQuestionPage from './pages/WrongQuestionPage.jsx'
 import PracticeStatisticsPage from './pages/PracticeStatisticsPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import PostEditPage from './pages/PostEditPage.jsx'
 
@@ -80,6 +81,7 @@ export default function App() {
       <Route path="/practice/statistics" element={<PracticeStatisticsPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/profile/posts/:postId/edit" element={<PostEditPage />} />
 

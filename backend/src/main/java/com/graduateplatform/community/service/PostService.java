@@ -60,15 +60,20 @@ public class PostService {
                 .orElse(null);
         }
 
-        Sort sortObj = Sort.by(Sort.Direction.DESC, "createdAt");
-        if ("hot".equals(sort)) {
-            sortObj = Sort.by(Sort.Direction.DESC, "viewCount");
+        String normalizedSort = sort == null ? "latest" : sort.trim().toLowerCase();
+        Page<Post> postPage;
+        if ("hot".equals(normalizedSort)) {
+            Pageable pageable = PageRequest.of(page, size);
+            postPage = postRepository.findPublishedPostsByHotScore(
+                includeMembers, categoryId, keyword, tag, hasAttachment, pageable
+            );
+        } else {
+            Sort sortObj = Sort.by(Sort.Direction.DESC, "createdAt");
+            Pageable pageable = PageRequest.of(page, size, sortObj);
+            postPage = postRepository.findPublishedPosts(
+                includeMembers, categoryId, keyword, tag, hasAttachment, pageable
+            );
         }
-
-        Pageable pageable = PageRequest.of(page, size, sortObj);
-        Page<Post> postPage = postRepository.findPublishedPosts(
-            includeMembers, categoryId, keyword, tag, hasAttachment, pageable
-        );
 
         List<Map<String, Object>> content = postPage.getContent()
             .stream()
