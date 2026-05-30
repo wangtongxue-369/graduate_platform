@@ -224,6 +224,7 @@ public class UserService {
     private Map<String, Object> toProfileMap(User user) {
         Map<String, Object> profile = new LinkedHashMap<>();
         profile.put("id", user.getId());
+        profile.put("username", user.getUsername());
         profile.put("name", user.getName());
         profile.put("email", user.getEmail());
         profile.put("phone", user.getPhone());

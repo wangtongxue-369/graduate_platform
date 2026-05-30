@@ -845,11 +845,34 @@
   margin-bottom: 18px;
 }
 
+.comment-thread-root,
+.comment-thread-nested {
+  display: grid;
+  gap: 14px;
+}
+
+.comment-thread-nested {
+  margin-top: 12px;
+}
+
 .comment {
   background: rgba(255, 255, 255, 0.8);
   border-radius: 14px;
   padding: 12px 14px;
   border: 1px solid var(--line);
+  box-shadow: 0 8px 20px rgba(13, 27, 26, 0.04);
+}
+
+.comment.is-reply {
+  margin-left: min(32px, calc(12px + var(--comment-depth, 0) * 8px));
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.comment.is-target {
+  border-color: rgba(15, 118, 110, 0.28);
+  box-shadow:
+    0 10px 24px rgba(15, 118, 110, 0.08),
+    inset 0 0 0 1px rgba(15, 118, 110, 0.08);
 }
 
 .comment-head {
@@ -867,6 +890,38 @@
 
 .comment-body {
   font-size: 14px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.comment-foot {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.comment-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.comment-op-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.comment-replies {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(15, 118, 110, 0.12);
 }
 
 .comment-box {
@@ -880,6 +935,8 @@
   padding: 10px 12px;
   font-size: 14px;
   font-family: inherit;
+  min-height: 132px;
+  resize: vertical;
 }
 
 .comment-actions {
@@ -887,6 +944,32 @@
   justify-content: space-between;
   gap: 10px;
   align-items: center;
+}
+
+.comment-reply-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  background: rgba(240, 253, 250, 0.78);
+  color: #1b4b46;
+  flex-wrap: wrap;
+}
+
+.comment-reply-target {
+  font-weight: 700;
+  color: #0f766e;
+}
+
+.comment-form-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .question-stem {
@@ -1868,6 +1951,11 @@
 
 .error-text {
   color: #b91c1c;
+  font-size: 14px;
+}
+
+.success-text {
+  color: #15803d;
   font-size: 14px;
 }
 

@@ -17,7 +17,9 @@ async function request(path, options = {}) {
   const data = await response.json().catch(() => null)
   if (!response.ok || !data?.success) {
     const message = data?.message || `Request failed: ${response.status}`
-    throw new Error(message)
+    const error = new Error(message)
+    error.status = response.status
+    throw error
   }
   return data.data
 }
@@ -31,6 +33,9 @@ export const authApi = {
   },
   login(payload) {
     return request('/api/auth/login', { method: 'POST', body: payload })
+  },
+  resetPassword(payload) {
+    return request('/api/auth/reset-password', { method: 'POST', body: payload })
   },
   me(token) {
     return request('/api/auth/me', { token })
@@ -68,6 +73,19 @@ export const communityApi = {
   },
   createComment(postId, payload, token) {
     return request(`/api/posts/${postId}/comments`, { method: 'POST', body: payload, token })
+  },
+  updateComment(postId, commentId, payload, token) {
+    return request(`/api/posts/${postId}/comments/${commentId}`, { method: 'PUT', body: payload, token })
+  },
+  deleteComment(postId, commentId, token) {
+    return request(`/api/posts/${postId}/comments/${commentId}`, { method: 'DELETE', token })
+  },
+  reportComment(postId, commentId, reason, token) {
+    return request(`/api/posts/${postId}/comments/${commentId}/report`, {
+      method: 'POST',
+      body: { reason },
+      token,
+    })
   },
   toggleLike(postId, token) {
     return request(`/api/posts/${postId}/like`, { method: 'POST', token })
@@ -792,6 +810,17 @@ export const adminApi = {
   },
   reviewReport(id, action, note, token) {
     return request(`/api/admin/reports/${id}/review`, {
+      method: 'PUT',
+      body: { action, note },
+      token,
+    })
+  },
+  commentReports(status, page, size, token) {
+    const q = status ? `?status=${status}&page=${page}&size=${size}` : `?page=${page}&size=${size}`
+    return request(`/api/admin/comment-reports${q}`, { token })
+  },
+  reviewCommentReport(id, action, note, token) {
+    return request(`/api/admin/comment-reports/${id}/review`, {
       method: 'PUT',
       body: { action, note },
       token,

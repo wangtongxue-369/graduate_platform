@@ -4,6 +4,7 @@ import { authApi } from '../lib/api.js'
 const AuthContext = createContext(null)
 const TOKEN_KEY = 'gp_token'
 const DEV_USER_KEY = 'gp_dev_user'
+const USER_KEY = 'gp_user'
 
 const devUsers = {
   kaoyan: { id: 'dev-1', name: '考研测试用户', target: 'kaoyan', email: 'kaoyan@test.local', role: 'user', status: 'normal' },
@@ -16,21 +17,51 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(localStorage.getItem(TOKEN_KEY) || '')
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const hasRealToken = Boolean(token && token !== 'dev-token')
+  const isAuthed = token === 'dev-token'
+    ? Boolean(user)
+    : Boolean(user) || (loading && hasRealToken)
 
   useEffect(() => {
     let active = true
+    const restoreCachedUser = () => {
+      const raw = localStorage.getItem(USER_KEY)
+      if (!raw) return null
+      try {
+        return JSON.parse(raw)
+      } catch {
+        localStorage.removeItem(USER_KEY)
+        return null
+      }
+    }
+
+    const clearRealSession = () => {
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem(USER_KEY)
+      if (active) {
+        setToken('')
+        setUser(null)
+      }
+    }
+
     async function init() {
       if (token && token !== 'dev-token') {
+        const cachedUser = restoreCachedUser()
+        if (cachedUser && active) {
+          setUser(cachedUser)
+        }
         try {
           const me = await authApi.me(token)
           localStorage.removeItem(DEV_USER_KEY)
+          localStorage.setItem(USER_KEY, JSON.stringify(me))
           if (active) {
             setUser(me)
           }
-        } catch {
-          localStorage.removeItem(TOKEN_KEY)
-          if (active) {
-            setToken('')
+        } catch (err) {
+          const status = err?.status
+          if (status === 401 || status === 403) {
+            clearRealSession()
+          } else if (!cachedUser && active) {
             setUser(null)
           }
         } finally {
@@ -45,6 +76,7 @@ export function AuthProvider({ children }) {
       const devTarget = localStorage.getItem(DEV_USER_KEY)
       if (devTarget && devUsers[devTarget]) {
         const devUser = devUsers[devTarget]
+        localStorage.setItem(USER_KEY, JSON.stringify(devUser))
         if (active) {
           setToken('dev-token')
           setUser(devUser)
@@ -64,6 +96,7 @@ export function AuthProvider({ children }) {
   function switchDevUser(target) {
     if (!target) {
       localStorage.removeItem(DEV_USER_KEY)
+      localStorage.removeItem(USER_KEY)
       setToken('')
       setUser(null)
       return
@@ -72,6 +105,7 @@ export function AuthProvider({ children }) {
     if (devUser) {
       localStorage.removeItem(TOKEN_KEY)
       localStorage.setItem(DEV_USER_KEY, target)
+      localStorage.setItem(USER_KEY, JSON.stringify(devUser))
       setToken('dev-token')
       setUser(devUser)
     }
@@ -81,6 +115,7 @@ export function AuthProvider({ children }) {
     const auth = await authApi.login(payload)
     localStorage.removeItem(DEV_USER_KEY)
     localStorage.setItem(TOKEN_KEY, auth.token)
+    localStorage.setItem(USER_KEY, JSON.stringify(auth))
     setToken(auth.token)
     setUser(auth)
     return auth
@@ -90,6 +125,7 @@ export function AuthProvider({ children }) {
     const auth = await authApi.register(payload)
     localStorage.removeItem(DEV_USER_KEY)
     localStorage.setItem(TOKEN_KEY, auth.token)
+    localStorage.setItem(USER_KEY, JSON.stringify(auth))
     setToken(auth.token)
     setUser(auth)
     return auth
@@ -105,6 +141,7 @@ export function AuthProvider({ children }) {
     }
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(DEV_USER_KEY)
+    localStorage.removeItem(USER_KEY)
     setToken('')
     setUser(null)
   }
@@ -115,7 +152,7 @@ export function AuthProvider({ children }) {
         token,
         user,
         loading,
-        isAuthed: Boolean(token && user),
+        isAuthed,
         login,
         register,
         logout,

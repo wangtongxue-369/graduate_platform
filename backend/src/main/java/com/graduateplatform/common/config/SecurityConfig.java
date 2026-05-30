@@ -29,7 +29,7 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Public authentication POST endpoints
-                .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/send-code").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/send-code", "/api/auth/reset-password").permitAll()
                 // Study abroad management APIs require authenticated users
                 .requestMatchers("/api/studyabroad/**").authenticated()
                 // Kaoyan materials - my page and download require auth

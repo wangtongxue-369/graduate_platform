@@ -2,9 +2,10 @@ package com.graduateplatform.auth.controller;
 
 import com.graduateplatform.auth.dto.LoginRequest;
 import com.graduateplatform.auth.dto.RegisterRequest;
-import com.graduateplatform.common.dto.ApiResponse;
+import com.graduateplatform.auth.dto.ResetPasswordRequest;
 import com.graduateplatform.auth.service.AuthService;
 import com.graduateplatform.auth.service.VerificationCodeService;
+import com.graduateplatform.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -28,25 +29,30 @@ public class AuthController {
         String target = body.get("target");
         String type = body.get("type"); // phone / email / studentId
         if (target == null || target.isBlank() || type == null || type.isBlank()) {
-            return ApiResponse.fail("参数不完整");
+            return ApiResponse.fail("Missing required parameters");
         }
         codeService.sendCode(target, type);
-        return ApiResponse.ok(null, "验证码已发送，5分钟内有效");
+        return ApiResponse.ok(null, "Verification code sent, valid for 5 minutes");
     }
 
     @PostMapping("/register")
     public ApiResponse<?> register(@Valid @RequestBody RegisterRequest req) {
-        // 校验验证码
         String verifyTarget = resolveVerifyTarget(req);
         if (verifyTarget != null) {
             codeService.verifyAndConsume(verifyTarget, req.getAccountType(), req.getVerifyCode());
         }
-        return ApiResponse.ok(authService.register(req), "注册成功");
+        return ApiResponse.ok(authService.register(req), "Register success");
     }
 
     @PostMapping("/login")
     public ApiResponse<?> login(@Valid @RequestBody LoginRequest req) {
-        return ApiResponse.ok(authService.login(req), "登录成功");
+        return ApiResponse.ok(authService.login(req), "Login success");
+    }
+
+    @PostMapping("/reset-password")
+    public ApiResponse<?> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
+        authService.resetPassword(req);
+        return ApiResponse.ok(null, "Password has been reset");
     }
 
     @GetMapping("/me")
@@ -59,7 +65,7 @@ public class AuthController {
     public ApiResponse<?> logout(Authentication auth) {
         Long userId = (Long) auth.getPrincipal();
         authService.logout(userId);
-        return ApiResponse.ok(null, "已登出");
+        return ApiResponse.ok(null, "Logged out");
     }
 
     private String resolveVerifyTarget(RegisterRequest req) {
