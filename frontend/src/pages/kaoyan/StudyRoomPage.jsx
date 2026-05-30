@@ -304,7 +304,7 @@ function RoomView({
           <form className="chat-composer" onSubmit={onSend} style={{ marginTop: 12 }}>
             <textarea
               value={newMessage}
-              onChange={onMessageChange}
+              onChange={e => onMessageChange(e.target.value)}
               placeholder="输入讨论内容..."
               rows={2}
               onKeyDown={e => {
@@ -569,7 +569,7 @@ export default function StudyRoomPage() {
               activePeriod={activePeriod} realtimeState={realtimeState}
               newMessage={newMessage} sending={sending}
               user={user} token={token} isOwner={isOwner}
-              onLeaveRoom={handleLeaveRoom} onSendMessage={setNewMessage}
+              onLeaveRoom={handleLeaveRoom} onMessageChange={setNewMessage}
               onSend={handleSend} onPeriodChange={handlePeriodChange}
               onCloseRoom={handleCloseRoom}
             />

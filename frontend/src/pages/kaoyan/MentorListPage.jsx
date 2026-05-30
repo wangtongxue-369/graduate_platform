@@ -62,13 +62,13 @@ export default function MentorListPage() {
   }, [])
 
   const fetchMyProfile = useCallback(async () => {
-    if (!token || token === 'dev-token') {
+    if (!token) {
       setMyProfile(null)
       return
     }
     try {
-      const data = await mentorApi.myProfile(token)
-      setMyProfile(data)
+      const res = await mentorApi.myProfile(token)
+      setMyProfile(res)
     } catch (err) {
       setMyProfile(null)
     }
