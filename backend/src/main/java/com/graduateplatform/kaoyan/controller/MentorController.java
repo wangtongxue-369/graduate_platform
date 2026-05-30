@@ -27,13 +27,12 @@ public class MentorController {
 
     @GetMapping("/me")
     public ApiResponse<?> getMyProfile(Authentication auth) {
-        try {
-            return mentorService.getMyProfile(requiredUserId(auth))
-                    .map(ApiResponse::ok)
-                    .orElse(ApiResponse.fail("暂无入驻信息"));
-        } catch (BusinessException e) {
-            return ResponseEntity.badRequest().body(ApiResponse.fail(e.getMessage())).getBody();
+        Long userId = requiredUserId(auth);
+        var profile = mentorService.getMyProfile(userId);
+        if (profile == null) {
+            return ApiResponse.fail("暂无入驻信息");
         }
+        return ApiResponse.ok(profile);
     }
 
     @GetMapping("/{id}")
