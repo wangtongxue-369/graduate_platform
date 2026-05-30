@@ -11,6 +11,7 @@ import java.util.Optional;
 @Repository
 public interface MentorProfileRepository extends JpaRepository<MentorProfile, Long>, JpaSpecificationExecutor<MentorProfile> {
     Optional<MentorProfile> findByUserId(Long userId);
+    Optional<MentorProfile> findByUserIdAndActiveTrue(Long userId);
     Optional<MentorProfile> findByIdAndActiveTrue(Long id);
     boolean existsByUserId(Long userId);
     Page<MentorProfile> findByActiveTrue(Pageable pageable);

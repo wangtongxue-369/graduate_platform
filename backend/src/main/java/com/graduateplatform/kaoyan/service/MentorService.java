@@ -46,7 +46,7 @@ public class MentorService {
 
     public MentorProfile createOrUpdateProfile(Long userId, Map<String, Object> body) {
         User user = findUser(userId);
-        Optional<MentorProfile> existing = mentorRepository.findByUserId(userId);
+        Optional<MentorProfile> existing = mentorRepository.findByUserIdAndActiveTrue(userId);
         if (existing.isPresent()) {
             throw new BusinessException("您已完成入驻，无需重复入驻");
         }
@@ -65,8 +65,10 @@ public class MentorService {
         return mentorRepository.save(profile);
     }
 
-    public Optional<MentorProfile> getMyProfile(Long userId) {
-        return mentorRepository.findByUserId(userId);
+    public Map<String, Object> getMyProfile(Long userId) {
+        return mentorRepository.findByUserIdAndActiveTrue(userId)
+                .map(this::toMentorMap)
+                .orElse(null);
     }
 
     public Map<String, Object> getMentorDetail(Long mentorId) {

@@ -16,6 +16,8 @@ export default function StudyPlanDetailPage() {
   const [showCheckInModal, setShowCheckInModal] = useState(false)
   const [checkInForm, setCheckInForm] = useState({ durationHours: '', remark: '' })
   const [submitting, setSubmitting] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editForm, setEditForm] = useState({ name: '', description: '', startDate: '', endDate: '', totalDurationHours: '' })
 
   useEffect(() => {
     if (isAuthed) loadDetail()
@@ -58,6 +60,51 @@ export default function StudyPlanDetailPage() {
     try {
       await studyPlanApi.deleteCheckIn(checkInId, token)
       loadDetail()
+    } catch (e) {
+      alert(e.message || '删除失败')
+    }
+  }
+
+  function openEditModal() {
+    setEditForm({
+      name: plan.name || '',
+      description: plan.description || '',
+      startDate: plan.startDate || '',
+      endDate: plan.endDate || '',
+      totalDurationHours: plan.plannedDurationHours || plan.totalDurationHours || '',
+    })
+    setShowEditModal(true)
+  }
+
+  async function handleUpdatePlan(e) {
+    e.preventDefault()
+    if (!editForm.name.trim() || !editForm.startDate || !editForm.endDate || !editForm.totalDurationHours) {
+      alert('请填写完整信息')
+      return
+    }
+    setSubmitting(true)
+    try {
+      await studyPlanApi.updatePlan(id, {
+        name: editForm.name,
+        description: editForm.description,
+        startDate: editForm.startDate,
+        endDate: editForm.endDate,
+        totalDurationHours: parseFloat(editForm.totalDurationHours),
+      }, token)
+      setShowEditModal(false)
+      loadDetail()
+    } catch (e) {
+      alert(e.message || '更新失败')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleDeletePlan() {
+    if (!confirm('确定删除该计划？')) return
+    try {
+      await studyPlanApi.deletePlan(id, token)
+      window.location.href = '/kaoyan/plan'
     } catch (e) {
       alert(e.message || '删除失败')
     }
@@ -199,10 +246,14 @@ export default function StudyPlanDetailPage() {
         <section className="section">
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
             <Link to="/kaoyan/plan" className="btn ghost">← 返回</Link>
-            <div>
+            <div style={{ flex: 1 }}>
               <p className="eyebrow">考研 · 复习计划</p>
               <h2 style={{ margin: 0 }}>{plan.name}</h2>
               {plan.description && <p className="muted" style={{ margin: '0.25rem 0 0' }}>{plan.description}</p>}
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button className="btn ghost" onClick={openEditModal}>编辑</button>
+              <button className="btn ghost" onClick={handleDeletePlan} style={{ color: '#e74c3c' }}>删除</button>
             </div>
           </div>
 
@@ -364,6 +415,45 @@ export default function StudyPlanDetailPage() {
                 <button type="submit" className="btn primary" disabled={submitting}>
                   {submitting ? '提交中...' : '确认打卡'}
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && (
+        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 style={{ margin: 0 }}>编辑计划</h3>
+              <button className="btn ghost" onClick={() => setShowEditModal(false)} style={{ padding: '4px 8px', fontSize: '0.85rem' }}>✕</button>
+            </div>
+            <form onSubmit={handleUpdatePlan} className="modal-body">
+              <div className="field">
+                <label>计划名称</label>
+                <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} required />
+              </div>
+              <div className="field">
+                <label>计划简介</label>
+                <textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} rows={2} style={{ resize: 'vertical' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="field">
+                  <label>开始日期</label>
+                  <input type="date" value={editForm.startDate} onChange={e => setEditForm({ ...editForm, startDate: e.target.value })} required />
+                </div>
+                <div className="field">
+                  <label>结束日期</label>
+                  <input type="date" value={editForm.endDate} onChange={e => setEditForm({ ...editForm, endDate: e.target.value })} required />
+                </div>
+              </div>
+              <div className="field">
+                <label>计划总时长（小时）</label>
+                <input type="number" min="1" step="0.5" value={editForm.totalDurationHours} onChange={e => setEditForm({ ...editForm, totalDurationHours: e.target.value })} required />
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn ghost" onClick={() => setShowEditModal(false)}>取消</button>
+                <button type="submit" className="btn primary" disabled={submitting}>{submitting ? '保存中...' : '保存修改'}</button>
               </div>
             </form>
           </div>
