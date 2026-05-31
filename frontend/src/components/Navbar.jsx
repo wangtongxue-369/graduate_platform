@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 
@@ -40,7 +40,7 @@ const trackMenus = {
     items: [
       { label: '申请时间线', to: '/studyabroad/timeline' },
       { label: '文书资料库', to: '/studyabroad/materials' },
-      { label: '经验社区', to: '/studyabroad/experience' },
+      { label: '留学社区（并入）', to: '/community?category=liuxue' },
     ],
   },
 }
@@ -50,13 +50,13 @@ function TrackDropdown({ menu }) {
   const ref = useRef(null)
 
   useEffect(() => {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) {
+    function handleClickOutside(event) {
+      if (ref.current && !ref.current.contains(event.target)) {
         setOpen(false)
       }
     }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   return (
@@ -64,13 +64,13 @@ function TrackDropdown({ menu }) {
       <button
         className="dropdown-trigger"
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
       >
         {menu.label}
-        <span className="dropdown-arrow">{open ? '▴' : '▾'}</span>
+        <span className="dropdown-arrow">{open ? '▲' : '▼'}</span>
       </button>
-      {open && (
+      {open ? (
         <div className="dropdown-menu">
           <Link className="dropdown-item all" to={menu.to} onClick={() => setOpen(false)}>
             功能面板首页
@@ -87,7 +87,7 @@ function TrackDropdown({ menu }) {
             </Link>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
@@ -103,15 +103,15 @@ export default function Navbar() {
         <span className="logo-mark">GP</span>
         <div>
           <div className="logo-title">毕业去向平台</div>
-          <div className="logo-sub">升学 · 考公 · 就业</div>
+          <div className="logo-sub">升学 · 考公 · 就业 · 留学</div>
         </div>
       </Link>
 
       <nav className="nav-links">
         <NavLink to="/community">社区</NavLink>
         <NavLink to="/practice">题库</NavLink>
-        {isAuthed && menu && <TrackDropdown menu={menu} />}
-        {isAuthed && user?.role === 'admin' && <NavLink to="/admin">管理后台</NavLink>}
+        {isAuthed && menu ? <TrackDropdown menu={menu} /> : null}
+        {isAuthed && user?.role === 'admin' ? <NavLink to="/admin">管理后台</NavLink> : null}
       </nav>
 
       <div className="nav-actions">

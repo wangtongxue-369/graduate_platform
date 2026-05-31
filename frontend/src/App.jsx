@@ -51,7 +51,6 @@ import StudyAbroadPage from './pages/studyabroad/StudyAbroadPage.jsx'
 import ApplicationsPage from './pages/studyabroad/ApplicationsPage.jsx'
 import TimelinePage from './pages/studyabroad/TimelinePage.jsx'
 import SAMaterialsPage from './pages/studyabroad/SAMaterialsPage.jsx'
-import ExperiencePage from './pages/studyabroad/ExperiencePage.jsx'
 
 // 管理员页面
 import AdminPage from './pages/admin/AdminPage.jsx'
@@ -64,6 +63,7 @@ import AdminKaoyanDataPage from './pages/admin/AdminKaoyanDataPage.jsx'
 import AdminMaterialReviewPage from './pages/admin/AdminMaterialReviewPage.jsx'
 import AdminQuestionBankPage from './pages/admin/AdminQuestionBankPage.jsx'
 import AdminQuestionsPage from './pages/admin/AdminQuestionsPage.jsx'
+import CategoryManagementPage from './pages/admin/CategoryManagementPage.jsx'
 
 export default function App() {
   return (
@@ -120,7 +120,6 @@ export default function App() {
       <Route path="/studyabroad/applications" element={<ApplicationsPage />} />
       <Route path="/studyabroad/timeline" element={<TimelinePage />} />
       <Route path="/studyabroad/materials" element={<SAMaterialsPage />} />
-      <Route path="/studyabroad/experience" element={<ExperiencePage />} />
 
       {/* 管理员后台 */}
       <Route path="/admin" element={<AdminPage />} />
@@ -133,6 +132,7 @@ export default function App() {
       <Route path="/admin/material-review" element={<AdminMaterialReviewPage />} />
       <Route path="/admin/question-banks" element={<AdminQuestionBankPage />} />
       <Route path="/admin/question-banks/:bankId/questions" element={<AdminQuestionsPage />} />
+      <Route path="/admin/categories" element={<CategoryManagementPage />} />
     </Routes>
     </>
   )

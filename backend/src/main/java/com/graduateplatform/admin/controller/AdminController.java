@@ -3,7 +3,9 @@ package com.graduateplatform.admin.controller;
 import com.graduateplatform.admin.dto.ReviewReportRequest;
 import com.graduateplatform.admin.service.AdminService;
 import com.graduateplatform.common.dto.ApiResponse;
+import com.graduateplatform.community.dto.CategoryRequest;
 import com.graduateplatform.community.service.CommentService;
+import com.graduateplatform.community.service.CategoryService;
 import com.graduateplatform.kaogong.service.KaoGongService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
@@ -18,11 +20,16 @@ public class AdminController {
     private final AdminService adminService;
     private final KaoGongService kaoGongService;
     private final CommentService commentService;
+    private final CategoryService categoryService;
 
-    public AdminController(AdminService adminService, KaoGongService kaoGongService, CommentService commentService) {
+    public AdminController(AdminService adminService,
+                           KaoGongService kaoGongService,
+                           CommentService commentService,
+                           CategoryService categoryService) {
         this.adminService = adminService;
         this.kaoGongService = kaoGongService;
         this.commentService = commentService;
+        this.categoryService = categoryService;
     }
 
     @GetMapping("/dashboard")
@@ -89,6 +96,37 @@ public class AdminController {
             "Comment report reviewed"
         );
     }
+
+    @GetMapping("/post-categories")
+    public ApiResponse<?> postCategories() {
+        return ApiResponse.ok(categoryService.getAdminAll());
+    }
+
+    @PostMapping("/post-categories")
+    public ApiResponse<?> createPostCategory(@RequestBody CategoryRequest req) {
+        return ApiResponse.ok(categoryService.create(req), "Category created");
+    }
+
+    @PutMapping("/post-categories/{id}")
+    public ApiResponse<?> updatePostCategory(@PathVariable Long id, @RequestBody CategoryRequest req) {
+        return ApiResponse.ok(categoryService.update(id, req), "Category updated");
+    }
+
+    @PutMapping("/post-categories/{id}/status")
+    public ApiResponse<?> updatePostCategoryStatus(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        boolean active = Boolean.parseBoolean(String.valueOf(body.getOrDefault("active", true)));
+        return ApiResponse.ok(categoryService.updateActive(id, active), "Category status updated");
+    }
+
+    @PostMapping("/post-categories/{id}/merge")
+    public ApiResponse<?> mergePostCategory(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Object rawTargetId = body.get("targetId");
+        Long targetId = rawTargetId instanceof Number number
+            ? number.longValue()
+            : Long.parseLong(String.valueOf(rawTargetId));
+        return ApiResponse.ok(categoryService.merge(id, targetId), "Category merged");
+    }
+
     @GetMapping("/users")
     public ApiResponse<?> users(@RequestParam(required = false) String target,
                                 @RequestParam(required = false) String status,

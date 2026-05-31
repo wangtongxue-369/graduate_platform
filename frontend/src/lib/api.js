@@ -100,6 +100,36 @@ export const communityApi = {
       token,
     })
   },
+  attachmentDownloadUrl(postId, attachmentId) {
+    return `${API_BASE}/api/posts/${postId}/attachments/${attachmentId}/download`
+  },
+  async downloadPostAttachment(postId, attachmentId, token) {
+    const response = await fetch(`${API_BASE}/api/posts/${postId}/attachments/${attachmentId}/download`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      throw new Error(data?.message || `Request failed: ${response.status}`)
+    }
+    const blob = await response.blob()
+    const disposition = response.headers.get('content-disposition') || ''
+    const match = disposition.match(/filename\*=UTF-8''([^;]+)/)
+    const fileName = match ? decodeURIComponent(match[1]) : `attachment-${attachmentId}`
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  },
+  notifications(page = 0, size = 8, token) {
+    return request(`/api/community/notifications?page=${page}&size=${size}`, { token })
+  },
+  markNotificationRead(id, token) {
+    return request(`/api/community/notifications/${id}/read`, { method: 'PUT', token })
+  },
 }
 
 export const practiceApi = {
@@ -350,22 +380,6 @@ export const adminMaterialApi = {
 }
 
 export const studyAbroadApi = {
-  experiences(params = {}, token) {
-    const search = new URLSearchParams()
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '' && value !== 'all') {
-        search.set(key, value)
-      }
-    })
-    const query = search.toString()
-    return request(`/api/studyabroad/experiences${query ? `?${query}` : ''}`, { token })
-  },
-  createExperience(payload, token) {
-    return request('/api/studyabroad/experiences', { method: 'POST', body: payload, token })
-  },
-  deleteExperience(id, token) {
-    return request(`/api/studyabroad/experiences/${id}`, { method: 'DELETE', token })
-  },
   applications(token) {
     return request('/api/studyabroad/applications', { token })
   },
@@ -823,6 +837,29 @@ export const adminApi = {
     return request(`/api/admin/comment-reports/${id}/review`, {
       method: 'PUT',
       body: { action, note },
+      token,
+    })
+  },
+  postCategories(token) {
+    return request('/api/admin/post-categories', { token })
+  },
+  createPostCategory(payload, token) {
+    return request('/api/admin/post-categories', { method: 'POST', body: payload, token })
+  },
+  updatePostCategory(id, payload, token) {
+    return request(`/api/admin/post-categories/${id}`, { method: 'PUT', body: payload, token })
+  },
+  updatePostCategoryStatus(id, active, token) {
+    return request(`/api/admin/post-categories/${id}/status`, {
+      method: 'PUT',
+      body: { active },
+      token,
+    })
+  },
+  mergePostCategory(sourceId, targetId, token) {
+    return request(`/api/admin/post-categories/${sourceId}/merge`, {
+      method: 'POST',
+      body: { targetId },
       token,
     })
   },

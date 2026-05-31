@@ -31,15 +31,21 @@ public class CommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CommentReportRepository commentReportRepository;
+    private final CommunityModerationService moderationService;
+    private final CommunityNotificationService notificationService;
 
     public CommentService(CommentRepository commentRepository,
                           PostRepository postRepository,
                           UserRepository userRepository,
-                          CommentReportRepository commentReportRepository) {
+                          CommentReportRepository commentReportRepository,
+                          CommunityModerationService moderationService,
+                          CommunityNotificationService notificationService) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.commentReportRepository = commentReportRepository;
+        this.moderationService = moderationService;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -62,14 +68,25 @@ public class CommentService {
 
         String normalizedContent = normalizeCommentContent(req.getContent());
         Comment parentComment = resolveParentComment(postId, req.getParentId());
+        var sensitiveWord = moderationService.findSensitiveWord(normalizedContent);
+        String status = sensitiveWord.isPresent() ? "HIDDEN" : "PUBLISHED";
 
         Comment comment = commentRepository.save(Comment.builder()
             .content(normalizedContent)
             .post(post)
             .author(author)
             .parentComment(parentComment)
-            .status("PUBLISHED")
+            .status(status)
             .build());
+
+        sensitiveWord.ifPresent(word -> notificationService.create(
+            author,
+            "评论已隐藏待复核",
+            "你在帖子《" + post.getTitle() + "》下的评论因命中敏感词已被隐藏。原因："
+                + moderationService.sensitiveReason(word),
+            "COMMENT",
+            comment.getId()
+        ));
 
         return toMap(comment);
     }
@@ -126,6 +143,17 @@ public class CommentService {
 
         long pendingCount = commentReportRepository.countByCommentIdAndStatus(commentId, "PENDING");
         comment.setReportCount((int) pendingCount);
+        if (pendingCount >= CommunityModerationService.COMMENT_REPORT_ESCALATION_THRESHOLD
+            && "PUBLISHED".equals(comment.getStatus())) {
+            comment.setStatus("HIDDEN");
+            notificationService.create(
+                comment.getAuthor(),
+                "评论已自动隐藏",
+                "你在帖子《" + comment.getPost().getTitle() + "》下的评论因多次举报已被系统自动隐藏，等待管理员复核。",
+                "COMMENT",
+                comment.getId()
+            );
+        }
         commentRepository.save(comment);
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -181,6 +209,14 @@ public class CommentService {
             report.setStatus("RESOLVED");
             if (!"DELETED".equals(comment.getStatus())) {
                 comment.setStatus("HIDDEN");
+                notificationService.create(
+                    comment.getAuthor(),
+                    "评论举报处理成立",
+                    "你在帖子《" + comment.getPost().getTitle() + "》下的评论已被隐藏。处理说明："
+                        + (note == null || note.isBlank() ? "管理员审核通过举报" : note.trim()),
+                    "COMMENT",
+                    comment.getId()
+                );
                 commentRepository.save(comment);
             }
         } else {
@@ -274,6 +310,7 @@ public class CommentService {
         map.put("reportCount", comment.getReportCount());
         map.put("editable", "PUBLISHED".equals(comment.getStatus()));
         map.put("deleted", "DELETED".equals(comment.getStatus()));
+        map.put("hidden", "HIDDEN".equals(comment.getStatus()));
         map.put("createdAt", comment.getCreatedAt().toString());
         map.put("updatedAt", comment.getUpdatedAt() != null ? comment.getUpdatedAt().toString() : null);
         map.put("replyCount", 0);

@@ -26,17 +26,35 @@ function parseTags(post) {
   return []
 }
 
+function normalizeAttachments(postData) {
+  if (!Array.isArray(postData?.attachments)) return []
+  return postData.attachments
+    .filter((item) => item && item.id)
+    .map((item) => ({
+      id: item.id,
+      originalName: item.originalName || `附件-${item.id}`,
+      fileSize: Number(item.fileSize ?? 0),
+      fileType: item.fileType || 'application/octet-stream',
+      downloadCount: Number(item.downloadCount ?? 0),
+      createdAt: item.createdAt || null,
+    }))
+}
+
 function countComments(items = []) {
   return items.reduce((total, item) => total + 1 + countComments(item.replies || []), 0)
 }
 
 function normalizePost(postData, commentData) {
+  const attachments = normalizeAttachments(postData)
   return {
     ...postData,
     tags: parseTags(postData),
+    attachments,
+    attachmentCount: Number(postData.attachmentCount ?? attachments.length),
     status: (postData.auditStatus || postData.status || 'PUBLISHED').toUpperCase(),
     contentFormat: postData.contentFormat || 'plain',
     sourceFileName: postData.sourceFileName || '',
+    hasAttachment: Boolean(postData.hasAttachment) || attachments.length > 0,
     viewCount: postData.viewCount ?? postData.views ?? 0,
     commentCount: postData.commentCount ?? countComments(commentData || []),
     likeCount: postData.likeCount ?? 0,
@@ -56,6 +74,13 @@ function getCommentAuthorLabel(comment) {
 function sameUserId(left, right) {
   if (left == null || right == null) return false
   return String(left) === String(right)
+}
+
+function formatFileSize(bytes) {
+  if (!bytes || bytes <= 0) return '未知大小'
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${bytes} B`
 }
 
 function CommentThread({
@@ -156,6 +181,8 @@ export default function CommunityDetailPage() {
   const [submitting, setSubmitting] = useState(false)
   const [acting, setActing] = useState(false)
   const [actionMessage, setActionMessage] = useState('')
+  const [attachmentMessage, setAttachmentMessage] = useState('')
+  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState(null)
   const [replyTarget, setReplyTarget] = useState(null)
 
   const currentUserId = user?.id ?? null
@@ -430,6 +457,30 @@ export default function CommunityDetailPage() {
     }
   }
 
+  async function handleDownloadAttachment(attachment) {
+    setAttachmentMessage('')
+    setDownloadingAttachmentId(attachment.id)
+    try {
+      await communityApi.downloadPostAttachment(id, attachment.id, token)
+      setAttachmentMessage(`附件下载成功：${attachment.originalName}`)
+      setPost((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          attachments: prev.attachments.map((item) => (
+            item.id === attachment.id
+              ? { ...item, downloadCount: (item.downloadCount || 0) + 1 }
+              : item
+          )),
+        }
+      })
+    } catch (downloadError) {
+      setAttachmentMessage(downloadError.message || '附件下载失败')
+    } finally {
+      setDownloadingAttachmentId(null)
+    }
+  }
+
   return (
     <div className="app">
       <Navbar />
@@ -451,7 +502,7 @@ export default function CommunityDetailPage() {
                     <span className="tag subtle">{post?.visibility === 'members' ? '仅注册用户可见' : '公开可见'}</span>
                     {post?.contentFormat === 'markdown' ? <span className="tag subtle">Markdown</span> : null}
                     {post?.anonymous ? <span className="tag subtle">匿名发布</span> : null}
-                    {post?.hasAttachment ? <span className="tag subtle">含附件说明</span> : null}
+                    {post?.hasAttachment ? <span className="tag subtle">附件 {post?.attachmentCount ?? 0}</span> : null}
                   </div>
                   <div className="detail-meta">
                     <span>{post?.sourceFileName || (post?.anonymous ? '匿名用户' : `作者 ID: ${post?.authorId}`)}</span>
@@ -471,7 +522,30 @@ export default function CommunityDetailPage() {
 
                 <MarkdownContent content={post?.content || ''} />
 
+                {post?.attachments?.length ? (
+                  <div className="attachment-list">
+                    {post.attachments.map((attachment) => (
+                      <div className="attachment-item" key={attachment.id}>
+                        <div className="attachment-info">
+                          <span className="attachment-name">{attachment.originalName}</span>
+                          <span className="muted">{formatFileSize(attachment.fileSize)}</span>
+                          <span className="muted">下载 {attachment.downloadCount || 0}</span>
+                        </div>
+                        <button
+                          className="btn outline small"
+                          type="button"
+                          onClick={() => handleDownloadAttachment(attachment)}
+                          disabled={downloadingAttachmentId === attachment.id}
+                        >
+                          {downloadingAttachmentId === attachment.id ? '下载中...' : '下载附件'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
                 {post?.attachmentNote ? <div className="notice-box">{post.attachmentNote}</div> : null}
+                {attachmentMessage ? <div className="muted">{attachmentMessage}</div> : null}
 
                 <div className="metric-row">
                   <span>浏览 {post?.viewCount ?? 0}</span>

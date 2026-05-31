@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
 import MarkdownContent from '../components/MarkdownContent.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
-import { userApi } from '../lib/api.js'
+import { communityApi, userApi } from '../lib/api.js'
 import '../App.css'
 
 const statusLabelMap = {
@@ -85,9 +85,11 @@ function ProfilePage() {
   const [postsData, setPostsData] = useState(emptyPaged)
   const [commentsData, setCommentsData] = useState(emptyPaged)
   const [attemptsData, setAttemptsData] = useState(emptyPaged)
+  const [notificationsData, setNotificationsData] = useState(emptyPaged)
   const [postsPage, setPostsPage] = useState(0)
   const [commentsPage, setCommentsPage] = useState(0)
   const [attemptsPage, setAttemptsPage] = useState(0)
+  const [notificationsPage, setNotificationsPage] = useState(0)
   const [historyLoading, setHistoryLoading] = useState(false)
 
   const [editingPost, setEditingPost] = useState(null)
@@ -161,6 +163,12 @@ function ProfilePage() {
     setAttemptsPage(data?.number ?? page)
   }
 
+  async function loadNotifications(page = notificationsPage) {
+    const data = await communityApi.notifications(page, 8, token)
+    setNotificationsData(data || emptyPaged)
+    setNotificationsPage(data?.number ?? page)
+  }
+
   useEffect(() => {
     let active = true
     async function load() {
@@ -172,6 +180,7 @@ function ProfilePage() {
           loadPosts(0),
           loadComments(0),
           loadAttempts(0),
+          loadNotifications(0),
         ])
       } catch (err) {
         if (active) setError(err.message || '加载用户信息失败')
@@ -192,6 +201,7 @@ function ProfilePage() {
       if (activeTab === 'posts') await loadPosts(postsPage)
       if (activeTab === 'comments') await loadComments(commentsPage)
       if (activeTab === 'attempts') await loadAttempts(attemptsPage)
+      if (activeTab === 'notifications') await loadNotifications(notificationsPage)
       await loadProfileAndDashboard()
     } catch (err) {
       setError(err.message || '刷新数据失败')
@@ -335,6 +345,18 @@ function ProfilePage() {
       setPostActionMessage('评论已删除')
     } catch (err) {
       setPostActionMessage(err.message || '删除评论失败')
+    }
+  }
+
+  async function handleMarkNotificationRead(notificationId) {
+    if (!token) return
+    setPostActionMessage('')
+    try {
+      await communityApi.markNotificationRead(notificationId, token)
+      await loadNotifications(notificationsPage)
+      setPostActionMessage('通知已标记为已读')
+    } catch (err) {
+      setPostActionMessage(err.message || '通知状态更新失败')
     }
   }
 
@@ -514,6 +536,10 @@ function ProfilePage() {
               {[
                 { key: 'posts', label: `我的帖子 (${postsData.totalElements || 0})` },
                 { key: 'comments', label: `我的评论 (${commentsData.totalElements || 0})` },
+                {
+                  key: 'notifications',
+                  label: `社区通知 (${notificationsData.unreadCount || 0}/${notificationsData.totalElements || 0})`,
+                },
                 { key: 'attempts', label: `练习记录 (${attemptsData.totalElements || 0})` },
               ].map((item) => (
                 <button
@@ -614,6 +640,49 @@ function ProfilePage() {
                   commentsData,
                   () => loadComments(Math.max(0, commentsPage - 1)),
                   () => loadComments(commentsPage + 1),
+                )}
+              </>
+            ) : null}
+
+            {activeTab === 'notifications' ? (
+              <>
+                {notificationsData.content?.length ? (
+                  <div className="track-grid">
+                    {notificationsData.content.map((item) => (
+                      <article className="track-card" key={item.id}>
+                        <div className="track-head">
+                          <h3>{item.title}</h3>
+                          <span className="tag subtle">{item.readFlag ? '已读' : '未读'}</span>
+                        </div>
+                        <p className="muted">{item.content}</p>
+                        <div className="metric-row">
+                          <span>{item.relatedType === 'POST' ? '帖子' : '评论'} #{item.relatedId}</span>
+                          <span>{item.createdAt?.replace('T', ' ').slice(0, 16)}</span>
+                        </div>
+                        <div className="comment-actions">
+                          {item.relatedType === 'POST' && item.relatedId ? (
+                            <Link className="btn ghost small" to={`/community/${item.relatedId}`}>查看相关帖子</Link>
+                          ) : null}
+                          {!item.readFlag ? (
+                            <button
+                              className="btn outline small"
+                              type="button"
+                              onClick={() => handleMarkNotificationRead(item.id)}
+                            >
+                              标记已读
+                            </button>
+                          ) : null}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="muted">暂无社区审核或举报反馈。</div>
+                )}
+                {renderPager(
+                  notificationsData,
+                  () => loadNotifications(Math.max(0, notificationsPage - 1)),
+                  () => loadNotifications(notificationsPage + 1),
                 )}
               </>
             ) : null}

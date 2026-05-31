@@ -59,6 +59,7 @@ export default function AdminPage() {
               <Link className="btn primary" to="/admin/review">内容审核</Link>
               <Link className="btn outline" to="/admin/users">用户管理</Link>
               <Link className="btn outline" to="/admin/reports">举报处理</Link>
+              <Link className="btn outline" to="/admin/categories">社区分类管理</Link>
               <Link className="btn outline" to="/admin/employment">Employment management</Link>
               <Link className="btn outline" to="/admin/kaogong-data">考公数据维护</Link>
               <Link className="btn outline" to="/admin/kaoyan-data">考研数据维护</Link>
@@ -95,6 +96,14 @@ export default function AdminPage() {
               </div>
               <p className="muted">查看举报列表，支持举报成立后下架帖子或驳回举报。</p>
               <Link className="btn primary small" to="/admin/reports">处理举报</Link>
+            </div>
+            <div className="track-card">
+              <div className="track-head">
+                <h3>社区分类管理</h3>
+                <span className="tag subtle">SRS</span>
+              </div>
+              <p className="muted">维护社区分类的新增、启停、排序和合并，控制前台分类筛选展示。</p>
+              <Link className="btn primary small" to="/admin/categories">管理分类</Link>
             </div>
             <div className="track-card">
               <div className="track-head">
