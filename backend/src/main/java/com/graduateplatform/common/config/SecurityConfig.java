@@ -38,6 +38,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/kaoyan/materials").authenticated()
                 // Admin APIs must be declared before generic /api/** GET allow rules
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/community/notifications/**").authenticated()
                 // Kaogong endpoints that require authenticated users
                 .requestMatchers(HttpMethod.GET, "/api/kaogong/jobs/favorites").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/kaogong/jobs/match-history").authenticated()

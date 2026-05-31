@@ -79,6 +79,10 @@ public class Post {
     @Builder.Default
     private List<Comment> comments = new ArrayList<>();
 
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<PostAttachment> attachments = new ArrayList<>();
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -97,5 +101,15 @@ public class Post {
 
     public int getCommentCount() {
         return comments != null ? comments.size() : 0;
+    }
+
+    public int getAttachmentCount() {
+        return attachments != null ? attachments.size() : 0;
+    }
+
+    public void addAttachment(PostAttachment attachment) {
+        if (attachment == null) return;
+        attachment.setPost(this);
+        attachments.add(attachment);
     }
 }
