@@ -89,6 +89,8 @@ export default function PreferencesPanel() {
                     key={item.value}
                     type="button"
                     className={`preferences-chip ${preferences.theme === item.value ? 'is-active' : ''}`}
+                    aria-label={`Theme ${item.value}`}
+                    aria-pressed={preferences.theme === item.value}
                     onClick={() => setTheme(item.value)}
                   >
                     {item.label}
@@ -129,6 +131,8 @@ export default function PreferencesPanel() {
                     key={item.value}
                     type="button"
                     className={`preferences-card ${preferences.languageMode === item.value ? 'is-active' : ''}`}
+                    aria-label={`Language ${item.value}`}
+                    aria-pressed={preferences.languageMode === item.value}
                     onClick={() => setLanguageMode(item.value)}
                   >
                     <strong>{item.label}</strong>
@@ -139,7 +143,12 @@ export default function PreferencesPanel() {
             </div>
 
             <div className="preferences-actions">
-              <button type="button" className="btn ghost" onClick={resetPreferences}>
+              <button
+                type="button"
+                className="btn ghost"
+                aria-label="Reset display preferences"
+                onClick={resetPreferences}
+              >
                 恢复默认
               </button>
             </div>

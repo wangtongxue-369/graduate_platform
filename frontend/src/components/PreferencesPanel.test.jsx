@@ -44,4 +44,29 @@ describe('PreferencesPanel', () => {
 
     expect(screen.getByText('110%')).toBeTruthy()
   })
+
+  it('switches theme from the panel and resets back to system defaults', async () => {
+    renderPanel()
+
+    fireEvent.click(screen.getByRole('button', { name: /open display preferences/i }))
+
+    const darkThemeButton = screen.getByRole('button', { name: /theme dark/i })
+    fireEvent.click(darkThemeButton)
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe('dark')
+    })
+
+    expect(darkThemeButton.getAttribute('aria-pressed')).toBe('true')
+
+    fireEvent.change(screen.getByLabelText(/font scale/i), { target: { value: '1.125' } })
+    fireEvent.click(screen.getByRole('button', { name: /reset display preferences/i }))
+
+    await waitFor(() => {
+      expect(document.documentElement.dataset.theme).toBe('light')
+    })
+
+    expect(screen.getByText('100%')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /theme system/i }).getAttribute('aria-pressed')).toBe('true')
+  })
 })
