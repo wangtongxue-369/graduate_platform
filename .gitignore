@@ -40,6 +40,13 @@ Microsoft/
 # Local/generated artifacts
 .omx/
 docs/
+!docs/
+docs/*
+!docs/superpowers/
+docs/superpowers/*
+!docs/superpowers/specs/
+docs/superpowers/specs/*
+!docs/superpowers/specs/*.md
 # Besokus
 AGENTS.md
 task_plan.md
