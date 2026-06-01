@@ -1,8 +1,8 @@
 .app {
   min-height: 100svh;
-  background: radial-gradient(circle at 8% 12%, #f7efe3 0%, rgba(247, 239, 227, 0) 45%),
-    radial-gradient(circle at 90% 8%, #e7f3f1 0%, rgba(231, 243, 241, 0) 40%),
-    #f7f3ed;
+  background: radial-gradient(circle at 8% 12%, var(--hero-glow-a) 0%, rgba(0, 0, 0, 0) 45%),
+    radial-gradient(circle at 90% 8%, var(--hero-glow-b) 0%, rgba(0, 0, 0, 0) 40%),
+    var(--bg);
   color: var(--ink);
   display: flex;
   flex-direction: column;
@@ -21,7 +21,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(247, 243, 237, 0.92);
+  background: var(--nav-surface);
   backdrop-filter: blur(18px);
   display: flex;
   align-items: center;
@@ -29,6 +29,134 @@
   gap: 24px;
   padding: 20px min(4vw, 48px);
   border-bottom: 1px solid var(--line);
+}
+
+.preferences-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 120;
+  min-width: 68px;
+  height: 68px;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary), #14b8a6);
+  color: var(--primary-ink);
+  box-shadow: var(--panel-shadow);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.preferences-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 119;
+}
+
+.preferences-panel {
+  position: absolute;
+  right: 24px;
+  bottom: 104px;
+  width: min(360px, calc(100vw - 24px));
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-surface);
+  box-shadow: var(--panel-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.preferences-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.preferences-group {
+  display: grid;
+  gap: 12px;
+}
+
+.preferences-group-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.preferences-group-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.preferences-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preferences-chip,
+.preferences-card {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.preferences-chip {
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.preferences-card {
+  width: 100%;
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.preferences-card span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.preferences-chip.is-active,
+.preferences-card.is-active {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.22);
+}
+
+.preferences-range-field input {
+  width: 100%;
+}
+
+.preferences-range-scale {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.preferences-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.preferences-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .logo {
@@ -365,7 +493,7 @@
 }
 
 .feature-card.soft {
-  background: #f3f8f7;
+  background: color-mix(in srgb, var(--surface) 82%, var(--hero-glow-b));
 }
 
 .feature-card.highlight {
@@ -373,7 +501,7 @@
 }
 
 .feature-card.metrics {
-  background: #f8faf9;
+  background: color-mix(in srgb, var(--surface) 88%, var(--hero-glow-b));
 }
 
 .card-title {
@@ -835,6 +963,7 @@
   border-radius: 999px;
   border: none;
   background: rgba(15, 118, 110, 0.12);
+  color: var(--ink);
   font-size: 18px;
   cursor: pointer;
 }
@@ -856,7 +985,7 @@
 }
 
 .comment {
-  background: rgba(255, 255, 255, 0.8);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
   border-radius: 14px;
   padding: 12px 14px;
   border: 1px solid var(--line);
@@ -865,7 +994,7 @@
 
 .comment.is-reply {
   margin-left: min(32px, calc(12px + var(--comment-depth, 0) * 8px));
-  background: rgba(255, 255, 255, 0.92);
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
 }
 
 .comment.is-target {
@@ -937,6 +1066,8 @@
   font-family: inherit;
   min-height: 132px;
   resize: vertical;
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .comment-actions {
@@ -3409,6 +3540,20 @@
 }
 
 @media (max-width: 640px) {
+  .preferences-fab {
+    right: 14px;
+    bottom: 14px;
+    min-width: 56px;
+    height: 56px;
+  }
+
+  .preferences-panel {
+    right: 12px;
+    left: 12px;
+    bottom: 82px;
+    width: auto;
+  }
+
   .admin-row-actions {
     justify-content: flex-start;
     flex-wrap: wrap;
