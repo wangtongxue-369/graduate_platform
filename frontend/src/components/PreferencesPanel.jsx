@@ -126,26 +126,25 @@ export default function PreferencesPanel() {
             <div className="preferences-group">
               <span className="preferences-group-title">语言模式</span>
               <div className="preferences-stack">
-                {languageOptions.map((item) => (
-                  (() => {
-                    const noteId = `preferences-language-note-${item.value}`
+                {languageOptions.map((item) => {
+                  const noteId = `preferences-language-note-${item.value}`
 
-                    return (
-                      <button
-                        key={item.value}
-                        type="button"
-                        className={`preferences-card ${preferences.languageMode === item.value ? 'is-active' : ''}`}
-                        aria-label={item.label}
-                        aria-describedby={noteId}
-                        aria-pressed={preferences.languageMode === item.value}
-                        onClick={() => setLanguageMode(item.value)}
-                      >
-                        <strong>{item.label}</strong>
-                        <span id={noteId}>{item.note}</span>
-                      </button>
-                    )
-                  })()
-                ))}
+                  return (
+                    <button
+                      key={item.value}
+                      type="button"
+                      className={`preferences-card ${preferences.languageMode === item.value ? 'is-active' : ''}`}
+                      aria-label={item.label}
+                      aria-describedby={noteId}
+                      aria-pressed={preferences.languageMode === item.value}
+                      data-testid={`preferences-language-${item.value}`}
+                      onClick={() => setLanguageMode(item.value)}
+                    >
+                      <strong>{item.label}</strong>
+                      <span id={noteId}>{item.note}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
 
