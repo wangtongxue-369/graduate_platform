@@ -2,50 +2,89 @@
 
 :root {
   color-scheme: light;
-  --bg: #f7f3ed;
-  --ink: #0d1b1a;
-  --text: #0d1b1a;
-  --muted: #5b6a67;
-  --ink-muted: #6f817d;
+  --page-bg: #eef4f5;
+  --page-bg-rgb: 238 244 245;
+  --page-bg-alt: #dde8ea;
+  --page-grid: rgba(102, 138, 146, 0.08);
+  --surface: rgba(255, 255, 255, 0.82);
+  --surface-strong: #ffffff;
+  --surface-soft: #f6fafb;
+  --surface-muted: #edf4f5;
+  --surface-elevated: rgba(255, 255, 255, 0.92);
+  --surface-inverse: #102125;
+  --text: #102226;
+  --ink: #102226;
+  --muted: #5e7278;
+  --ink-muted: #7d9197;
   --primary: #0f766e;
-  --primary-ink: #f0fdfa;
-  --accent: #f59e0b;
-  --line: rgba(13, 27, 26, 0.12);
-  --surface: #ffffff;
-  --panel-surface: rgba(255, 255, 255, 0.94);
-  --panel-border: rgba(13, 27, 26, 0.12);
-  --shadow: 0 12px 30px rgba(13, 27, 26, 0.08);
-  --panel-shadow: 0 24px 48px rgba(13, 27, 26, 0.18);
+  --primary-strong: #0c5f59;
+  --primary-soft: rgba(15, 118, 110, 0.11);
+  --primary-softer: rgba(15, 118, 110, 0.06);
+  --primary-ink: #f4fffd;
+  --accent: #2563eb;
+  --accent-soft: rgba(37, 99, 235, 0.12);
+  --line: rgba(16, 34, 38, 0.1);
+  --line-strong: rgba(16, 34, 38, 0.16);
+  --success-soft: rgba(21, 128, 61, 0.12);
+  --warning-soft: rgba(217, 119, 6, 0.14);
+  --danger-soft: rgba(220, 38, 38, 0.12);
+  --shadow: 0 18px 40px rgba(16, 34, 38, 0.08);
+  --shadow-strong: 0 28px 64px rgba(16, 34, 38, 0.14);
+  --panel-surface: rgba(255, 255, 255, 0.9);
+  --panel-border: rgba(16, 34, 38, 0.1);
+  --panel-shadow: 0 28px 64px rgba(16, 34, 38, 0.18);
+  --nav-surface: rgba(244, 249, 250, 0.78);
+  --hero-glow-a: rgba(15, 118, 110, 0.09);
+  --hero-glow-b: rgba(37, 99, 235, 0.08);
   --font-scale: 1;
-  --hero-glow-a: #f7efe3;
-  --hero-glow-b: #e7f3f1;
-  --nav-surface: rgba(247, 243, 237, 0.92);
+  --bg: var(--page-bg);
 
   font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
   font-size: calc(16px * var(--font-scale));
   line-height: 1.6;
   color: var(--text);
-  background: var(--bg);
+  background: var(--page-bg);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0d1413;
-  --ink: #e8f0ee;
-  --text: #e8f0ee;
-  --muted: #9eb2ad;
-  --ink-muted: #b6c7c3;
-  --line: rgba(232, 240, 238, 0.14);
-  --surface: #16211f;
-  --panel-surface: rgba(22, 33, 31, 0.94);
-  --panel-border: rgba(232, 240, 238, 0.14);
-  --shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
-  --panel-shadow: 0 24px 56px rgba(0, 0, 0, 0.38);
-  --hero-glow-a: rgba(31, 60, 57, 0.55);
-  --hero-glow-b: rgba(15, 68, 71, 0.42);
-  --nav-surface: rgba(13, 20, 19, 0.86);
+  --page-bg: #091417;
+  --page-bg-rgb: 9 20 23;
+  --page-bg-alt: #102126;
+  --page-grid: rgba(148, 184, 194, 0.09);
+  --surface: rgba(15, 29, 34, 0.84);
+  --surface-strong: #13252a;
+  --surface-soft: #102024;
+  --surface-muted: #0d1b1f;
+  --surface-elevated: rgba(18, 35, 40, 0.94);
+  --surface-inverse: #ecf8f7;
+  --text: #e6f0f2;
+  --ink: #f1fbfd;
+  --muted: #9ab0b6;
+  --ink-muted: #b5c9cf;
+  --primary: #34d399;
+  --primary-strong: #10b981;
+  --primary-soft: rgba(52, 211, 153, 0.16);
+  --primary-softer: rgba(52, 211, 153, 0.09);
+  --primary-ink: #052019;
+  --accent: #60a5fa;
+  --accent-soft: rgba(96, 165, 250, 0.16);
+  --line: rgba(224, 242, 247, 0.1);
+  --line-strong: rgba(224, 242, 247, 0.18);
+  --success-soft: rgba(74, 222, 128, 0.14);
+  --warning-soft: rgba(251, 191, 36, 0.16);
+  --danger-soft: rgba(248, 113, 113, 0.16);
+  --shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+  --shadow-strong: 0 30px 70px rgba(0, 0, 0, 0.46);
+  --panel-surface: rgba(14, 28, 32, 0.94);
+  --panel-border: rgba(224, 242, 247, 0.1);
+  --panel-shadow: 0 30px 72px rgba(0, 0, 0, 0.54);
+  --nav-surface: rgba(9, 20, 23, 0.78);
+  --hero-glow-a: rgba(52, 211, 153, 0.12);
+  --hero-glow-b: rgba(96, 165, 250, 0.1);
+  --bg: var(--page-bg);
 }
 
 * {
@@ -55,7 +94,10 @@
 body {
   margin: 0;
   min-height: 100svh;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at top left, var(--hero-glow-a), transparent 34%),
+    radial-gradient(circle at top right, var(--hero-glow-b), transparent 28%),
+    linear-gradient(180deg, color-mix(in srgb, var(--page-bg) 92%, white 8%), var(--page-bg));
   color: var(--text);
 }
 
@@ -78,10 +120,19 @@ p {
 
 a {
   color: inherit;
+  text-decoration-color: color-mix(in srgb, var(--primary) 42%, transparent);
 }
 
-button {
-  font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 24%, transparent);
+  color: var(--ink);
 }
 
 .sr-only {
