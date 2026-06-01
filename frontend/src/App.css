@@ -319,6 +319,15 @@
   color: var(--accent);
 }
 
+.lead,
+.muted,
+.logo-sub,
+.panel-sub,
+.stat-label,
+.room-sub {
+  color: var(--muted);
+}
+
 .lead {
   font-size: 18px;
   max-width: 520px;
@@ -485,10 +494,6 @@
 .section-head h2 {
   font-size: clamp(1.8rem, 2.5vw, 2.5rem);
   margin: 8px 0 8px;
-}
-
-.muted {
-  color: var(--muted);
 }
 
 .grid-two {
@@ -1174,11 +1179,11 @@
   width: 28px;
   height: 28px;
   border-radius: 10px;
-  background: rgba(15, 118, 110, 0.12);
+  background: var(--primary-soft);
   display: grid;
   place-items: center;
   font-weight: 700;
-  color: #0f766e;
+  color: var(--primary-strong);
 }
 
 .question-actions {
