@@ -199,7 +199,7 @@
   font-weight: 500;
 }
 
-.nav-links a {
+.nav .nav-links a {
   color: var(--ink);
   text-decoration: none;
   padding: 8px 10px;
@@ -233,13 +233,14 @@
     border-color 0.2s ease;
 }
 
-.nav-links a.active,
-.dropdown-trigger:hover {
+.nav .nav-links a.active,
+.dropdown-trigger:hover,
+.dropdown-trigger[aria-expanded='true'] {
   background: var(--primary-softer);
   color: var(--ink);
 }
 
-.nav-links a:hover {
+.nav .nav-links a:hover {
   background: var(--primary-softer);
   color: var(--ink);
 }
@@ -389,7 +390,8 @@
   gap: 16px;
 }
 
-.panel-card.accent {
+.panel-card.accent,
+.feature-card.highlight {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 86%, transparent), color-mix(in srgb, var(--surface-soft) 94%, transparent)),
     radial-gradient(circle at top right, var(--primary-softer), transparent 48%);
@@ -516,13 +518,6 @@
 
 .feature-card.soft {
   background: color-mix(in srgb, var(--surface) 82%, var(--hero-glow-b));
-}
-
-.feature-card.highlight {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 86%, transparent), color-mix(in srgb, var(--surface-soft) 94%, transparent)),
-    radial-gradient(circle at top right, var(--primary-softer), transparent 48%);
-  border-color: color-mix(in srgb, var(--primary) 16%, var(--line));
 }
 
 .feature-card.metrics {
@@ -2758,7 +2753,7 @@
 
 .material-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-strong);
 }
 
 .material-card.admin {
@@ -3533,7 +3528,7 @@
 
 .file-card:hover {
   border-color: var(--primary);
-  box-shadow: 0 2px 12px rgba(26, 158, 122, 0.1);
+  box-shadow: var(--shadow);
 }
 
 .file-card-icon {
@@ -3690,6 +3685,7 @@
 .score-table td .btn.small {
   font-size: 12px;
   padding: 2px 8px;
+  min-height: auto;
 }
 
 .score-table .muted.small {
