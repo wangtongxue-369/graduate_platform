@@ -6,6 +6,69 @@ import { adminApi } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import '../../App.css'
 
+const shortcutLinks = [
+  { to: '/admin/review', label: '内容审核', variant: 'btn primary' },
+  { to: '/admin/users', label: '用户管理', variant: 'btn outline' },
+  { to: '/admin/reports', label: '举报处理', variant: 'btn outline' },
+  { to: '/admin/categories', label: '社区分类管理', variant: 'btn outline' },
+  { to: '/admin/employment', label: 'Employment management', variant: 'btn outline' },
+  { to: '/admin/kaogong-data', label: '考公数据维护', variant: 'btn outline' },
+  { to: '/admin/kaoyan-data', label: '考研数据维护', variant: 'btn outline' },
+  { to: '/admin/material-review', label: '资料审核', variant: 'btn outline' },
+]
+
+const capabilityCards = [
+  {
+    title: '内容审核',
+    code: 'UC-26',
+    description: '审核待处理帖子：通过、驳回或下架，支持按状态筛选和操作留痕。',
+    to: '/admin/review',
+    cta: '进入审核',
+  },
+  {
+    title: '用户管理',
+    code: 'UC-25',
+    description: '查看用户列表，按目标方向和状态筛选，支持禁言、封禁和解锁。',
+    to: '/admin/users',
+    cta: '管理用户',
+  },
+  {
+    title: '举报处理',
+    code: 'UC-30',
+    description: '查看举报列表，支持举报成立后下架帖子或驳回举报。',
+    to: '/admin/reports',
+    cta: '处理举报',
+  },
+  {
+    title: '社区分类管理',
+    code: 'SRS',
+    description: '维护社区分类的新增、启停、排序和合并，控制前台分类筛选展示。',
+    to: '/admin/categories',
+    cta: '管理分类',
+  },
+  {
+    title: 'Employment source data',
+    code: 'JOB',
+    description: 'Create career fairs and job postings, then trigger matched in-app notifications.',
+    to: '/admin/employment',
+    cta: 'Manage employment',
+  },
+  {
+    title: '考公数据维护',
+    code: 'UC-32',
+    description: '维护岗位、进面分数线和考试节点，支持筛选、后端分页与新增数据。',
+    to: '/admin/kaogong-data',
+    cta: '维护考公数据',
+  },
+  {
+    title: '题库管理',
+    code: 'UC-28',
+    description: '新增、修改、删除题库与试题，预留批量导入接口。',
+    to: '/admin/question-banks',
+    cta: '进入管理',
+  },
+]
+
 export default function AdminPage() {
   const { user, token, isAuthed } = useAuth()
   const [stats, setStats] = useState(null)
@@ -31,103 +94,66 @@ export default function AdminPage() {
             {error && <div className="error-text">{error}</div>}
           </div>
 
-          <div className="grid-two">
-            <div className="feature-card">
-              <div className="card-title">快速概览</div>
-              <div className="mini-grid">
-                <div className="mini-card">
-                  <div className="mini-value">{stats?.totalUsers ?? '-'}</div>
-                  <div className="mini-label">注册用户</div>
-                </div>
-                <div className="mini-card">
-                  <div className="mini-value" style={{ color: stats?.pendingPosts > 0 ? '#d97706' : undefined }}>
-                    {stats?.pendingPosts ?? '-'}
-                  </div>
-                  <div className="mini-label">待审核帖子</div>
-                </div>
-                <div className="mini-card">
-                  <div className="mini-value" style={{ color: stats?.pendingReports > 0 ? '#b91c1c' : undefined }}>
-                    {stats?.pendingReports ?? '-'}
-                  </div>
-                  <div className="mini-label">待处理举报</div>
-                </div>
+          <div className="admin-page-shell">
+            <div className="admin-summary-grid">
+              <article className="admin-summary-card">
+                <span className="admin-summary-label">注册用户</span>
+                <strong className="admin-summary-value">{stats?.totalUsers ?? '-'}</strong>
+                <span className="muted">当前系统累计注册用户数。</span>
+              </article>
+              <article className="admin-summary-card">
+                <span className="admin-summary-label">待审核帖子</span>
+                <strong className="admin-summary-value">{stats?.pendingPosts ?? '-'}</strong>
+                <span className={`admin-status-chip ${stats?.pendingPosts > 0 ? 'is-warning' : 'is-neutral'}`}>
+                  {stats?.pendingPosts > 0 ? '需要处理' : '队列正常'}
+                </span>
+              </article>
+              <article className="admin-summary-card">
+                <span className="admin-summary-label">待处理举报</span>
+                <strong className="admin-summary-value">{stats?.pendingReports ?? '-'}</strong>
+                <span className={`admin-status-chip ${stats?.pendingReports > 0 ? 'is-danger' : 'is-neutral'}`}>
+                  {stats?.pendingReports > 0 ? '需要关注' : '暂无积压'}
+                </span>
+              </article>
+            </div>
+
+            <div className="admin-toolbar-card">
+              <div className="track-head">
+                <h3>快捷操作</h3>
+                <span className="admin-status-chip is-neutral">控制台入口</span>
+              </div>
+              <div className="admin-inline-actions">
+                {shortcutLinks.map((item) => (
+                  <Link key={item.to} className={item.variant} to={item.to}>
+                    {item.label}
+                  </Link>
+                ))}
               </div>
             </div>
 
-            <div className="feature-card soft">
-              <div className="card-title">快捷操作</div>
-              <Link className="btn primary" to="/admin/review">内容审核</Link>
-              <Link className="btn outline" to="/admin/users">用户管理</Link>
-              <Link className="btn outline" to="/admin/reports">举报处理</Link>
-              <Link className="btn outline" to="/admin/categories">社区分类管理</Link>
-              <Link className="btn outline" to="/admin/employment">Employment management</Link>
-              <Link className="btn outline" to="/admin/kaogong-data">考公数据维护</Link>
-              <Link className="btn outline" to="/admin/kaoyan-data">考研数据维护</Link>
-              <Link className="btn outline" to="/admin/material-review">资料审核</Link>
-            </div>
-          </div>
-        </section>
-
-        <section className="section">
-          <div className="section-head">
-            <h2>管理功能</h2>
-          </div>
-          <div className="track-grid">
-            <div className="track-card">
-              <div className="track-head">
-                <h3>内容审核</h3>
-                <span className="tag subtle">UC-26</span>
+            <div>
+              <div className="section-head">
+                <h2>管理功能</h2>
               </div>
-              <p className="muted">审核待处理帖子：通过、驳回或下架，支持按状态筛选和操作留痕。</p>
-              <Link className="btn primary small" to="/admin/review">进入审核</Link>
-            </div>
-            <div className="track-card">
-              <div className="track-head">
-                <h3>用户管理</h3>
-                <span className="tag subtle">UC-25</span>
+              <div className="admin-capability-grid">
+                {capabilityCards.map((item) => (
+                  <article className="admin-record-card" key={item.to}>
+                    <div className="track-head">
+                      <h3>{item.title}</h3>
+                      <span className="admin-status-chip is-neutral">{item.code}</span>
+                    </div>
+                    <div className="admin-record-main">
+                      <p className="muted">{item.description}</p>
+                    </div>
+                    <div className="admin-record-side">
+                      <span className="muted small">后台能力入口</span>
+                      <Link className="btn primary small" to={item.to}>
+                        {item.cta}
+                      </Link>
+                    </div>
+                  </article>
+                ))}
               </div>
-              <p className="muted">查看用户列表，按目标方向和状态筛选，支持禁言、封禁和解锁。</p>
-              <Link className="btn primary small" to="/admin/users">管理用户</Link>
-            </div>
-            <div className="track-card">
-              <div className="track-head">
-                <h3>举报处理</h3>
-                <span className="tag subtle">UC-30</span>
-              </div>
-              <p className="muted">查看举报列表，支持举报成立后下架帖子或驳回举报。</p>
-              <Link className="btn primary small" to="/admin/reports">处理举报</Link>
-            </div>
-            <div className="track-card">
-              <div className="track-head">
-                <h3>社区分类管理</h3>
-                <span className="tag subtle">SRS</span>
-              </div>
-              <p className="muted">维护社区分类的新增、启停、排序和合并，控制前台分类筛选展示。</p>
-              <Link className="btn primary small" to="/admin/categories">管理分类</Link>
-            </div>
-            <div className="track-card">
-              <div className="track-head">
-                <h3>Employment source data</h3>
-                <span className="tag subtle">JOB</span>
-              </div>
-              <p className="muted">Create career fairs and job postings, then trigger matched in-app notifications.</p>
-              <Link className="btn primary small" to="/admin/employment">Manage employment</Link>
-            </div>
-            <div className="track-card">
-              <div className="track-head">
-                <h3>考公数据维护</h3>
-                <span className="tag subtle">UC-32</span>
-              </div>
-              <p className="muted">维护岗位、进面分数线和考试节点，支持筛选、后端分页与新增数据。</p>
-              <Link className="btn primary small" to="/admin/kaogong-data">维护考公数据</Link>
-            </div>
-            <div className="track-card">
-              <div className="track-head">
-                <h3>题库管理</h3>
-                <span className="tag subtle">UC-28</span>
-              </div>
-              <p className="muted">新增、修改、删除题库与试题，预留批量导入接口。</p>
-              <Link className="btn primary small" to="/admin/question-banks">进入管理</Link>
             </div>
           </div>
         </section>

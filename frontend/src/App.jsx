@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import DevBar from './components/DevBar.jsx'
+import PreferencesPanel from './components/PreferencesPanel.jsx'
 
 // 通用功能页面
 import HomePage from './pages/HomePage.jsx'
@@ -69,6 +70,7 @@ export default function App() {
   return (
     <>
     <DevBar />
+    <PreferencesPanel />
     <Routes>
       {/* 通用功能 */}
       <Route path="/" element={<HomePage />} />

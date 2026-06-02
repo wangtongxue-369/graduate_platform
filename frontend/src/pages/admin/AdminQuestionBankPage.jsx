@@ -6,6 +6,11 @@ import { adminQuestionBankApi } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import '../../App.css'
 
+const bankStatusClassMap = {
+  true: 'is-success',
+  false: 'is-neutral',
+}
+
 export default function AdminQuestionBankPage() {
   const { user, token, isAuthed } = useAuth()
   const [banks, setBanks] = useState([])
@@ -92,14 +97,14 @@ export default function AdminQuestionBankPage() {
             {error && <div className="error-text">{error}</div>}
           </div>
 
-          <div style={{ marginBottom: '1rem' }}>
+          <div className="admin-toolbar">
             <button className="btn primary" type="button" onClick={openCreate}>新建题库</button>
-            <Link className="btn outline" to="/admin" style={{ marginLeft: '0.5rem' }}>返回控制台</Link>
+            <Link className="btn outline" to="/admin">返回控制台</Link>
           </div>
 
           {showForm && (
-            <div className="card" style={{ marginBottom: '1.5rem', padding: '1.25rem' }}>
-              <h3 style={{ marginBottom: '1rem' }}>{editBank ? '编辑题库' : '新建题库'}</h3>
+            <div className="admin-surface-card">
+              <h3>{editBank ? '编辑题库' : '新建题库'}</h3>
               <form onSubmit={handleSubmit}>
                 <div className="form-row">
                   <label>名称 *</label>
@@ -141,9 +146,9 @@ export default function AdminQuestionBankPage() {
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                   />
                 </div>
-                <div style={{ marginTop: '1rem' }}>
+                <div className="admin-inline-actions">
                   <button className="btn primary" type="submit">保存</button>
-                  <button className="btn outline" type="button" onClick={() => setShowForm(false)} style={{ marginLeft: '0.5rem' }}>取消</button>
+                  <button className="btn outline" type="button" onClick={() => setShowForm(false)}>取消</button>
                 </div>
               </form>
             </div>
@@ -172,22 +177,24 @@ export default function AdminQuestionBankPage() {
                   <td>{bank.difficulty || '-'}</td>
                   <td>{bank.questionCount}</td>
                   <td>
-                    <span style={{ color: bank.active !== false ? 'var(--green, #16a34a)' : 'var(--red, #dc2626)' }}>
+                    <span className={`admin-status-chip ${bankStatusClassMap[String(bank.active !== false)] || 'is-neutral'}`}>
                       {bank.active !== false ? '启用' : '停用'}
                     </span>
                   </td>
                   <td>
-                    <Link className="btn primary small" to={`/admin/question-banks/${bank.id}/questions`}>管理试题</Link>
-                    <button className="btn outline small" type="button" onClick={() => openEdit(bank)} style={{ marginLeft: '0.25rem' }}>编辑</button>
-                    <button className="btn outline small" type="button" onClick={() => handleToggleStatus(bank)} style={{ marginLeft: '0.25rem' }}>
-                      {bank.active !== false ? '停用' : '启用'}
-                    </button>
-                    <button className="btn danger small" type="button" onClick={() => handleDelete(bank.id, bank.name)} style={{ marginLeft: '0.25rem' }}>删除</button>
+                    <div className="admin-inline-actions">
+                      <Link className="btn primary small" to={`/admin/question-banks/${bank.id}/questions`}>管理试题</Link>
+                      <button className="btn outline small" type="button" onClick={() => openEdit(bank)}>编辑</button>
+                      <button className={`btn ${bank.active !== false ? 'outline-neutral' : 'outline'} small`} type="button" onClick={() => handleToggleStatus(bank)}>
+                        {bank.active !== false ? '停用' : '启用'}
+                      </button>
+                      <button className="btn danger small" type="button" onClick={() => handleDelete(bank.id, bank.name)}>删除</button>
+                    </div>
                   </td>
                 </tr>
               ))}
               {banks.length === 0 && (
-                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>暂无题库</td></tr>
+                <tr><td className="admin-empty-row" colSpan="8">暂无题库</td></tr>
               )}
             </tbody>
           </table>
