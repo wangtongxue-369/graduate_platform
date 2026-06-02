@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import Navbar from '../../components/Navbar.jsx'
 import Footer from '../../components/Footer.jsx'
@@ -23,6 +23,9 @@ const reportTypeLabelMap = {
   COMMENT: '评论举报',
 }
 
+const reportTypes = ['POST', 'COMMENT']
+const reportStatuses = ['PENDING', 'RESOLVED', 'REJECTED']
+
 export default function ReportPage() {
   const { user, token, isAuthed } = useAuth()
   const [reports, setReports] = useState([])
@@ -32,7 +35,7 @@ export default function ReportPage() {
   const [error, setError] = useState('')
   const [acting, setActing] = useState(null)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
@@ -45,9 +48,9 @@ export default function ReportPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filterStatus, reportType, token])
 
-  useEffect(() => { load() }, [reportType, filterStatus, token])
+  useEffect(() => { load() }, [load])
 
   async function handleAction(reportId, action) {
     const note = window.prompt(action === 'RESOLVE' ? '处理说明（可选）' : '驳回说明（可选）') || ''
@@ -80,105 +83,124 @@ export default function ReportPage() {
             {error ? <div className="error-text">{error}</div> : null}
           </div>
 
-          <div className="feature-card">
-            <div className="card-title">举报类型</div>
-            <div className="tag-row">
-              {['POST', 'COMMENT'].map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  className={`tag tag-btn ${reportType === type ? 'selected' : ''}`}
-                  onClick={() => setReportType(type)}
-                >
-                  {reportTypeLabelMap[type]}
-                </button>
-              ))}
+          <div className="admin-page-shell">
+            <div className="admin-toolbar-card">
+              <div className="track-head">
+                <h3>筛选条件</h3>
+                <span className="admin-status-chip is-neutral">举报队列</span>
+              </div>
+              <div className="admin-filter-stack">
+                <div className="admin-filter-bar">
+                  {reportTypes.map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      className={`admin-filter-pill ${reportType === type ? 'is-active' : ''}`}
+                      onClick={() => setReportType(type)}
+                    >
+                      {reportTypeLabelMap[type]}
+                    </button>
+                  ))}
+                </div>
+                <div className="admin-filter-bar">
+                  {reportStatuses.map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      className={`admin-filter-pill ${filterStatus === status ? 'is-active' : ''}`}
+                      onClick={() => setFilterStatus(status)}
+                    >
+                      {statusLabelMap[status]}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            <div className="card-title">处理状态</div>
-            <div className="tag-row">
-              {['PENDING', 'RESOLVED', 'REJECTED'].map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  className={`tag tag-btn ${filterStatus === s ? 'selected' : ''}`}
-                  onClick={() => setFilterStatus(s)}
-                >
-                  {statusLabelMap[s]}
-                </button>
-              ))}
-            </div>
-          </div>
+            {loading ? (
+              <div className="admin-surface-card">加载中...</div>
+            ) : reports.length === 0 ? (
+              <div className="admin-surface-card">
+                <div className="track-head">
+                  <h3>暂无 {statusLabelMap[filterStatus]} 的 {reportTypeLabelMap[reportType]}</h3>
+                  <span className="admin-status-chip is-neutral">0 项</span>
+                </div>
+              </div>
+            ) : (
+              <div className="admin-record-grid">
+                {reports.map((item) => {
+                  const actingKey = `${reportType}-${item.id}`
+                  const post = item.post || null
+                  const comment = item.comment || null
 
-          {loading ? (
-            <div className="feature-card">加载中...</div>
-          ) : reports.length === 0 ? (
-            <div className="feature-card">
-              <div className="card-title">暂无 {statusLabelMap[filterStatus]} 的 {reportTypeLabelMap[reportType]}</div>
-            </div>
-          ) : (
-            <div className="track-grid">
-              {reports.map((item) => {
-                const actingKey = `${reportType}-${item.id}`
-                const post = item.post || null
-                const comment = item.comment || null
-                return (
-                  <article className="track-card" key={item.id}>
-                    <div className="track-head">
-                      <h3>{reportTypeLabelMap[reportType]} #{item.id}</h3>
-                      <span className={`admin-status-chip ${statusClassMap[item.status] || 'is-neutral'}`}>
-                        {statusLabelMap[item.status] || item.status}
-                      </span>
-                    </div>
-
-                    <ul className="feature-list compact">
-                      <li>举报人: {item.reporter?.name} (ID: {item.reporter?.id})</li>
-                      <li>举报原因: {item.reason}</li>
-                      <li>提交时间: {item.createdAt?.replace('T', ' ').slice(0, 16)}</li>
-                      <li>处理说明: {item.reviewNote || '暂无'}</li>
-                      {reportType === 'COMMENT' ? (
-                        <>
-                          <li>评论内容: {comment?.content}</li>
-                          <li>评论状态: {comment?.status}</li>
-                          <li>评论作者: {comment?.authorName} (ID: {comment?.authorId})</li>
-                          <li>所属帖子: {comment?.postTitle} (ID: {comment?.postId})</li>
-                        </>
-                      ) : (
-                        <>
-                          <li>帖子: {post?.title}</li>
-                          <li>帖子状态: {post?.status}</li>
-                          <li>帖子作者: {post?.authorName} (ID: {post?.authorId})</li>
-                        </>
-                      )}
-                    </ul>
-
-                    {item.status === 'PENDING' ? (
-                      <div className="admin-inline-actions">
-                        <button
-                          className="btn primary small"
-                          type="button"
-                          disabled={acting === actingKey}
-                          onClick={() => handleAction(item.id, 'RESOLVE')}
-                        >
-                          举报成立并处置
-                        </button>
-                        <button
-                          className="btn outline small"
-                          type="button"
-                          disabled={acting === actingKey}
-                          onClick={() => handleAction(item.id, 'REJECT')}
-                        >
-                          驳回举报
-                        </button>
+                  return (
+                    <article className="admin-record-card" key={item.id}>
+                      <div className="track-head">
+                        <h3>{reportTypeLabelMap[reportType]} #{item.id}</h3>
+                        <span className={`admin-status-chip ${statusClassMap[item.status] || 'is-neutral'}`}>
+                          {statusLabelMap[item.status] || item.status}
+                        </span>
                       </div>
-                    ) : null}
-                  </article>
-                )
-              })}
-            </div>
-          )}
+                      <div className="admin-record-main">
+                        <p className="muted">举报人: {item.reporter?.name} (ID: {item.reporter?.id})</p>
+                        <p className="muted">举报原因: {item.reason}</p>
+                        <p className="muted">处理说明: {item.reviewNote || '暂无'}</p>
+                        {reportType === 'COMMENT' ? (
+                          <>
+                            <p className="muted">评论内容: {comment?.content}</p>
+                            <p className="muted">所属帖子: {comment?.postTitle} (ID: {comment?.postId})</p>
+                          </>
+                        ) : (
+                          <p className="muted">帖子: {post?.title}</p>
+                        )}
+                      </div>
+                      <div className="admin-record-meta">
+                        <span>提交时间: {item.createdAt?.replace('T', ' ').slice(0, 16)}</span>
+                        {reportType === 'COMMENT' ? (
+                          <>
+                            <span>评论状态: {comment?.status || '未知'}</span>
+                            <span>评论作者: {comment?.authorName} (ID: {comment?.authorId})</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>帖子状态: {post?.status || '未知'}</span>
+                            <span>帖子作者: {post?.authorName} (ID: {post?.authorId})</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="admin-record-side">
+                        <span className="muted small">
+                          {item.status === 'PENDING' ? '待确认是否成立并执行处置' : '该举报已完成处理'}
+                        </span>
+                        {item.status === 'PENDING' ? (
+                          <div className="admin-inline-actions">
+                            <button
+                              className="btn primary small"
+                              type="button"
+                              disabled={acting === actingKey}
+                              onClick={() => handleAction(item.id, 'RESOLVE')}
+                            >
+                              举报成立并处置
+                            </button>
+                            <button
+                              className="btn outline small"
+                              type="button"
+                              disabled={acting === actingKey}
+                              onClick={() => handleAction(item.id, 'REJECT')}
+                            >
+                              驳回举报
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    </article>
+                  )
+                })}
+              </div>
+            )}
 
-          <Link className="btn ghost" to="/admin">返回控制台</Link>
+            <Link className="btn ghost" to="/admin">返回控制台</Link>
+          </div>
         </section>
       </main>
       <Footer />

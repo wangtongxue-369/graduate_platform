@@ -55,6 +55,7 @@ const emptyFilters = {
   year: '',
   majorCategory: '',
   majorName: '',
+  schoolName: '',
 }
 
 const pageSize = 8
@@ -228,9 +229,7 @@ export default function AdminKaoyanDataPage() {
             <h2>院校信息与历年分数线</h2>
             <p className="muted">后台维护考研院校库与历年分数线数据，用户可按院校、年份、专业查询并对比。</p>
           </div>
-        </section>
 
-        <section className="section">
           <div className="admin-tabs">
             {tabs.map((tab) => (
               <button
@@ -244,119 +243,123 @@ export default function AdminKaoyanDataPage() {
             ))}
           </div>
 
-          <form className="feature-card calendar-filter-panel" onSubmit={handleFilter}>
-            {active === 'schools' ? (
-              <div className="filter-grid">
-                <label className="field">
-                  <span>院校名称</span>
-                  <input value={filters.name} onChange={(e) => updateFilter('name', e.target.value)} placeholder="模糊搜索" />
-                </label>
-                <label className="field">
-                  <span>地区</span>
-                  <input value={filters.region} onChange={(e) => updateFilter('region', e.target.value)} placeholder="如：北京" />
-                </label>
-                <label className="field">
-                  <span>省份</span>
-                  <input value={filters.province} onChange={(e) => updateFilter('province', e.target.value)} placeholder="如：江苏" />
-                </label>
-                <label className="field">
-                  <span>院校类型</span>
-                  <select value={filters.schoolType} onChange={(e) => updateFilter('schoolType', e.target.value)}>
-                    <option value="">全部</option>
-                    {schoolTypes.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </label>
-                <label className="field">
-                  <span>985</span>
-                  <select value={filters.is985} onChange={(e) => updateFilter('is985', e.target.value)}>
-                    <option value="">不限</option>
-                    <option value="true">是</option>
-                    <option value="false">否</option>
-                  </select>
-                </label>
-                <label className="field">
-                  <span>211</span>
-                  <select value={filters.is211} onChange={(e) => updateFilter('is211', e.target.value)}>
-                    <option value="">不限</option>
-                    <option value="true">是</option>
-                    <option value="false">否</option>
-                  </select>
-                </label>
+          <div className="admin-page-shell">
+            <form className="admin-toolbar-card admin-filter-stack" onSubmit={handleFilter}>
+              {active === 'schools' ? (
+                <div className="filter-grid">
+                  <label className="field">
+                    <span>院校名称</span>
+                    <input value={filters.name} onChange={(e) => updateFilter('name', e.target.value)} placeholder="模糊搜索" />
+                  </label>
+                  <label className="field">
+                    <span>地区</span>
+                    <input value={filters.region} onChange={(e) => updateFilter('region', e.target.value)} placeholder="如：北京" />
+                  </label>
+                  <label className="field">
+                    <span>省份</span>
+                    <input value={filters.province} onChange={(e) => updateFilter('province', e.target.value)} placeholder="如：江苏" />
+                  </label>
+                  <label className="field">
+                    <span>院校类型</span>
+                    <select value={filters.schoolType} onChange={(e) => updateFilter('schoolType', e.target.value)}>
+                      <option value="">全部</option>
+                      {schoolTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </label>
+                  <label className="field">
+                    <span>985</span>
+                    <select value={filters.is985} onChange={(e) => updateFilter('is985', e.target.value)}>
+                      <option value="">不限</option>
+                      <option value="true">是</option>
+                      <option value="false">否</option>
+                    </select>
+                  </label>
+                  <label className="field">
+                    <span>211</span>
+                    <select value={filters.is211} onChange={(e) => updateFilter('is211', e.target.value)}>
+                      <option value="">不限</option>
+                      <option value="true">是</option>
+                      <option value="false">否</option>
+                    </select>
+                  </label>
+                </div>
+              ) : (
+                <div className="filter-grid">
+                  <label className="field">
+                    <span>院校名称</span>
+                    <input value={filters.schoolName} onChange={(e) => updateFilter('schoolName', e.target.value)} placeholder="模糊搜索" />
+                  </label>
+                  <label className="field">
+                    <span>年份</span>
+                    <input value={filters.year} onChange={(e) => updateFilter('year', e.target.value)} placeholder="如：2025" />
+                  </label>
+                  <label className="field">
+                    <span>专业门类</span>
+                    <select value={filters.majorCategory} onChange={(e) => updateFilter('majorCategory', e.target.value)}>
+                      <option value="">全部</option>
+                      {majorCategories.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </label>
+                  <label className="field">
+                    <span>具体专业</span>
+                    <input value={filters.majorName} onChange={(e) => updateFilter('majorName', e.target.value)} placeholder="模糊搜索" />
+                  </label>
+                </div>
+              )}
+              <div className="admin-filter-bar">
+                <button className="btn primary" type="submit" disabled={loading}>{loading ? '查询中...' : '查询'}</button>
+                <button className="btn ghost" type="button" onClick={() => { setFilters(emptyFilters); setPage(0) }}>清空</button>
+                <span className="admin-filter-pill is-active">{activeTab?.label || '数据'}</span>
+                <span className="admin-filter-pill">共 {pageInfo.totalElements} 条</span>
               </div>
-            ) : (
-              <div className="filter-grid">
-                <label className="field">
-                  <span>院校名称</span>
-                  <input value={filters.schoolName} onChange={(e) => updateFilter('schoolName', e.target.value)} placeholder="模糊搜索" />
-                </label>
-                <label className="field">
-                  <span>年份</span>
-                  <input value={filters.year} onChange={(e) => updateFilter('year', e.target.value)} placeholder="如：2025" />
-                </label>
-                <label className="field">
-                  <span>专业门类</span>
-                  <select value={filters.majorCategory} onChange={(e) => updateFilter('majorCategory', e.target.value)}>
-                    <option value="">全部</option>
-                    {majorCategories.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </label>
-                <label className="field">
-                  <span>具体专业</span>
-                  <input value={filters.majorName} onChange={(e) => updateFilter('majorName', e.target.value)} placeholder="模糊搜索" />
-                </label>
-              </div>
-            )}
-            <div className="question-actions">
-              <button className="btn primary" type="submit" disabled={loading}>{loading ? '查询中...' : '查询'}</button>
-              <button className="btn ghost" type="button" onClick={() => { setFilters(emptyFilters); setPage(0) }}>清空</button>
-            </div>
-            {message ? <div className="muted admin-inline-message">{message}</div> : null}
-          </form>
+              {message ? <div className="admin-note-panel"><p>{message}</p></div> : null}
+            </form>
 
-          <form className="feature-card" onSubmit={createRecord}>
-            <div className="track-head">
-              <h3>{editingId ? '编辑' : '新增'}{activeTab?.label}</h3>
-              <span className="admin-status-chip is-neutral">后台维护</span>
-            </div>
-            {active === 'schools' ? renderSchoolForm(schoolForm, updateSchoolForm) : renderScoreForm(scoreForm, updateScoreForm, schools)}
-            <div className="question-actions">
-              <button className="btn primary" type="submit" disabled={loading}>保存</button>
-              {editingId ? (
-                <button
-                  className="btn ghost"
-                  type="button"
-                  onClick={() => {
-                    setEditingId(null)
-                    setSchoolForm(emptySchool)
-                    setScoreForm(emptyScore)
-                    setMessage('')
-                  }}
-                >
-                  取消编辑
-                </button>
-              ) : null}
-            </div>
-          </form>
-
-          <div className="feature-card">
-            <div className="track-head">
-              <h3>{activeTab?.label}列表</h3>
-              <span className="admin-status-chip is-neutral">共 {pageInfo.totalElements} 条</span>
-            </div>
-            {rows.length === 0 ? (
-              <p className="muted">暂无数据</p>
-            ) : (
-              <div className="admin-data-list">
-                {active === 'schools' ? rows.map((row) => renderSchoolRow(row, editRecord, deleteRecord)) : null}
-                {active === 'scores' ? rows.map((row) => renderScoreRow(row, editRecord, deleteRecord)) : null}
+            <form className="admin-form-surface" onSubmit={createRecord}>
+              <div className="track-head">
+                <h3>{editingId ? '编辑' : '新增'}{activeTab?.label}</h3>
+                <span className="admin-status-chip is-neutral">后台维护</span>
               </div>
-            )}
-            <Pagination
-              page={page + 1}
-              total={pageInfo.totalPages}
-              totalItems={pageInfo.totalElements}
-              onChange={(nextPage) => setPage(nextPage - 1)}
-            />
+              {active === 'schools' ? renderSchoolForm(schoolForm, updateSchoolForm) : renderScoreForm(scoreForm, updateScoreForm, schools)}
+              <div className="question-actions">
+                <button className="btn primary" type="submit" disabled={loading}>保存</button>
+                {editingId ? (
+                  <button
+                    className="btn ghost"
+                    type="button"
+                    onClick={() => {
+                      setEditingId(null)
+                      setSchoolForm(emptySchool)
+                      setScoreForm(emptyScore)
+                      setMessage('')
+                    }}
+                  >
+                    取消编辑
+                  </button>
+                ) : null}
+              </div>
+            </form>
+
+            <div className="admin-surface-card">
+              <div className="track-head">
+                <h3>{activeTab?.label}列表</h3>
+                <span className="admin-status-chip is-neutral">共 {pageInfo.totalElements} 条</span>
+              </div>
+              {rows.length === 0 ? (
+                <p className="muted">暂无数据</p>
+              ) : (
+                <div className="admin-record-grid">
+                  {active === 'schools' ? rows.map((row) => renderSchoolRow(row, editRecord, deleteRecord)) : null}
+                  {active === 'scores' ? rows.map((row) => renderScoreRow(row, editRecord, deleteRecord)) : null}
+                </div>
+              )}
+              <Pagination
+                page={page + 1}
+                total={pageInfo.totalPages}
+                totalItems={pageInfo.totalElements}
+                onChange={(nextPage) => setPage(nextPage - 1)}
+              />
+            </div>
           </div>
         </section>
       </main>
@@ -434,33 +437,39 @@ function renderScoreForm(form, update, schools) {
   )
 }
 
-function TextField({ label, value, onChange, type = 'text', required = false }) {
+function TextField({ label, value, onChange, type = 'text', required = false, placeholder }) {
   return (
     <label className="field">
       <span>{label}</span>
-      <input type={type} value={value || ''} onChange={(e) => onChange(e.target.value)} required={required} />
+      <input type={type} value={value || ''} onChange={(e) => onChange(e.target.value)} required={required} placeholder={placeholder} />
     </label>
   )
 }
 
 function rowActions(row, onEdit, onDelete) {
   return (
-    <div className="admin-row-actions">
+    <div className="admin-record-side">
       <span className={`admin-status-chip ${activeStatusClassMap[String(row.active !== false)] || 'is-neutral'}`}>{row.active === false ? '已停用' : '启用中'}</span>
-      <button className="btn outline small" type="button" onClick={() => onEdit(row)}>编辑</button>
-      <button className="btn outline-neutral small" type="button" onClick={() => onDelete(row.id)} disabled={row.active === false}>停用</button>
+      <div className="admin-inline-actions">
+        <button className="btn outline small" type="button" onClick={() => onEdit(row)}>编辑</button>
+        <button className="btn outline-neutral small" type="button" onClick={() => onDelete(row.id)} disabled={row.active === false}>停用</button>
+      </div>
     </div>
   )
 }
 
 function renderSchoolRow(row, onEdit, onDelete) {
   return (
-    <article className="admin-data-row" key={row.id}>
-      <div>
+    <article className="admin-record-card admin-data-row" key={row.id}>
+      <div className="admin-record-main">
         <strong>{row.name}</strong>
         <p className="muted">{row.region} {row.province} {row.schoolType}</p>
+        <div className="admin-record-meta">
+          <span>{row.is985 ? '985' : '非985'}</span>
+          <span>{row.is211 ? '211' : '非211'}</span>
+          <span>{row.isDoubleFirstClass ? '双一流' : '普通院校'}</span>
+        </div>
       </div>
-      <span>{row.is985 ? '985' : ''}{row.is211 ? ' 211' : ''}{row.isDoubleFirstClass ? ' 双一流' : ''}</span>
       {rowActions(row, onEdit, onDelete)}
     </article>
   )
@@ -468,14 +477,16 @@ function renderSchoolRow(row, onEdit, onDelete) {
 
 function renderScoreRow(row, onEdit, onDelete) {
   return (
-    <article className="admin-data-row" key={row.id}>
-      <div>
+    <article className="admin-record-card admin-data-row" key={row.id}>
+      <div className="admin-record-main">
         <strong>{row.schoolName}</strong>
         <p className="muted">{row.majorName || row.majorCategory}</p>
+        <div className="admin-record-meta">
+          <span>年份：{row.year}</span>
+          <span>总分线：{row.totalScoreLine}</span>
+          <span>{row.admissionRatio ? `${row.admissionRatio}:1` : '报录比待补充'}</span>
+        </div>
       </div>
-      <span>{row.year}</span>
-      <span>{row.totalScoreLine}</span>
-      <span>{row.admissionRatio ? row.admissionRatio + ':1' : '-'}</span>
       {rowActions(row, onEdit, onDelete)}
     </article>
   )

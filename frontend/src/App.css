@@ -2261,8 +2261,8 @@
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 14px 16px;
-  background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
-  box-shadow: 0 12px 28px rgba(16, 34, 38, 0.05);
+  background: var(--admin-surface-alt);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--page-bg) 12%, transparent);
 }
 
 .admin-data-row strong {
@@ -2330,15 +2330,64 @@
   border-radius: 22px;
   padding: 20px 22px;
   margin-bottom: 1.25rem;
-  background: color-mix(in srgb, var(--surface-strong) 90%, transparent);
+  background: var(--admin-surface);
   box-shadow: var(--shadow);
 }
 
+.admin-page-shell {
+  display: grid;
+  gap: 28px;
+}
+
+.admin-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.admin-summary-card {
+  display: grid;
+  gap: 8px;
+  min-height: 140px;
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--primary) 10%, var(--line));
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, var(--admin-summary-glow), transparent 48%),
+    var(--admin-surface);
+  box-shadow: var(--shadow);
+}
+
+.admin-summary-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-summary-value {
+  font-size: clamp(1.8rem, 2.4vw, 2.4rem);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.admin-page-shell .admin-surface-card,
+.admin-form-surface,
+.admin-toolbar-card,
+.admin-record-card {
+  background: var(--admin-surface);
+}
+
 .admin-toolbar-card {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  gap: 16px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, var(--admin-toolbar-surface), var(--admin-surface));
+  box-shadow: var(--shadow);
 }
 
 .admin-inline-actions {
@@ -2358,6 +2407,42 @@
   font-size: 12px;
   font-weight: 700;
   line-height: 1.2;
+}
+
+.admin-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-filter-pill {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--admin-surface-alt) 92%, transparent);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.admin-filter-pill:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--line));
+}
+
+.admin-filter-pill.is-active {
+  background: var(--admin-filter-active);
+  border-color: var(--admin-filter-active-border);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 14%, transparent);
 }
 
 .admin-status-chip.is-success {
@@ -2384,8 +2469,54 @@
   color: var(--muted);
 }
 
+.admin-capability-grid,
+.admin-record-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.admin-record-card {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
+
+.admin-record-main {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-record-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.admin-record-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-form-surface {
+  display: grid;
+  gap: 18px;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
+
 .admin-selected-row td {
-  background: color-mix(in srgb, var(--accent-soft) 52%, var(--surface-strong));
+  background: var(--admin-record-highlight);
 }
 
 .admin-empty-row {
@@ -2537,8 +2668,8 @@
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 13px;
-  background: #fff;
-  color: var(--text);
+  background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+  color: var(--ink);
 }
 
 .auth-tip {
@@ -2971,6 +3102,12 @@
   }
 
   .grid-two {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-summary-grid,
+  .admin-capability-grid,
+  .admin-record-grid {
     grid-template-columns: 1fr;
   }
 
@@ -3852,6 +3989,34 @@
 
   .post-editor-render-block::before {
     display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-page-shell {
+    gap: 22px;
+  }
+
+  .admin-toolbar-card,
+  .admin-form-surface,
+  .admin-summary-card,
+  .admin-record-card {
+    padding: 18px;
+  }
+
+  .admin-filter-bar {
+    gap: 8px;
+  }
+
+  .admin-filter-pill {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-record-side {
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-direction: column;
   }
 }
 

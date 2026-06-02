@@ -7,6 +7,8 @@ const categoryManagementPageSource = readFileSync(resolve(import.meta.dirname, '
 const employmentManagementPageSource = readFileSync(resolve(import.meta.dirname, './pages/admin/EmploymentManagementPage.jsx'), 'utf8')
 const adminPageSource = readFileSync(resolve(import.meta.dirname, './pages/admin/AdminPage.jsx'), 'utf8')
 const reviewPageSource = readFileSync(resolve(import.meta.dirname, './pages/admin/ReviewPage.jsx'), 'utf8')
+const userManagementPageSource = readFileSync(resolve(import.meta.dirname, './pages/admin/UserManagementPage.jsx'), 'utf8')
+const reportPageSource = readFileSync(resolve(import.meta.dirname, './pages/admin/ReportPage.jsx'), 'utf8')
 const materialReviewPageSource = readFileSync(resolve(import.meta.dirname, './pages/admin/AdminMaterialReviewPage.jsx'), 'utf8')
 const adminKaoyanDataPageSource = readFileSync(resolve(import.meta.dirname, './pages/admin/AdminKaoyanDataPage.jsx'), 'utf8')
 const kaogongDataPageSource = readFileSync(resolve(import.meta.dirname, './pages/admin/KaogongDataPage.jsx'), 'utf8')
@@ -47,6 +49,21 @@ describe('admin theme styles', () => {
     expect(adminUtilitiesSection).not.toContain('background: #fef2f2')
   })
 
+  it('defines admin console primitives on semantic tokens only', () => {
+    const adminUtilitiesSection = getSection('.admin-surface-card {', '.data-table {')
+
+    expect(adminUtilitiesSection).toContain('.admin-page-shell')
+    expect(adminUtilitiesSection).toContain('.admin-summary-grid')
+    expect(adminUtilitiesSection).toContain('.admin-filter-bar')
+    expect(adminUtilitiesSection).toContain('.admin-filter-pill')
+    expect(adminUtilitiesSection).toContain('.admin-record-card')
+    expect(adminUtilitiesSection).toContain('var(--admin-surface)')
+    expect(adminUtilitiesSection).toContain('var(--admin-toolbar-surface)')
+    expect(adminUtilitiesSection).toContain('var(--admin-filter-active)')
+    expect(adminUtilitiesSection).not.toContain('background: #fff')
+    expect(adminUtilitiesSection).not.toContain('background: rgba(15, 118, 110, 0.08)')
+  })
+
   it('keeps remaining admin management screens on shared admin utility classes', () => {
     expect(categoryManagementPageSource).toContain('admin-surface-card')
     expect(categoryManagementPageSource).toContain('admin-status-chip')
@@ -65,5 +82,34 @@ describe('admin theme styles', () => {
     expect(materialReviewPageSource).not.toContain('tag subtle')
     expect(adminKaoyanDataPageSource).not.toContain('tag subtle')
     expect(kaogongDataPageSource).not.toContain('tag subtle')
+  })
+
+  it('keeps the main admin pages off legacy frontend filter and card patterns', () => {
+    expect(adminPageSource).toContain('admin-summary-grid')
+    expect(adminPageSource).toContain('admin-capability-grid')
+    expect(adminPageSource).not.toContain('feature-card soft')
+    expect(adminPageSource).not.toContain('track-card')
+
+    expect(reviewPageSource).toContain('admin-filter-bar')
+    expect(reviewPageSource).toContain('admin-record-card')
+    expect(reviewPageSource).not.toContain('tag tag-btn')
+    expect(reviewPageSource).not.toContain('track-card')
+
+    expect(userManagementPageSource).toContain('admin-filter-bar')
+    expect(userManagementPageSource).toContain('admin-summary-grid')
+    expect(userManagementPageSource).toContain('admin-record-card')
+    expect(userManagementPageSource).not.toContain('tag tag-btn')
+
+    expect(reportPageSource).toContain('admin-filter-bar')
+    expect(reportPageSource).toContain('admin-record-card')
+    expect(reportPageSource).not.toContain('tag tag-btn')
+
+    expect(adminKaoyanDataPageSource).toContain('admin-toolbar-card')
+    expect(adminKaoyanDataPageSource).toContain('admin-form-surface')
+    expect(adminKaoyanDataPageSource).not.toContain('feature-card calendar-filter-panel')
+
+    expect(kaogongDataPageSource).toContain('admin-toolbar-card')
+    expect(kaogongDataPageSource).toContain('admin-form-surface')
+    expect(kaogongDataPageSource).not.toContain('feature-card calendar-filter-panel')
   })
 })
