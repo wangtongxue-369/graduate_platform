@@ -12,10 +12,10 @@ const statusLabelMap = {
   REJECTED: '已驳回',
 }
 
-const statusColors = {
-  PENDING: '#d97706',
-  RESOLVED: '#0f766e',
-  REJECTED: '#6b7280',
+const statusClassMap = {
+  PENDING: 'is-warning',
+  RESOLVED: 'is-success',
+  REJECTED: 'is-neutral',
 }
 
 const reportTypeLabelMap = {
@@ -82,14 +82,13 @@ export default function ReportPage() {
 
           <div className="feature-card">
             <div className="card-title">举报类型</div>
-            <div className="tag-row" style={{ marginBottom: 12 }}>
+            <div className="tag-row">
               {['POST', 'COMMENT'].map((type) => (
                 <button
                   key={type}
                   type="button"
                   className={`tag tag-btn ${reportType === type ? 'selected' : ''}`}
                   onClick={() => setReportType(type)}
-                  style={reportType === type ? { background: '#0f766e' } : undefined}
                 >
                   {reportTypeLabelMap[type]}
                 </button>
@@ -104,7 +103,6 @@ export default function ReportPage() {
                   type="button"
                   className={`tag tag-btn ${filterStatus === s ? 'selected' : ''}`}
                   onClick={() => setFilterStatus(s)}
-                  style={filterStatus === s ? { background: statusColors[s] } : undefined}
                 >
                   {statusLabelMap[s]}
                 </button>
@@ -128,10 +126,7 @@ export default function ReportPage() {
                   <article className="track-card" key={item.id}>
                     <div className="track-head">
                       <h3>{reportTypeLabelMap[reportType]} #{item.id}</h3>
-                      <span
-                        className="tag subtle"
-                        style={{ background: `${statusColors[item.status]}18`, color: statusColors[item.status] }}
-                      >
+                      <span className={`admin-status-chip ${statusClassMap[item.status] || 'is-neutral'}`}>
                         {statusLabelMap[item.status] || item.status}
                       </span>
                     </div>
@@ -158,7 +153,7 @@ export default function ReportPage() {
                     </ul>
 
                     {item.status === 'PENDING' ? (
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div className="admin-inline-actions">
                         <button
                           className="btn primary small"
                           type="button"

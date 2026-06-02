@@ -40,13 +40,13 @@ export default function AdminPage() {
                   <div className="mini-label">注册用户</div>
                 </div>
                 <div className="mini-card">
-                  <div className="mini-value" style={{ color: stats?.pendingPosts > 0 ? '#d97706' : undefined }}>
+                  <div className={`mini-value admin-stat-value ${stats?.pendingPosts > 0 ? 'is-warning' : ''}`}>
                     {stats?.pendingPosts ?? '-'}
                   </div>
                   <div className="mini-label">待审核帖子</div>
                 </div>
                 <div className="mini-card">
-                  <div className="mini-value" style={{ color: stats?.pendingReports > 0 ? '#b91c1c' : undefined }}>
+                  <div className={`mini-value admin-stat-value ${stats?.pendingReports > 0 ? 'is-danger' : ''}`}>
                     {stats?.pendingReports ?? '-'}
                   </div>
                   <div className="mini-label">待处理举报</div>
@@ -76,7 +76,7 @@ export default function AdminPage() {
             <div className="track-card">
               <div className="track-head">
                 <h3>内容审核</h3>
-                <span className="tag subtle">UC-26</span>
+                <span className="admin-status-chip is-neutral">UC-26</span>
               </div>
               <p className="muted">审核待处理帖子：通过、驳回或下架，支持按状态筛选和操作留痕。</p>
               <Link className="btn primary small" to="/admin/review">进入审核</Link>
@@ -84,7 +84,7 @@ export default function AdminPage() {
             <div className="track-card">
               <div className="track-head">
                 <h3>用户管理</h3>
-                <span className="tag subtle">UC-25</span>
+                <span className="admin-status-chip is-neutral">UC-25</span>
               </div>
               <p className="muted">查看用户列表，按目标方向和状态筛选，支持禁言、封禁和解锁。</p>
               <Link className="btn primary small" to="/admin/users">管理用户</Link>
@@ -92,7 +92,7 @@ export default function AdminPage() {
             <div className="track-card">
               <div className="track-head">
                 <h3>举报处理</h3>
-                <span className="tag subtle">UC-30</span>
+                <span className="admin-status-chip is-neutral">UC-30</span>
               </div>
               <p className="muted">查看举报列表，支持举报成立后下架帖子或驳回举报。</p>
               <Link className="btn primary small" to="/admin/reports">处理举报</Link>
@@ -100,7 +100,7 @@ export default function AdminPage() {
             <div className="track-card">
               <div className="track-head">
                 <h3>社区分类管理</h3>
-                <span className="tag subtle">SRS</span>
+                <span className="admin-status-chip is-neutral">SRS</span>
               </div>
               <p className="muted">维护社区分类的新增、启停、排序和合并，控制前台分类筛选展示。</p>
               <Link className="btn primary small" to="/admin/categories">管理分类</Link>
@@ -108,7 +108,7 @@ export default function AdminPage() {
             <div className="track-card">
               <div className="track-head">
                 <h3>Employment source data</h3>
-                <span className="tag subtle">JOB</span>
+                <span className="admin-status-chip is-neutral">JOB</span>
               </div>
               <p className="muted">Create career fairs and job postings, then trigger matched in-app notifications.</p>
               <Link className="btn primary small" to="/admin/employment">Manage employment</Link>
@@ -116,7 +116,7 @@ export default function AdminPage() {
             <div className="track-card">
               <div className="track-head">
                 <h3>考公数据维护</h3>
-                <span className="tag subtle">UC-32</span>
+                <span className="admin-status-chip is-neutral">UC-32</span>
               </div>
               <p className="muted">维护岗位、进面分数线和考试节点，支持筛选、后端分页与新增数据。</p>
               <Link className="btn primary small" to="/admin/kaogong-data">维护考公数据</Link>
@@ -124,7 +124,7 @@ export default function AdminPage() {
             <div className="track-card">
               <div className="track-head">
                 <h3>题库管理</h3>
-                <span className="tag subtle">UC-28</span>
+                <span className="admin-status-chip is-neutral">UC-28</span>
               </div>
               <p className="muted">新增、修改、删除题库与试题，预留批量导入接口。</p>
               <Link className="btn primary small" to="/admin/question-banks">进入管理</Link>

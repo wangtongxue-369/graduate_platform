@@ -10,10 +10,6 @@ const statusLabelMap = {
   normal: '正常', muted: '禁言', upload_limited: '限制上传',
   temporary_locked: '临时锁定', banned: '封禁',
 }
-const statusColors = {
-  normal: '#0f766e', muted: '#d97706', upload_limited: '#d97706',
-  temporary_locked: '#ea580c', banned: '#b91c1c',
-}
 
 const targets = [
   { value: '', label: '全部方向' },
@@ -24,10 +20,18 @@ const targets = [
 ]
 
 const actions = [
-  { status: 'normal', label: '恢复正常', color: '#0f766e' },
-  { status: 'muted', label: '禁言', color: '#d97706' },
-  { status: 'banned', label: '封禁', color: '#b91c1c' },
+  { status: 'normal', label: '恢复正常' },
+  { status: 'muted', label: '禁言' },
+  { status: 'banned', label: '封禁' },
 ]
+
+const statusClassMap = {
+  normal: 'is-success',
+  muted: 'is-warning',
+  upload_limited: 'is-warning',
+  temporary_locked: 'is-warning',
+  banned: 'is-danger',
+}
 
 export default function UserManagementPage() {
   const { user, token, isAuthed } = useAuth()
@@ -94,7 +98,7 @@ export default function UserManagementPage() {
                   </button>
                 ))}
               </div>
-              <div className="tag-row" style={{ marginTop: 12 }}>
+              <div className="tag-row">
                 {['', 'normal', 'muted', 'upload_limited', 'temporary_locked', 'banned'].map(status => (
                   <button
                     key={status || 'all'}
@@ -130,7 +134,7 @@ export default function UserManagementPage() {
                 <article className="track-card" key={u.id}>
                   <div className="track-head">
                     <h3>{u.name}</h3>
-                    <span className="tag subtle" style={{ background: (statusColors[u.status] || '#6b7280') + '18', color: statusColors[u.status] }}>
+                    <span className={`admin-status-chip ${statusClassMap[u.status] || 'is-neutral'}`}>
                       {statusLabelMap[u.status] || u.status}
                     </span>
                   </div>
@@ -143,14 +147,13 @@ export default function UserManagementPage() {
                     <li>注册: {u.createdAt?.replace('T', ' ').slice(0, 10)}</li>
                   </ul>
                   {u.role !== 'admin' && (
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <div className="admin-inline-actions">
                       {actions.map(a => (
                         <button
                           key={a.status}
                           className={`tag tag-btn ${u.status === a.status ? 'selected' : ''}`}
                           disabled={acting === u.id || u.status === a.status}
                           onClick={() => handleStatusChange(u.id, a.status)}
-                          style={u.status === a.status ? { background: a.color } : undefined}
                         >
                           {a.label}
                         </button>

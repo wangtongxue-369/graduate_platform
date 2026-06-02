@@ -66,6 +66,11 @@ const majorCategories = [
 
 const schoolTypes = ['综合', '理工', '师范', '农林', '医药', '财经', '政法', '民族', '体育', '艺术', '军事', '其他']
 
+const activeStatusClassMap = {
+  true: 'is-success',
+  false: 'is-neutral',
+}
+
 export default function AdminKaoyanDataPage() {
   const { user, token, isAuthed } = useAuth()
   const [active, setActive] = useState('schools')
@@ -305,13 +310,13 @@ export default function AdminKaoyanDataPage() {
               <button className="btn primary" type="submit" disabled={loading}>{loading ? '查询中...' : '查询'}</button>
               <button className="btn ghost" type="button" onClick={() => { setFilters(emptyFilters); setPage(0) }}>清空</button>
             </div>
-            {message ? <div className="muted" style={{ marginTop: '8px' }}>{message}</div> : null}
+            {message ? <div className="muted admin-inline-message">{message}</div> : null}
           </form>
 
           <form className="feature-card" onSubmit={createRecord}>
             <div className="track-head">
               <h3>{editingId ? '编辑' : '新增'}{activeTab?.label}</h3>
-              <span className="tag subtle">后台维护</span>
+              <span className="admin-status-chip is-neutral">后台维护</span>
             </div>
             {active === 'schools' ? renderSchoolForm(schoolForm, updateSchoolForm) : renderScoreForm(scoreForm, updateScoreForm, schools)}
             <div className="question-actions">
@@ -336,7 +341,7 @@ export default function AdminKaoyanDataPage() {
           <div className="feature-card">
             <div className="track-head">
               <h3>{activeTab?.label}列表</h3>
-              <span className="tag subtle">共 {pageInfo.totalElements} 条</span>
+              <span className="admin-status-chip is-neutral">共 {pageInfo.totalElements} 条</span>
             </div>
             {rows.length === 0 ? (
               <p className="muted">暂无数据</p>
@@ -367,18 +372,18 @@ function renderSchoolForm(form, update) {
       <TextField label="地区" value={form.region} onChange={(value) => update('region', value)} placeholder="如：华北" />
       <TextField label="省份" value={form.province} onChange={(value) => update('province', value)} placeholder="如：北京" />
       <TextField label="院校类型" value={form.schoolType} onChange={(value) => update('schoolType', value)} placeholder="如：综合/理工/师范" />
-      <label className="field" style={{ flexBasis: '100%' }}>
+      <label className="field admin-field-wide">
         <span>院校层次</span>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '4px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div className="admin-inline-checkbox-group">
+          <label className="admin-inline-checkbox">
             <input type="checkbox" checked={form.is985} onChange={(e) => update('is985', e.target.checked)} />
             <span>985</span>
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <label className="admin-inline-checkbox">
             <input type="checkbox" checked={form.is211} onChange={(e) => update('is211', e.target.checked)} />
             <span>211</span>
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <label className="admin-inline-checkbox">
             <input type="checkbox" checked={form.isDoubleFirstClass} onChange={(e) => update('isDoubleFirstClass', e.target.checked)} />
             <span>双一流</span>
           </label>
@@ -441,9 +446,9 @@ function TextField({ label, value, onChange, type = 'text', required = false }) 
 function rowActions(row, onEdit, onDelete) {
   return (
     <div className="admin-row-actions">
-      <span className={`tag subtle ${row.active === false ? 'danger-tag' : ''}`}>{row.active === false ? '已停用' : '启用中'}</span>
+      <span className={`admin-status-chip ${activeStatusClassMap[String(row.active !== false)] || 'is-neutral'}`}>{row.active === false ? '已停用' : '启用中'}</span>
       <button className="btn outline small" type="button" onClick={() => onEdit(row)}>编辑</button>
-      <button className="btn ghost small" type="button" onClick={() => onDelete(row.id)} disabled={row.active === false}>停用</button>
+      <button className="btn outline-neutral small" type="button" onClick={() => onDelete(row.id)} disabled={row.active === false}>停用</button>
     </div>
   )
 }

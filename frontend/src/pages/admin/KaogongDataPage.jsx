@@ -71,6 +71,11 @@ const emptyFilters = {
 
 const pageSize = 8
 
+const activeStatusClassMap = {
+  true: 'is-success',
+  false: 'is-neutral',
+}
+
 export default function KaogongDataPage() {
   const { user, token, isAuthed } = useAuth()
   const [active, setActive] = useState('jobs')
@@ -274,7 +279,7 @@ export default function KaogongDataPage() {
           <form className="feature-card" onSubmit={createRecord}>
             <div className="track-head">
               <h3>{editingId ? '编辑' : '新增'}{activeTab?.label}</h3>
-              <span className="tag subtle">后台维护</span>
+              <span className="admin-status-chip is-neutral">后台维护</span>
             </div>
             {active === 'jobs' ? renderJobForm(jobForm, (key, value) => updateForm(setJobForm, key, value)) : null}
             {active === 'scores' ? renderScoreForm(scoreForm, (key, value) => updateForm(setScoreForm, key, value)) : null}
@@ -302,7 +307,7 @@ export default function KaogongDataPage() {
           <div className="feature-card">
             <div className="track-head">
               <h3>{activeTab?.label}列表</h3>
-              <span className="tag subtle">共 {pageInfo.totalElements} 条</span>
+              <span className="admin-status-chip is-neutral">共 {pageInfo.totalElements} 条</span>
             </div>
             {rows.length === 0 ? (
               <p className="muted">暂无数据</p>
@@ -401,9 +406,9 @@ function normalizeDates(row) {
 function rowActions(row, onEdit, onDelete) {
   return (
     <div className="admin-row-actions">
-      <span className={`tag subtle ${row.active === false ? 'danger-tag' : ''}`}>{row.active === false ? '已停用' : '启用中'}</span>
+      <span className={`admin-status-chip ${activeStatusClassMap[String(row.active !== false)] || 'is-neutral'}`}>{row.active === false ? '已停用' : '启用中'}</span>
       <button className="btn outline small" type="button" onClick={() => onEdit(row)}>编辑</button>
-      <button className="btn ghost small" type="button" onClick={() => onDelete(row.id)} disabled={row.active === false}>停用</button>
+      <button className="btn outline-neutral small" type="button" onClick={() => onDelete(row.id)} disabled={row.active === false}>停用</button>
     </div>
   )
 }

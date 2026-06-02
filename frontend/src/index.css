@@ -36,6 +36,12 @@
   --nav-surface: rgba(244, 249, 250, 0.78);
   --hero-glow-a: rgba(15, 118, 110, 0.09);
   --hero-glow-b: rgba(37, 99, 235, 0.08);
+  --code-surface: #11201e;
+  --code-surface-soft: #17302d;
+  --code-line: rgba(236, 254, 255, 0.08);
+  --code-line-strong: rgba(236, 254, 255, 0.18);
+  --code-ink: #ecfeff;
+  --code-muted: rgba(236, 254, 255, 0.72);
   --font-scale: 1;
   --bg: var(--page-bg);
 
@@ -84,6 +90,12 @@
   --nav-surface: rgba(9, 20, 23, 0.78);
   --hero-glow-a: rgba(52, 211, 153, 0.12);
   --hero-glow-b: rgba(96, 165, 250, 0.1);
+  --code-surface: #0d1a1e;
+  --code-surface-soft: #14282e;
+  --code-line: rgba(224, 242, 247, 0.1);
+  --code-line-strong: rgba(224, 242, 247, 0.18);
+  --code-ink: #ecfeff;
+  --code-muted: rgba(224, 242, 247, 0.72);
   --bg: var(--page-bg);
 }
 

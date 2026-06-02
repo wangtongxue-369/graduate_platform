@@ -10,8 +10,13 @@ import '../../App.css'
 const statusLabelMap = {
   PENDING: '待审核', PUBLISHED: '已发布', REJECTED: '驳回', OFFLINE: '已下架', DRAFT: '草稿',
 }
-const statusColors = {
-  PENDING: '#d97706', PUBLISHED: '#0f766e', REJECTED: '#b91c1c', OFFLINE: '#6b7280', DRAFT: '#9ca3af',
+
+const statusClassMap = {
+  PENDING: 'is-warning',
+  PUBLISHED: 'is-success',
+  REJECTED: 'is-danger',
+  OFFLINE: 'is-neutral',
+  DRAFT: 'is-neutral',
 }
 
 export default function ReviewPage() {
@@ -83,7 +88,6 @@ export default function ReviewPage() {
                   type="button"
                   className={`tag tag-btn ${filterStatus === s ? 'selected' : ''}`}
                   onClick={() => setFilterStatus(s)}
-                  style={filterStatus === s ? { background: statusColors[s] } : undefined}
                 >
                   {statusLabelMap[s]} ({s})
                 </button>
@@ -103,7 +107,7 @@ export default function ReviewPage() {
                 <article className="track-card" key={post.id}>
                   <div className="track-head">
                     <h3>{post.title}</h3>
-                    <span className="tag subtle" style={{ background: statusColors[post.status] + '18', color: statusColors[post.status] }}>
+                    <span className={`admin-status-chip ${statusClassMap[post.status] || 'is-neutral'}`}>
                       {statusLabelMap[post.status]}
                     </span>
                   </div>
@@ -111,10 +115,10 @@ export default function ReviewPage() {
                     <MarkdownContent content={post.content || ''} />
                   </div>
                   <div className="tag-row">
-                    <span className="tag subtle">{post.category?.name}</span>
-                    <span className="tag subtle">作者: {post.authorName || post.authorId}</span>
+                    <span className="admin-status-chip is-neutral">{post.category?.name}</span>
+                    <span className="admin-status-chip is-neutral">作者: {post.authorName || post.authorId}</span>
                     {post.tags?.split(',').filter(Boolean).map(t => (
-                      <span className="tag subtle" key={t}>#{t.trim()}</span>
+                      <span className="admin-status-chip is-neutral" key={t}>#{t.trim()}</span>
                     ))}
                   </div>
                   <div className="metric-row">
@@ -123,12 +127,12 @@ export default function ReviewPage() {
                     <span>举报{post.reportCount}</span>
                   </div>
                   {post.reviewReason ? <div className="muted">处理原因：{post.reviewReason}</div> : null}
-                  <div className="muted" style={{ fontSize: 12 }}>
+                  <div className="muted small">
                     {post.createdAt?.replace('T', ' ').slice(0, 16)}
                   </div>
 
                   {post.status === 'PENDING' && (
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div className="admin-inline-actions">
                       <button
                         className="btn primary small"
                         disabled={acting === post.id}
@@ -137,10 +141,9 @@ export default function ReviewPage() {
                         通过
                       </button>
                       <button
-                        className="btn outline small"
+                        className="btn outline-danger small"
                         disabled={acting === post.id}
                         onClick={() => handleAction(post.id, 'REJECT')}
-                        style={{ color: '#b91c1c', borderColor: '#b91c1c' }}
                       >
                         驳回
                       </button>
@@ -148,10 +151,9 @@ export default function ReviewPage() {
                   )}
                   {post.status === 'PUBLISHED' && (
                     <button
-                      className="btn outline small"
+                      className="btn outline-neutral small"
                       disabled={acting === post.id}
                       onClick={() => handleAction(post.id, 'OFFLINE')}
-                      style={{ color: '#6b7280', borderColor: '#6b7280' }}
                     >
                       下架
                     </button>

@@ -153,10 +153,10 @@ export default function CategoryManagementPage() {
 
         <section className="section">
           <div className="grid-two">
-            <form className="feature-card" onSubmit={saveCategory}>
+            <form className="admin-surface-card" onSubmit={saveCategory}>
               <div className="track-head">
                 <h3>{editingId ? '编辑分类' : '新增分类'}</h3>
-                <span className="tag subtle">{activeCount} 个启用</span>
+                <span className="admin-status-chip is-success">{activeCount} 个启用</span>
               </div>
               <div className="filter-grid">
                 <label className="field">
@@ -212,10 +212,10 @@ export default function CategoryManagementPage() {
               </div>
             </form>
 
-            <form className="feature-card soft" onSubmit={mergeCategory}>
+            <form className="admin-surface-card" onSubmit={mergeCategory}>
               <div className="track-head">
                 <h3>分类合并</h3>
-                <span className="tag subtle">迁移帖子</span>
+                <span className="admin-status-chip is-warning">迁移帖子</span>
               </div>
               <label className="field">
                 <span>源分类</span>
@@ -242,7 +242,7 @@ export default function CategoryManagementPage() {
         </section>
 
         <section className="section">
-          <div className="feature-card">
+          <div className="admin-surface-card">
             <div className="track-head">
               <h3>分类列表</h3>
               <button className="btn ghost small" type="button" onClick={loadCategories} disabled={loading}>刷新</button>
@@ -257,16 +257,18 @@ export default function CategoryManagementPage() {
                       <strong>{row.name}</strong>
                       <p className="muted">{row.description || '暂无说明'}</p>
                     </div>
-                    <span className="tag subtle">{row.code}</span>
+                    <span className="admin-status-chip is-neutral">{row.code}</span>
                     <span>排序 {row.sortOrder ?? 0}</span>
                     <div className="admin-row-actions">
-                      <span className={`tag subtle ${row.active === false ? 'danger-tag' : ''}`}>
+                      <span className={`admin-status-chip ${row.active === false ? 'is-danger' : 'is-success'}`}>
                         {row.active === false ? '停用' : '启用'}
                       </span>
-                      <button className="btn outline small" type="button" onClick={() => startEdit(row)}>编辑</button>
-                      <button className="btn ghost small" type="button" onClick={() => toggleCategory(row)}>
+                      <div className="admin-inline-actions">
+                        <button className="btn outline small" type="button" onClick={() => startEdit(row)}>编辑</button>
+                        <button className="btn ghost small" type="button" onClick={() => toggleCategory(row)}>
                         {row.active === false ? '启用' : '停用'}
-                      </button>
+                        </button>
+                      </div>
                     </div>
                   </article>
                 ))}

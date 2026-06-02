@@ -6,6 +6,11 @@ import { adminQuestionBankApi } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import '../../App.css'
 
+const questionStatusClassMap = {
+  true: 'is-success',
+  false: 'is-neutral',
+}
+
 export default function AdminQuestionsPage() {
   const { bankId } = useParams()
   const { user, token, isAuthed } = useAuth()
@@ -203,31 +208,31 @@ export default function AdminQuestionsPage() {
             {error && <div className="error-text">{error}</div>}
           </div>
 
-          <div style={{ marginBottom: '1rem' }}>
+          <div className="admin-toolbar">
             <button className="btn primary" type="button" onClick={openCreate}>新建题目</button>
-            <button className="btn outline" type="button" onClick={() => { setShowBatch(!showBatch); setBatchResult(null) }} style={{ marginLeft: '0.5rem' }}>批量导入</button>
-            <Link className="btn outline" to="/admin/question-banks" style={{ marginLeft: '0.5rem' }}>返回题库列表</Link>
+            <button className="btn outline" type="button" onClick={() => { setShowBatch(!showBatch); setBatchResult(null) }}>批量导入</button>
+            <Link className="btn outline" to="/admin/question-banks">返回题库列表</Link>
           </div>
 
           {showBatch && (
-            <div className="card" style={{ marginBottom: '1.5rem', padding: '1.25rem' }}>
-              <h3 style={{ marginBottom: '0.5rem' }}>批量导入题目</h3>
-              <p className="muted" style={{ marginBottom: '1rem' }}>粘贴 JSON 数组，每项包含 stem(answer 必填)、optionsJson、analysis、chapter、questionType、difficulty、year 等字段。</p>
+            <div className="admin-surface-card">
+              <h3>批量导入题目</h3>
+              <p className="muted">粘贴 JSON 数组，每项包含 stem(answer 必填)、optionsJson、analysis、chapter、questionType、difficulty、year 等字段。</p>
               <textarea
                 rows={10} value={batchJson}
+                className="admin-json-textarea"
                 placeholder={'[\n  {"stem": "中国的首都是？", "optionsJson": "[\"A. 北京\",\"B. 上海\",\"C. 广州\",\"D. 深圳\"]", "answer": "A", "chapter": "地理", "questionType": "single", "difficulty": "easy"}\n]'}
                 onChange={(e) => setBatchJson(e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--line)', borderRadius: '6px', fontSize: '13px', fontFamily: 'monospace' }}
               />
-              <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <div className="admin-inline-actions">
                 <button className="btn primary" type="button" onClick={handleBatchImport}>开始导入</button>
                 <button className="btn outline" type="button" onClick={() => { setBatchJson(''); setBatchResult(null) }}>清空</button>
               </div>
               {batchResult && (
-                <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(15,118,110,0.06)', borderRadius: '6px' }}>
+                <div className="admin-note-panel">
                   <p>共 {batchResult.total} 条，成功 <strong>{batchResult.created}</strong> 条，失败 {batchResult.failed} 条</p>
                   {batchResult.errors && batchResult.errors.length > 0 && (
-                    <ul style={{ marginTop: '0.5rem', fontSize: '13px', color: '#b91c1c' }}>
+                    <ul className="admin-note-errors">
                       {batchResult.errors.map((e, i) => (
                         <li key={i}>第 {e.index} 条 (stem: {e.stem}) — {e.error}</li>
                       ))}
@@ -239,7 +244,7 @@ export default function AdminQuestionsPage() {
           )}
 
           {selectedIds.size > 0 && (
-            <div className="card" style={{ marginBottom: '1rem', padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div className="admin-surface-card admin-toolbar-card">
               <span>已选择 <strong>{selectedIds.size}</strong> 道题目</span>
               <button className="btn outline small" type="button" onClick={clearSelection}>清除选择</button>
               <button className="btn primary small" type="button" onClick={() => { setShowBatchUpdate(!showBatchUpdate); setBatchOpResult(null) }}>
@@ -249,8 +254,8 @@ export default function AdminQuestionsPage() {
           )}
 
           {showBatchUpdate && selectedIds.size > 0 && (
-            <div className="card" style={{ marginBottom: '1.5rem', padding: '1.25rem' }}>
-              <h3 style={{ marginBottom: '0.75rem' }}>批量更新题目（{selectedIds.size} 道）</h3>
+            <div className="admin-surface-card">
+              <h3>批量更新题目（{selectedIds.size} 道）</h3>
               <div className="form-row">
                 <label>操作类型</label>
                 <select value={batchUpdateForm.type} onChange={(e) => setBatchUpdateForm({ type: e.target.value, value: '' })}>
@@ -274,18 +279,18 @@ export default function AdminQuestionsPage() {
                     <option value="hard">困难</option>
                   </select>
                 ) : (
-                  <input type="text" value={batchUpdateForm.value} onChange={(e) => setBatchUpdateForm({ ...batchUpdateForm, value: e.target.value })} placeholder="输入章节名称" />
+                    <input type="text" value={batchUpdateForm.value} onChange={(e) => setBatchUpdateForm({ ...batchUpdateForm, value: e.target.value })} placeholder="输入章节名称" />
                 )}
               </div>
-              <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <div className="admin-inline-actions">
                 <button className="btn primary" type="button" onClick={handleBatchUpdate}>执行批量更新</button>
                 <button className="btn outline" type="button" onClick={() => setShowBatchUpdate(false)}>取消</button>
               </div>
               {batchOpResult && (
-                <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'rgba(15,118,110,0.06)', borderRadius: '6px' }}>
+                <div className="admin-note-panel">
                   <p>共 {batchOpResult.total} 条，成功 <strong>{batchOpResult.updated}</strong> 条，失败 {batchOpResult.failed} 条</p>
                   {batchOpResult.errors && batchOpResult.errors.length > 0 && (
-                    <ul style={{ marginTop: '0.5rem', fontSize: '13px', color: '#b91c1c' }}>
+                    <ul className="admin-note-errors">
                       {batchOpResult.errors.map((e, i) => (
                         <li key={i}>ID {e.id} — {e.error}</li>
                       ))}
@@ -297,8 +302,8 @@ export default function AdminQuestionsPage() {
           )}
 
           {showForm && (
-            <div className="card" style={{ marginBottom: '1.5rem', padding: '1.25rem' }}>
-              <h3 style={{ marginBottom: '1rem' }}>{editQuestion ? '编辑题目' : '新建题目'}</h3>
+            <div className="admin-surface-card">
+              <h3>{editQuestion ? '编辑题目' : '新建题目'}</h3>
               <form onSubmit={handleSubmit}>
                 <div className="form-row">
                   <label>题干 *</label>
@@ -314,15 +319,17 @@ export default function AdminQuestionsPage() {
                     onChange={(e) => setForm({ ...form, optionsJson: e.target.value })}
                   />
                 </div>
-                <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
+                <div className="admin-form-grid two-columns">
+                  <div className="admin-form-cell">
                     <label>答案 *</label>
                     <input
-                      type="text" required value={form.answer}
+                      type="text"
+                      required
+                      value={form.answer}
                       onChange={(e) => setForm({ ...form, answer: e.target.value })}
                     />
                   </div>
-                  <div>
+                  <div className="admin-form-cell">
                     <label>题型</label>
                     <select value={form.questionType} onChange={(e) => setForm({ ...form, questionType: e.target.value })}>
                       <option value="">请选择</option>
@@ -333,8 +340,8 @@ export default function AdminQuestionsPage() {
                     </select>
                   </div>
                 </div>
-                <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div>
+                <div className="admin-form-grid two-columns">
+                  <div className="admin-form-cell">
                     <label>难度</label>
                     <select value={form.difficulty} onChange={(e) => setForm({ ...form, difficulty: e.target.value })}>
                       <option value="">请选择</option>
@@ -343,10 +350,11 @@ export default function AdminQuestionsPage() {
                       <option value="hard">困难</option>
                     </select>
                   </div>
-                  <div>
+                  <div className="admin-form-cell">
                     <label>年份</label>
                     <input
-                      type="number" value={form.year}
+                      type="number"
+                      value={form.year}
                       onChange={(e) => setForm({ ...form, year: e.target.value })}
                     />
                   </div>
@@ -382,9 +390,9 @@ export default function AdminQuestionsPage() {
                     </select>
                   </div>
                 )}
-                <div style={{ marginTop: '1rem' }}>
+                <div className="admin-inline-actions">
                   <button className="btn primary" type="submit">保存</button>
-                  <button className="btn outline" type="button" onClick={() => setShowForm(false)} style={{ marginLeft: '0.5rem' }}>取消</button>
+                  <button className="btn outline" type="button" onClick={() => setShowForm(false)}>取消</button>
                 </div>
               </form>
             </div>
@@ -406,31 +414,33 @@ export default function AdminQuestionsPage() {
             </thead>
             <tbody>
               {questions.map((q) => (
-                <tr key={q.id} style={{ background: selectedIds.has(q.id) ? 'rgba(59,130,246,0.05)' : undefined }}>
+                <tr className={selectedIds.has(q.id) ? 'admin-selected-row' : ''} key={q.id}>
                   <td><input type="checkbox" checked={selectedIds.has(q.id)} onChange={() => toggleSelect(q.id)} /></td>
                   <td>{q.id}</td>
-                  <td style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{truncate(q.stem)}</td>
+                  <td className="admin-table-cell-ellipsis">{truncate(q.stem)}</td>
                   <td>{q.chapter || '-'}</td>
                   <td>{q.questionType || '-'}</td>
                   <td>{q.difficulty || '-'}</td>
                   <td>{q.year || '-'}</td>
                   <td>
-                    <span style={{ color: q.active !== false ? 'var(--green, #16a34a)' : 'var(--red, #dc2626)' }}>
+                    <span className={`admin-status-chip ${questionStatusClassMap[String(q.active !== false)] || 'is-neutral'}`}>
                       {q.active !== false ? '已发布' : '已停用'}
                     </span>
                   </td>
                   <td>
-                    <button className="btn outline small" type="button" onClick={() => openEdit(q)}>编辑</button>
-                    <button className="btn ghost small" type="button" onClick={() => handleViewSnapshots(q.id)} style={{ marginLeft: '0.25rem' }}>版本</button>
-                    <button className="btn outline small" type="button" onClick={() => handleToggleStatus(q)} style={{ marginLeft: '0.25rem' }}>
-                      {q.active !== false ? '停用' : '启用'}
-                    </button>
-                    <button className="btn danger small" type="button" onClick={() => handleDelete(q.id, q.stem)} style={{ marginLeft: '0.25rem' }}>删除</button>
+                    <div className="admin-inline-actions">
+                      <button className="btn outline small" type="button" onClick={() => openEdit(q)}>编辑</button>
+                      <button className="btn ghost small" type="button" onClick={() => handleViewSnapshots(q.id)}>版本</button>
+                      <button className={`btn ${q.active !== false ? 'outline-neutral' : 'outline'} small`} type="button" onClick={() => handleToggleStatus(q)}>
+                        {q.active !== false ? '停用' : '启用'}
+                      </button>
+                      <button className="btn danger small" type="button" onClick={() => handleDelete(q.id, q.stem)}>删除</button>
+                    </div>
                   </td>
                 </tr>
               ))}
               {questions.length === 0 && (
-                <tr><td colSpan="9" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>暂无题目</td></tr>
+                <tr><td className="admin-empty-row" colSpan="9">暂无题目</td></tr>
               )}
             </tbody>
           </table>
@@ -445,25 +455,27 @@ export default function AdminQuestionsPage() {
 
           {showSnapshots && (
             <div className="modal-overlay" onClick={() => setShowSnapshots(false)}>
-              <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+              <div className="modal-box admin-modal-wide" onClick={(e) => e.stopPropagation()}>
                 <div className="modal-header">
                   <h3>版本历史 — 题目 #{snapshotQuestionId}</h3>
                   <button className="btn ghost small" type="button" onClick={() => setShowSnapshots(false)}>✕</button>
                 </div>
-                <div className="modal-body" style={{ display: 'block' }}>
+                <div className="modal-body">
                   {snapshots.length === 0 ? (
                     <p className="muted">暂无历史版本</p>
                   ) : (
                     snapshots.map((s) => (
-                      <div key={s.id} className="card" style={{ marginBottom: '0.75rem', padding: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <div key={s.id} className="admin-surface-card admin-history-card">
+                        <div className="admin-history-header">
                           <strong>v{s.versionNo}</strong>
                           <span className="muted small">{s.createdAt}</span>
                         </div>
-                        <p style={{ fontSize: '13px', marginBottom: '0.25rem' }}><strong>题干:</strong> {truncate(s.stem, 100)}</p>
-                        <p style={{ fontSize: '13px', marginBottom: '0.25rem' }}><strong>答案:</strong> {s.answer}</p>
-                        {s.chapter && <p style={{ fontSize: '13px', marginBottom: '0.25rem' }}><strong>章节:</strong> {s.chapter}</p>}
-                        {s.difficulty && <p style={{ fontSize: '13px' }}><strong>难度:</strong> {s.difficulty}</p>}
+                        <div className="admin-history-copy">
+                          <p className="muted small"><strong>题干:</strong> {truncate(s.stem, 100)}</p>
+                          <p className="muted small"><strong>答案:</strong> {s.answer}</p>
+                          {s.chapter && <p className="muted small"><strong>章节:</strong> {s.chapter}</p>}
+                          {s.difficulty && <p className="muted small"><strong>难度:</strong> {s.difficulty}</p>}
+                        </div>
                       </div>
                     ))
                   )}
