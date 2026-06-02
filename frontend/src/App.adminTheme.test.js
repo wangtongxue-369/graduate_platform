@@ -73,7 +73,38 @@ describe('admin theme styles', () => {
     expect(employmentManagementPageSource).toContain('admin-surface-card')
     expect(employmentManagementPageSource).toContain('admin-status-chip')
     expect(employmentManagementPageSource).toContain('admin-inline-actions')
-    expect(employmentManagementPageSource).toContain('admin-data-row')
+    expect(employmentManagementPageSource).toContain('admin-control-tab')
+  })
+
+  it('keeps grid-based admin data pages off the legacy row-layout class stack', () => {
+    expect(employmentManagementPageSource).not.toContain('admin-record-card admin-data-row')
+    expect(adminKaoyanDataPageSource).not.toContain('admin-record-card admin-data-row')
+    expect(kaogongDataPageSource).not.toContain('admin-record-card admin-data-row')
+  })
+
+  it('gives employment management a tabbed single-object workbench layout', () => {
+    expect(employmentManagementPageSource).toContain("const [activePanel, setActivePanel] = useState('fairs')")
+    expect(employmentManagementPageSource).toContain('admin-control-tabs')
+    expect(employmentManagementPageSource).toContain('admin-control-tab')
+    expect(employmentManagementPageSource).toContain('admin-employment-workbench')
+    expect(employmentManagementPageSource).toContain('admin-employment-workspace')
+    expect(employmentManagementPageSource).toContain('admin-employment-form-panel')
+    expect(employmentManagementPageSource).toContain('admin-employment-list-panel')
+    expect(employmentManagementPageSource).not.toContain('admin-employment-editor-grid')
+    expect(employmentManagementPageSource).not.toContain('admin-employment-lists')
+  })
+
+  it('defines employment workbench layout primitives in shared admin CSS', () => {
+    const adminUtilitiesSection = getSection('.admin-surface-card {', '.data-table {')
+
+    expect(adminUtilitiesSection).toContain('.admin-control-tabs')
+    expect(adminUtilitiesSection).toContain('.admin-control-tab')
+    expect(adminUtilitiesSection).toContain('.admin-employment-workbench')
+    expect(adminUtilitiesSection).toContain('.admin-employment-workspace')
+    expect(adminUtilitiesSection).toContain('.admin-employment-form-panel')
+    expect(adminUtilitiesSection).toContain('.admin-employment-list-panel')
+    expect(adminUtilitiesSection).not.toContain('.admin-employment-editor-grid')
+    expect(adminUtilitiesSection).not.toContain('.admin-employment-lists')
   })
 
   it('avoids legacy admin info tags on the remaining backend surfaces', () => {

@@ -460,7 +460,7 @@ function rowActions(row, onEdit, onDelete) {
 
 function renderSchoolRow(row, onEdit, onDelete) {
   return (
-    <article className="admin-record-card admin-data-row" key={row.id}>
+    <article className="admin-record-card" key={row.id}>
       <div className="admin-record-main">
         <strong>{row.name}</strong>
         <p className="muted">{row.region} {row.province} {row.schoolType}</p>
@@ -477,7 +477,7 @@ function renderSchoolRow(row, onEdit, onDelete) {
 
 function renderScoreRow(row, onEdit, onDelete) {
   return (
-    <article className="admin-record-card admin-data-row" key={row.id}>
+    <article className="admin-record-card" key={row.id}>
       <div className="admin-record-main">
         <strong>{row.schoolName}</strong>
         <p className="muted">{row.majorName || row.majorCategory}</p>

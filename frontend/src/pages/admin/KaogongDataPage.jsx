@@ -419,7 +419,7 @@ function rowActions(row, onEdit, onDelete) {
 
 function renderJobRow(row, onEdit, onDelete) {
   return (
-    <article className="admin-record-card admin-data-row" key={row.id}>
+    <article className="admin-record-card" key={row.id}>
       <div className="admin-record-main">
         <strong>{row.jobName}</strong>
         <p className="muted">{row.recruitingUnit}</p>
@@ -436,7 +436,7 @@ function renderJobRow(row, onEdit, onDelete) {
 
 function renderScoreRow(row, onEdit, onDelete) {
   return (
-    <article className="admin-record-card admin-data-row" key={row.id}>
+    <article className="admin-record-card" key={row.id}>
       <div className="admin-record-main">
         <strong>{row.jobName}</strong>
         <p className="muted">{row.recruitingUnit}</p>
@@ -453,7 +453,7 @@ function renderScoreRow(row, onEdit, onDelete) {
 
 function renderEventRow(row, onEdit, onDelete) {
   return (
-    <article className="admin-record-card admin-data-row" key={row.id}>
+    <article className="admin-record-card" key={row.id}>
       <div className="admin-record-main">
         <strong>{row.title}</strong>
         <p className="muted">{row.description || row.examType}</p>

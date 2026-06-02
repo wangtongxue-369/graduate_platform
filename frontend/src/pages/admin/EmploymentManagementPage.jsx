@@ -66,9 +66,33 @@ export default function EmploymentManagementPage() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [actingKey, setActingKey] = useState('')
+  const [activePanel, setActivePanel] = useState('fairs')
 
   const activeFairCount = fairs.filter((item) => item.active !== false).length
   const activeJobCount = jobs.filter((item) => item.active !== false).length
+
+  const panelMeta = {
+    fairs: {
+      key: 'fairs',
+      label: '招聘会管理',
+      shortLabel: '招聘会',
+      description: '维护招聘会源数据，统一管理排期、地点与提醒触发。',
+      count: fairs.length,
+      activeCount: activeFairCount,
+      summary: editingFairId ? '当前正在编辑招聘会条目。' : '可直接新增、编辑或停用招聘会。',
+    },
+    jobs: {
+      key: 'jobs',
+      label: '岗位管理',
+      shortLabel: '岗位',
+      description: '维护岗位源数据，统一管理投递入口与岗位启用状态。',
+      count: jobs.length,
+      activeCount: activeJobCount,
+      summary: editingJobId ? '当前正在编辑岗位条目。' : '可直接新增、编辑或停用岗位。',
+    },
+  }
+
+  const currentPanel = panelMeta[activePanel]
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -108,6 +132,7 @@ export default function EmploymentManagementPage() {
   }
 
   function startEditFair(fair) {
+    setActivePanel('fairs')
     setEditingFairId(fair.id)
     setFairForm({
       ...emptyFair,
@@ -120,6 +145,7 @@ export default function EmploymentManagementPage() {
   }
 
   function startEditJob(job) {
+    setActivePanel('jobs')
     setEditingJobId(job.id)
     setJobForm({ ...emptyJob, ...job })
     setMessage(`正在编辑岗位：${job.title}`)
@@ -228,6 +254,284 @@ export default function EmploymentManagementPage() {
     }
   }
 
+  const renderFairFormBlock = () => (
+    <>
+      <div className="track-head">
+        <div>
+          <h3>{editingFairId ? '编辑招聘会' : '新增招聘会'}</h3>
+          <p className="muted">完善招聘会基础信息、时间节点与展示状态。</p>
+        </div>
+        <span className="admin-status-chip is-success">{fairs.length} 条已维护</span>
+      </div>
+
+      <form onSubmit={saveFair}>
+        <div className="admin-form-grid two-columns">
+          <label className="field">
+            <span>标题</span>
+            <input value={fairForm.title} onChange={(event) => updateFair('title', event.target.value)} required />
+          </label>
+          <label className="field">
+            <span>企业</span>
+            <input value={fairForm.companyName} onChange={(event) => updateFair('companyName', event.target.value)} required />
+          </label>
+          <label className="field">
+            <span>城市</span>
+            <input value={fairForm.city || ''} onChange={(event) => updateFair('city', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>行业</span>
+            <input value={fairForm.industry || ''} onChange={(event) => updateFair('industry', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>目标岗位</span>
+            <input value={fairForm.targetRoles || ''} onChange={(event) => updateFair('targetRoles', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>地点</span>
+            <input value={fairForm.location || ''} onChange={(event) => updateFair('location', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>开始时间</span>
+            <input type="datetime-local" value={fairForm.startTime || ''} onChange={(event) => updateFair('startTime', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>结束时间</span>
+            <input type="datetime-local" value={fairForm.endTime || ''} onChange={(event) => updateFair('endTime', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>网申截止</span>
+            <input type="datetime-local" value={fairForm.applyDeadline || ''} onChange={(event) => updateFair('applyDeadline', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>申请链接</span>
+            <input value={fairForm.applyUrl || ''} onChange={(event) => updateFair('applyUrl', event.target.value)} />
+          </label>
+          <label className="field admin-field-wide">
+            <span>展示状态</span>
+            <select value={fairForm.active ? 'true' : 'false'} onChange={(event) => updateFair('active', event.target.value === 'true')}>
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+        </div>
+
+        <label className="field">
+          <span>说明</span>
+          <textarea rows="4" value={fairForm.description || ''} onChange={(event) => updateFair('description', event.target.value)} />
+        </label>
+
+        <div className="admin-inline-actions">
+          <button className="btn primary" type="submit" disabled={actingKey === 'save-fair'}>
+            {actingKey === 'save-fair' ? '保存中...' : '保存招聘会'}
+          </button>
+          {editingFairId ? (
+            <button className="btn ghost" type="button" onClick={resetFairForm}>取消编辑</button>
+          ) : null}
+        </div>
+      </form>
+    </>
+  )
+
+  const renderJobFormBlock = () => (
+    <>
+      <div className="track-head">
+        <div>
+          <h3>{editingJobId ? '编辑岗位' : '新增岗位'}</h3>
+          <p className="muted">完善岗位要求、投递入口与前台展示状态。</p>
+        </div>
+        <span className="admin-status-chip is-success">{jobs.length} 条已维护</span>
+      </div>
+
+      <form onSubmit={saveJob}>
+        <div className="admin-form-grid two-columns">
+          <label className="field">
+            <span>岗位名称</span>
+            <input value={jobForm.title} onChange={(event) => updateJob('title', event.target.value)} required />
+          </label>
+          <label className="field">
+            <span>企业</span>
+            <input value={jobForm.companyName} onChange={(event) => updateJob('companyName', event.target.value)} required />
+          </label>
+          <label className="field">
+            <span>城市</span>
+            <input value={jobForm.city || ''} onChange={(event) => updateJob('city', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>行业</span>
+            <input value={jobForm.industry || ''} onChange={(event) => updateJob('industry', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>岗位类型</span>
+            <input value={jobForm.roleType || ''} onChange={(event) => updateJob('roleType', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>薪资范围</span>
+            <input value={jobForm.salaryRange || ''} onChange={(event) => updateJob('salaryRange', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>学历要求</span>
+            <input value={jobForm.educationRequirement || ''} onChange={(event) => updateJob('educationRequirement', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>专业关键词</span>
+            <input value={jobForm.majorKeywords || ''} onChange={(event) => updateJob('majorKeywords', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>技能标签</span>
+            <input value={jobForm.skillTags || ''} onChange={(event) => updateJob('skillTags', event.target.value)} />
+          </label>
+          <label className="field">
+            <span>申请链接</span>
+            <input value={jobForm.applyUrl || ''} onChange={(event) => updateJob('applyUrl', event.target.value)} />
+          </label>
+          <label className="field admin-field-wide">
+            <span>展示状态</span>
+            <select value={jobForm.active ? 'true' : 'false'} onChange={(event) => updateJob('active', event.target.value === 'true')}>
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+        </div>
+
+        <label className="field">
+          <span>岗位描述</span>
+          <textarea rows="4" value={jobForm.description || ''} onChange={(event) => updateJob('description', event.target.value)} />
+        </label>
+
+        <div className="admin-inline-actions">
+          <button className="btn primary" type="submit" disabled={actingKey === 'save-job'}>
+            {actingKey === 'save-job' ? '保存中...' : '保存岗位'}
+          </button>
+          {editingJobId ? (
+            <button className="btn ghost" type="button" onClick={resetJobForm}>取消编辑</button>
+          ) : null}
+        </div>
+      </form>
+    </>
+  )
+
+  const renderFairListBlock = () => (
+    <>
+      <div className="track-head">
+        <div>
+          <h3>招聘会列表</h3>
+          <p className="muted">查看已维护的招聘会记录，并按需编辑、提醒或删除。</p>
+        </div>
+        <span className="admin-status-chip is-warning">{activeFairCount} 条启用中</span>
+      </div>
+
+      {loading ? (
+        <p className="muted">正在加载招聘会...</p>
+      ) : fairs.length === 0 ? (
+        <p className="muted">暂无招聘会，可先在左侧创建第一条记录。</p>
+      ) : (
+        <div className="admin-employment-list-grid">
+          {fairs.map((fair) => (
+            <article className="admin-record-card" key={fair.id}>
+              <div className="admin-record-main">
+                <div className="track-head">
+                  <strong>{fair.title}</strong>
+                  <span className={`admin-status-chip ${activeStatusClassMap[String(fair.active !== false)] || 'is-neutral'}`}>
+                    {fair.active !== false ? '启用中' : '已停用'}
+                  </span>
+                </div>
+                <p className="muted">{fair.companyName || '未设置企业'} · {fair.city || '城市待定'} · {fair.industry || '行业待定'}</p>
+                <div className="admin-record-meta">
+                  <span>开始：{formatDateTime(fair.startTime)}</span>
+                  <span>截止：{formatDateTime(fair.applyDeadline)}</span>
+                  <span>{fair.targetRoles || '未设置目标岗位'}</span>
+                </div>
+              </div>
+              <div className="admin-record-side">
+                <span className="muted">{fair.location || '地点待补充'}</span>
+                <div className="admin-inline-actions">
+                  <button className="btn outline small" type="button" onClick={() => startEditFair(fair)}>编辑</button>
+                  <button
+                    className="btn outline small"
+                    type="button"
+                    disabled={actingKey === `notify-FAIR-${fair.id}`}
+                    onClick={() => triggerNotification('FAIR', fair.id)}
+                  >
+                    {actingKey === `notify-FAIR-${fair.id}` ? '发送中...' : '触发提醒'}
+                  </button>
+                  <button
+                    className="btn ghost small"
+                    type="button"
+                    disabled={actingKey === `delete-fair-${fair.id}`}
+                    onClick={() => deleteFair(fair.id)}
+                  >
+                    删除
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </>
+  )
+
+  const renderJobListBlock = () => (
+    <>
+      <div className="track-head">
+        <div>
+          <h3>岗位列表</h3>
+          <p className="muted">查看岗位条目、批量识别启用状态，并触发匹配提醒。</p>
+        </div>
+        <span className="admin-status-chip is-warning">{activeJobCount} 条启用中</span>
+      </div>
+
+      {loading ? (
+        <p className="muted">正在加载岗位...</p>
+      ) : jobs.length === 0 ? (
+        <p className="muted">暂无岗位，可先在左侧创建第一条记录。</p>
+      ) : (
+        <div className="admin-employment-list-grid">
+          {jobs.map((job) => (
+            <article className="admin-record-card" key={job.id}>
+              <div className="admin-record-main">
+                <div className="track-head">
+                  <strong>{job.title}</strong>
+                  <span className={`admin-status-chip ${activeStatusClassMap[String(job.active !== false)] || 'is-neutral'}`}>
+                    {job.active !== false ? '启用中' : '已停用'}
+                  </span>
+                </div>
+                <p className="muted">{job.companyName || '未设置企业'} · {job.city || '城市待定'} · {job.roleType || '岗位类型待定'}</p>
+                <div className="admin-record-meta">
+                  <span>{job.salaryRange || '薪资待补充'}</span>
+                  <span>{job.educationRequirement || '学历要求待补充'}</span>
+                  <span>{job.majorKeywords || job.skillTags || '未设置专业/技能标签'}</span>
+                </div>
+              </div>
+              <div className="admin-record-side">
+                <span className="muted">{job.industry || '行业待补充'}</span>
+                <div className="admin-inline-actions">
+                  <button className="btn outline small" type="button" onClick={() => startEditJob(job)}>编辑</button>
+                  <button
+                    className="btn outline small"
+                    type="button"
+                    disabled={actingKey === `notify-JOB-${job.id}`}
+                    onClick={() => triggerNotification('JOB', job.id)}
+                  >
+                    {actingKey === `notify-JOB-${job.id}` ? '发送中...' : '触发提醒'}
+                  </button>
+                  <button
+                    className="btn ghost small"
+                    type="button"
+                    disabled={actingKey === `delete-job-${job.id}`}
+                    onClick={() => deleteJob(job.id)}
+                  >
+                    删除
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </>
+  )
+
   return (
     <div className="app">
       <Navbar />
@@ -275,255 +579,55 @@ export default function EmploymentManagementPage() {
               </div>
             ) : null}
 
-            <div className="grid-two">
-              <form className="admin-form-surface" onSubmit={saveFair}>
-                <div className="track-head">
-                  <h3>{editingFairId ? '编辑招聘会' : '新增招聘会'}</h3>
-                  <span className="admin-status-chip is-success">{fairs.length} 条已维护</span>
-                </div>
-                <div className="admin-form-grid two-columns">
-                  <label className="field">
-                    <span>标题</span>
-                    <input value={fairForm.title} onChange={(event) => updateFair('title', event.target.value)} required />
-                  </label>
-                  <label className="field">
-                    <span>企业</span>
-                    <input value={fairForm.companyName} onChange={(event) => updateFair('companyName', event.target.value)} required />
-                  </label>
-                  <label className="field">
-                    <span>城市</span>
-                    <input value={fairForm.city || ''} onChange={(event) => updateFair('city', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>行业</span>
-                    <input value={fairForm.industry || ''} onChange={(event) => updateFair('industry', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>目标岗位</span>
-                    <input value={fairForm.targetRoles || ''} onChange={(event) => updateFair('targetRoles', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>地点</span>
-                    <input value={fairForm.location || ''} onChange={(event) => updateFair('location', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>开始时间</span>
-                    <input type="datetime-local" value={fairForm.startTime || ''} onChange={(event) => updateFair('startTime', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>结束时间</span>
-                    <input type="datetime-local" value={fairForm.endTime || ''} onChange={(event) => updateFair('endTime', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>网申截止</span>
-                    <input type="datetime-local" value={fairForm.applyDeadline || ''} onChange={(event) => updateFair('applyDeadline', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>申请链接</span>
-                    <input value={fairForm.applyUrl || ''} onChange={(event) => updateFair('applyUrl', event.target.value)} />
-                  </label>
-                  <label className="field admin-field-wide">
-                    <span>展示状态</span>
-                    <select value={fairForm.active ? 'true' : 'false'} onChange={(event) => updateFair('active', event.target.value === 'true')}>
-                      <option value="true">启用</option>
-                      <option value="false">停用</option>
-                    </select>
-                  </label>
-                </div>
-                <label className="field">
-                  <span>说明</span>
-                  <textarea rows="4" value={fairForm.description || ''} onChange={(event) => updateFair('description', event.target.value)} />
-                </label>
-                <div className="admin-inline-actions">
-                  <button className="btn primary" type="submit" disabled={actingKey === 'save-fair'}>
-                    {actingKey === 'save-fair' ? '保存中...' : '保存招聘会'}
-                  </button>
-                  {editingFairId ? (
-                    <button className="btn ghost" type="button" onClick={resetFairForm}>取消编辑</button>
-                  ) : null}
-                </div>
-              </form>
-
-              <form className="admin-form-surface" onSubmit={saveJob}>
-                <div className="track-head">
-                  <h3>{editingJobId ? '编辑岗位' : '新增岗位'}</h3>
-                  <span className="admin-status-chip is-success">{jobs.length} 条已维护</span>
-                </div>
-                <div className="admin-form-grid two-columns">
-                  <label className="field">
-                    <span>岗位名称</span>
-                    <input value={jobForm.title} onChange={(event) => updateJob('title', event.target.value)} required />
-                  </label>
-                  <label className="field">
-                    <span>企业</span>
-                    <input value={jobForm.companyName} onChange={(event) => updateJob('companyName', event.target.value)} required />
-                  </label>
-                  <label className="field">
-                    <span>城市</span>
-                    <input value={jobForm.city || ''} onChange={(event) => updateJob('city', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>行业</span>
-                    <input value={jobForm.industry || ''} onChange={(event) => updateJob('industry', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>岗位类型</span>
-                    <input value={jobForm.roleType || ''} onChange={(event) => updateJob('roleType', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>薪资范围</span>
-                    <input value={jobForm.salaryRange || ''} onChange={(event) => updateJob('salaryRange', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>学历要求</span>
-                    <input value={jobForm.educationRequirement || ''} onChange={(event) => updateJob('educationRequirement', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>专业关键词</span>
-                    <input value={jobForm.majorKeywords || ''} onChange={(event) => updateJob('majorKeywords', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>技能标签</span>
-                    <input value={jobForm.skillTags || ''} onChange={(event) => updateJob('skillTags', event.target.value)} />
-                  </label>
-                  <label className="field">
-                    <span>申请链接</span>
-                    <input value={jobForm.applyUrl || ''} onChange={(event) => updateJob('applyUrl', event.target.value)} />
-                  </label>
-                  <label className="field admin-field-wide">
-                    <span>展示状态</span>
-                    <select value={jobForm.active ? 'true' : 'false'} onChange={(event) => updateJob('active', event.target.value === 'true')}>
-                      <option value="true">启用</option>
-                      <option value="false">停用</option>
-                    </select>
-                  </label>
-                </div>
-                <label className="field">
-                  <span>岗位描述</span>
-                  <textarea rows="4" value={jobForm.description || ''} onChange={(event) => updateJob('description', event.target.value)} />
-                </label>
-                <div className="admin-inline-actions">
-                  <button className="btn primary" type="submit" disabled={actingKey === 'save-job'}>
-                    {actingKey === 'save-job' ? '保存中...' : '保存岗位'}
-                  </button>
-                  {editingJobId ? (
-                    <button className="btn ghost" type="button" onClick={resetJobForm}>取消编辑</button>
-                  ) : null}
-                </div>
-              </form>
+            <div className="admin-control-tabs" role="tablist" aria-label="就业管理对象切换">
+              {Object.values(panelMeta).map((panel) => (
+                <button
+                  key={panel.key}
+                  id={`employment-tab-${panel.key}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={activePanel === panel.key}
+                  aria-controls={`employment-panel-${panel.key}`}
+                  className={`admin-control-tab ${activePanel === panel.key ? 'active' : ''}`}
+                  onClick={() => setActivePanel(panel.key)}
+                >
+                  <span className="admin-control-tab-copy">
+                    <strong>{panel.label}</strong>
+                    <span>{panel.summary}</span>
+                  </span>
+                  <span className="admin-status-chip is-neutral">总计 {panel.count}</span>
+                </button>
+              ))}
             </div>
 
-            <div className="grid-two">
-              <div className="admin-surface-card">
-                <div className="track-head">
-                  <h3>招聘会列表</h3>
-                  <span className="admin-status-chip is-warning">{activeFairCount} 条启用中</span>
+            <section className="admin-surface-card admin-employment-workbench">
+              <div className="track-head">
+                <div>
+                  <h3>{currentPanel.label}</h3>
+                  <p className="muted">{currentPanel.description}</p>
                 </div>
-                {loading ? (
-                  <p className="muted">正在加载招聘会...</p>
-                ) : fairs.length === 0 ? (
-                  <p className="muted">暂无招聘会。</p>
-                ) : (
-                  <div className="admin-record-grid">
-                    {fairs.map((fair) => (
-                      <article className="admin-record-card admin-data-row admin-employment-row" key={fair.id}>
-                        <div className="admin-record-main">
-                          <div className="track-head">
-                            <strong>{fair.title}</strong>
-                            <span className={`admin-status-chip ${activeStatusClassMap[String(fair.active !== false)] || 'is-neutral'}`}>
-                              {fair.active !== false ? '启用中' : '已停用'}
-                            </span>
-                          </div>
-                          <p className="muted">{fair.companyName || '未设置企业'} · {fair.city || '城市待定'} · {fair.industry || '行业待定'}</p>
-                          <div className="admin-record-meta">
-                            <span>开始：{formatDateTime(fair.startTime)}</span>
-                            <span>截止：{formatDateTime(fair.applyDeadline)}</span>
-                            <span>{fair.targetRoles || '未设置目标岗位'}</span>
-                          </div>
-                        </div>
-                        <div className="admin-record-side">
-                          <span className="muted">{fair.location || '地点待补充'}</span>
-                          <div className="admin-inline-actions">
-                            <button className="btn outline small" type="button" onClick={() => startEditFair(fair)}>编辑</button>
-                            <button
-                              className="btn outline small"
-                              type="button"
-                              disabled={actingKey === `notify-FAIR-${fair.id}`}
-                              onClick={() => triggerNotification('FAIR', fair.id)}
-                            >
-                              {actingKey === `notify-FAIR-${fair.id}` ? '发送中...' : '触发提醒'}
-                            </button>
-                            <button
-                              className="btn ghost small"
-                              type="button"
-                              disabled={actingKey === `delete-fair-${fair.id}`}
-                              onClick={() => deleteFair(fair.id)}
-                            >
-                              删除
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
+                <div className="admin-inline-actions">
+                  <span className="admin-status-chip is-success">启用 {currentPanel.activeCount}</span>
+                  <span className="admin-status-chip is-neutral">总计 {currentPanel.count}</span>
+                  <span className="admin-status-chip is-neutral">{currentPanel.shortLabel}工作台</span>
+                </div>
               </div>
 
-              <div className="admin-surface-card">
-                <div className="track-head">
-                  <h3>岗位列表</h3>
-                  <span className="admin-status-chip is-warning">{activeJobCount} 条启用中</span>
+              <div
+                id={`employment-panel-${currentPanel.key}`}
+                className="admin-employment-workspace"
+                role="tabpanel"
+                aria-labelledby={`employment-tab-${currentPanel.key}`}
+              >
+                <div className="admin-form-surface admin-employment-form-panel">
+                  {activePanel === 'fairs' ? renderFairFormBlock() : renderJobFormBlock()}
                 </div>
-                {loading ? (
-                  <p className="muted">正在加载岗位...</p>
-                ) : jobs.length === 0 ? (
-                  <p className="muted">暂无岗位。</p>
-                ) : (
-                  <div className="admin-record-grid">
-                    {jobs.map((job) => (
-                      <article className="admin-record-card admin-data-row admin-employment-row" key={job.id}>
-                        <div className="admin-record-main">
-                          <div className="track-head">
-                            <strong>{job.title}</strong>
-                            <span className={`admin-status-chip ${activeStatusClassMap[String(job.active !== false)] || 'is-neutral'}`}>
-                              {job.active !== false ? '启用中' : '已停用'}
-                            </span>
-                          </div>
-                          <p className="muted">{job.companyName || '未设置企业'} · {job.city || '城市待定'} · {job.roleType || '岗位类型待定'}</p>
-                          <div className="admin-record-meta">
-                            <span>{job.salaryRange || '薪资待补充'}</span>
-                            <span>{job.educationRequirement || '学历要求待补充'}</span>
-                            <span>{job.majorKeywords || job.skillTags || '未设置专业/技能标签'}</span>
-                          </div>
-                        </div>
-                        <div className="admin-record-side">
-                          <span className="muted">{job.industry || '行业待补充'}</span>
-                          <div className="admin-inline-actions">
-                            <button className="btn outline small" type="button" onClick={() => startEditJob(job)}>编辑</button>
-                            <button
-                              className="btn outline small"
-                              type="button"
-                              disabled={actingKey === `notify-JOB-${job.id}`}
-                              onClick={() => triggerNotification('JOB', job.id)}
-                            >
-                              {actingKey === `notify-JOB-${job.id}` ? '发送中...' : '触发提醒'}
-                            </button>
-                            <button
-                              className="btn ghost small"
-                              type="button"
-                              disabled={actingKey === `delete-job-${job.id}`}
-                              onClick={() => deleteJob(job.id)}
-                            >
-                              删除
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
+
+                <div className="admin-surface-card admin-employment-list-panel">
+                  {activePanel === 'fairs' ? renderFairListBlock() : renderJobListBlock()}
+                </div>
               </div>
-            </div>
+            </section>
           </div>
         </section>
       </main>

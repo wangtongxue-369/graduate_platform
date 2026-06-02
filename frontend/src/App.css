@@ -2379,6 +2379,109 @@
   background: var(--admin-surface);
 }
 
+.admin-control-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-control-tab {
+  min-width: 0;
+  min-height: 76px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--admin-surface-alt) 94%, transparent), var(--admin-surface));
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.admin-control-tab:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--primary) 18%, var(--line));
+}
+
+.admin-control-tab:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--primary) 70%, var(--line));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent);
+}
+
+.admin-control-tab.active {
+  border-color: var(--admin-filter-active-border);
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--primary-soft) 86%, transparent), transparent 56%),
+    var(--admin-filter-active);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--primary) 14%, transparent),
+    var(--shadow);
+}
+
+.admin-control-tab-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.admin-control-tab-copy strong,
+.admin-control-tab-copy span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-control-tab-copy strong {
+  font-size: 15px;
+}
+
+.admin-control-tab-copy span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.admin-employment-workbench {
+  display: grid;
+  gap: 20px;
+}
+
+.admin-employment-workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.admin-employment-form-panel,
+.admin-employment-list-panel {
+  min-width: 0;
+}
+
+.admin-employment-form-panel form {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-employment-list-panel {
+  margin-bottom: 0;
+}
+
+.admin-employment-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
 .admin-toolbar-card {
   display: grid;
   gap: 16px;
@@ -2483,11 +2586,13 @@
   border: 1px solid var(--line);
   border-radius: 22px;
   box-shadow: var(--shadow);
+  min-width: 0;
 }
 
 .admin-record-main {
   display: grid;
   gap: 10px;
+  min-width: 0;
 }
 
 .admin-record-meta {
@@ -2504,6 +2609,25 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.admin-record-card .track-head {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.admin-record-card .track-head > * {
+  min-width: 0;
+}
+
+.admin-record-card .track-head h3,
+.admin-record-card .track-head strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-record-card .muted {
+  overflow-wrap: anywhere;
 }
 
 .admin-form-surface {
@@ -3102,6 +3226,11 @@
   }
 
   .grid-two {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-control-tabs,
+  .admin-employment-workspace {
     grid-template-columns: 1fr;
   }
 
@@ -4013,10 +4142,24 @@
     justify-content: center;
   }
 
+  .admin-control-tab {
+    padding: 14px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .admin-record-side {
     align-items: flex-start;
     justify-content: flex-start;
     flex-direction: column;
+  }
+
+  .admin-record-card .track-head {
+    flex-direction: column;
+  }
+
+  .admin-employment-list-grid {
+    grid-template-columns: 1fr;
   }
 }
 
