@@ -121,6 +121,22 @@ public class StudyAbroadService {
         experienceRepository.delete(item);
     }
 
+    @Transactional
+    public Map<String, Object> updateExperience(Long userId, Long id, ExperienceRequest req) {
+        ensureUser(userId);
+        StudyAbroadExperience item = experienceRepository.findByIdAndAuthorId(id, userId)
+            .orElseThrow(() -> new BusinessException("Experience not found or access denied"));
+        item.setTitle(req.getTitle().trim());
+        item.setCountry(req.getCountry().trim());
+        item.setTopic(req.getTopic().trim());
+        item.setAuthorName(normalize(req.getAuthorName(), item.getAuthorName()));
+        item.setReadTime(normalize(req.getReadTime(), "5 min"));
+        item.setSummary(req.getSummary().trim());
+        item.setContent(req.getContent().trim());
+        item.setTags(normalize(req.getTags(), ""));
+        return toExperienceMap(experienceRepository.save(item));
+    }
+
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getApplications(Long userId) {
         ensureUser(userId);
@@ -173,6 +189,8 @@ public class StudyAbroadService {
         ensureUser(userId);
         StudyAbroadApplication item = applicationRepository.findByIdAndUserId(id, userId)
             .orElseThrow(() -> new BusinessException("Application not found or access denied"));
+        materialRepository.deleteByUserIdAndApplicationId(userId, id);
+        timelineRepository.deleteByUserIdAndApplicationId(userId, id);
         applicationRepository.delete(item);
     }
 

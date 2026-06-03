@@ -54,6 +54,16 @@ public class StudyAbroadController {
         );
     }
 
+    @PutMapping("/experiences/{id}")
+    public ApiResponse<?> updateExperience(@PathVariable Long id,
+                                           @Valid @RequestBody ExperienceRequest req,
+                                           Authentication auth) {
+        return ApiResponse.ok(
+            studyAbroadService.updateExperience(getCurrentUserId(auth), id, req),
+            "Experience updated"
+        );
+    }
+
     @DeleteMapping("/experiences/{id}")
     public ApiResponse<?> deleteExperience(@PathVariable Long id, Authentication auth) {
         studyAbroadService.deleteExperience(getCurrentUserId(auth), id);
