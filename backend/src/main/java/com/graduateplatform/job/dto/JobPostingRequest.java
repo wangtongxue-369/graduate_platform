@@ -11,6 +11,7 @@ public class JobPostingRequest {
     private String companyName;
     private String city;
     private String industry;
+    private String companyType;
     private String roleType;
     private String salaryRange;
     private String educationRequirement;

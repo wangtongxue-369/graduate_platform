@@ -29,6 +29,9 @@ public class JobPosting {
     private String industry;
 
     @Column(length = 80)
+    private String companyType;
+
+    @Column(length = 80)
     private String roleType;
 
     @Column(length = 80)

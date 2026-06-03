@@ -22,12 +22,21 @@ export default function JobPostingDetailPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    setLoading(true)
-    setError('')
-    employmentApi.postingDetail(id)
-      .then(setJob)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false))
+    let cancelled = false
+    Promise.resolve().then(async () => {
+      if (cancelled) return
+      setLoading(true)
+      setError('')
+      try {
+        const data = await employmentApi.postingDetail(id)
+        if (!cancelled) setJob(data)
+      } catch (e) {
+        if (!cancelled) setError(e.message)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })
+    return () => { cancelled = true }
   }, [id])
 
   if (!authLoading && !isAuthed) return <Navigate to="/login" replace />
@@ -54,6 +63,7 @@ export default function JobPostingDetailPage() {
               </div>
               <div className="tag-row">
                 <span className="tag subtle">{job.industry || '行业待定'}</span>
+                <span className="tag subtle">{job.companyType || '企业类型待定'}</span>
                 <span className="tag subtle">{job.roleType || '岗位类型待定'}</span>
                 <span className="tag subtle">{job.salaryRange || '薪资面议'}</span>
               </div>

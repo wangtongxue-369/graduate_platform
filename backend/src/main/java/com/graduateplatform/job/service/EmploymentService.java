@@ -9,6 +9,7 @@ import com.graduateplatform.job.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -44,8 +45,9 @@ public class EmploymentService {
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> listFairs(String city, String industry, String keyword) {
-        return fairRepository.findActive(blankToNull(city), blankToNull(industry), blankToNull(keyword))
-            .stream().map(this::toFairMap).toList();
+        LocalDateTime now = LocalDateTime.now();
+        return deduplicateFairs(fairRepository.findActive(blankToNull(city), blankToNull(industry), blankToNull(keyword)), now)
+            .stream().map(fair -> toFairMap(fair, now)).toList();
     }
 
     @Transactional(readOnly = true)
@@ -54,19 +56,10 @@ public class EmploymentService {
         int pageNumber = Math.max(page == null ? 1 : page, 1);
         int pageSize = Math.min(Math.max(size == null ? 6 : size, 1), 50);
         LocalDateTime now = LocalDateTime.now();
-        List<CareerFair> fairs = fairRepository.findActive(blankToNull(city), blankToNull(industry), blankToNull(keyword))
+        List<CareerFair> fairs = deduplicateFairs(
+                fairRepository.findActive(blankToNull(city), blankToNull(industry), blankToNull(keyword)), now)
             .stream()
             .filter(fair -> includeExpired || !isFairExpired(fair, now))
-            .collect(
-                java.util.stream.Collectors.toMap(
-                    this::fairDedupKey,
-                    fair -> fair,
-                    (left, right) -> betterFairForList(left, right, now),
-                    LinkedHashMap::new
-                )
-            )
-            .values()
-            .stream()
             .sorted(fairListComparator(now))
             .toList();
         int fromIndex = Math.min((pageNumber - 1) * pageSize, fairs.size());
@@ -94,6 +87,14 @@ public class EmploymentService {
     public List<Map<String, Object>> listPostings(String city, String industry, String roleType, String keyword) {
         return jobRepository.findActive(blankToNull(city), blankToNull(industry), blankToNull(roleType), blankToNull(keyword))
             .stream().map(this::toJobMap).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> listPostingsPage(String city, String industry, String roleType, String keyword,
+                                                Integer page, Integer size) {
+        List<JobPosting> jobs = jobRepository.findActive(
+            blankToNull(city), blankToNull(industry), blankToNull(roleType), blankToNull(keyword));
+        return pageResult(jobs, page, size, this::toJobMap);
     }
 
     @Transactional(readOnly = true)
@@ -210,10 +211,15 @@ public class EmploymentService {
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> listNotifications(Long userId) {
+    public Map<String, Object> listNotifications(Long userId) {
         ensureUser(userId);
-        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId)
+        List<Map<String, Object>> items = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId)
             .stream().map(this::toNotificationMap).toList();
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("items", items);
+        result.put("unreadCount", notificationRepository.countByUserIdAndReadFlagFalse(userId));
+        result.put("totalItems", items.size());
+        return result;
     }
 
     @Transactional
@@ -226,11 +232,25 @@ public class EmploymentService {
         return toNotificationMap(notificationRepository.save(notification));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<Map<String, Object>> adminFairs() {
+        cleanupDuplicateFairs();
         return fairRepository.findAll().stream()
             .sorted(Comparator.comparing(CareerFair::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
             .map(this::toFairMap).toList();
+    }
+
+    @Transactional
+    public Map<String, Object> adminFairsPage(String keyword, Boolean active, Integer page, Integer size) {
+        cleanupDuplicateFairs();
+        LocalDateTime now = LocalDateTime.now();
+        List<CareerFair> fairs = fairRepository.findAll().stream()
+            .filter(fair -> active == null || Objects.equals(fair.getActive(), active))
+            .filter(fair -> matchesAdminKeyword(keyword, fair.getTitle(), fair.getCompanyName(), fair.getCity(),
+                fair.getIndustry(), fair.getLocation(), fair.getTargetRoles(), fair.getApplyUrl()))
+            .sorted(Comparator.comparing(CareerFair::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+            .toList();
+        return pageResult(fairs, page, size, fair -> toFairMap(fair, now));
     }
 
     @Transactional
@@ -263,6 +283,17 @@ public class EmploymentService {
             .map(this::toJobMap).toList();
     }
 
+    @Transactional(readOnly = true)
+    public Map<String, Object> adminJobsPage(String keyword, Boolean active, Integer page, Integer size) {
+        List<JobPosting> jobs = jobRepository.findAll().stream()
+            .filter(job -> active == null || Objects.equals(job.getActive(), active))
+            .filter(job -> matchesAdminKeyword(keyword, job.getTitle(), job.getCompanyName(), job.getCity(),
+                job.getIndustry(), job.getCompanyType(), job.getRoleType(), job.getSalaryRange(), job.getApplyUrl()))
+            .sorted(Comparator.comparing(JobPosting::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+            .toList();
+        return pageResult(jobs, page, size, this::toJobMap);
+    }
+
     @Transactional
     public Map<String, Object> createJob(JobPostingRequest req) {
         JobPosting job = new JobPosting();
@@ -280,6 +311,15 @@ public class EmploymentService {
     @Transactional
     public Map<String, Object> deleteJob(Long id) {
         JobPosting job = jobRepository.findById(id).orElseThrow(() -> new BusinessException("岗位不存在"));
+        if (applicationRepository.existsByJobPostingId(id)) {
+            job.setActive(false);
+            jobRepository.save(job);
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("deleted", false);
+            result.put("deactivated", true);
+            result.put("id", id);
+            return result;
+        }
         jobRepository.delete(job);
         return Map.of("deleted", true, "id", id);
     }
@@ -290,8 +330,14 @@ public class EmploymentService {
         NotificationSource source = resolveNotificationSource(type, req.getRelatedId());
         List<JobSubscriptionPreference> prefs = preferenceRepository.findByActiveTrue();
         List<EmploymentNotification> created = new ArrayList<>();
+        int skippedDuplicateCount = 0;
         for (JobSubscriptionPreference pref : prefs) {
-            if (matchesPreference(pref, source.city(), source.industry(), source.roleType())) {
+            Long userId = pref.getUser() == null ? null : pref.getUser().getId();
+            if (matchesPreference(pref, source.city(), source.industry(), source.roleType(), source.companyType())) {
+                if (userId != null && notificationRepository.existsByUserIdAndRelatedTypeAndRelatedId(userId, type, req.getRelatedId())) {
+                    skippedDuplicateCount++;
+                    continue;
+                }
                 EmploymentNotification notification = EmploymentNotification.builder()
                     .user(pref.getUser())
                     .title(source.title())
@@ -305,11 +351,14 @@ public class EmploymentService {
         }
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("createdCount", created.size());
+        result.put("skippedDuplicateCount", skippedDuplicateCount);
         result.put("notifications", created.stream().map(this::toNotificationMap).toList());
         return result;
     }
 
     private void applyFair(CareerFair fair, CareerFairRequest req) {
+        validateFairTimes(req);
+        validateHttpUrl(req.getApplyUrl(), "招聘会申请链接必须是 http 或 https 地址");
         fair.setTitle(trimRequired(req.getTitle(), "招聘会标题不能为空"));
         fair.setCompanyName(trimRequired(req.getCompanyName(), "公司名称不能为空"));
         fair.setCity(trim(req.getCity()));
@@ -320,6 +369,7 @@ public class EmploymentService {
         fair.setEndTime(req.getEndTime());
         fair.setApplyDeadline(req.getApplyDeadline());
         fair.setApplyUrl(trim(req.getApplyUrl()));
+        fair.setBusinessKey(fairBusinessKey(req.getTitle(), req.getCompanyName(), req.getStartTime()));
         fair.setDescription(trim(req.getDescription()));
         fair.setActive(req.getActive() == null || req.getActive());
     }
@@ -327,16 +377,47 @@ public class EmploymentService {
     private void validateFairDuplicate(Long currentId, CareerFairRequest req) {
         String title = trimRequired(req.getTitle(), "招聘会标题不能为空");
         String companyName = trimRequired(req.getCompanyName(), "公司名称不能为空");
-        if (fairRepository.existsDuplicate(title, companyName, req.getStartTime(), currentId)) {
+        String businessKey = fairBusinessKey(title, companyName, req.getStartTime());
+        if (fairRepository.existsDuplicateBusinessKey(businessKey, currentId)
+            || fairRepository.existsDuplicate(title, companyName, req.getStartTime(), currentId)) {
             throw new BusinessException("相同标题、公司和开始时间的招聘会已存在");
+        }
+        String displayKey = fairDisplayKey(title, companyName, req.getLocation(), req.getApplyUrl());
+        boolean duplicatedDisplay = fairRepository.findDuplicateCandidates(normalizedKey(title), normalizedKey(companyName), currentId)
+            .stream()
+            .anyMatch(fair -> displayKey.equals(fairDisplayKey(fair)));
+        if (duplicatedDisplay) {
+            throw new BusinessException("相同标题、公司、地点和申请链接的招聘会已存在");
+        }
+    }
+
+    private void validateFairTimes(CareerFairRequest req) {
+        if (req.getStartTime() != null && req.getEndTime() != null && req.getEndTime().isBefore(req.getStartTime())) {
+            throw new BusinessException("招聘会结束时间不能早于开始时间");
+        }
+    }
+
+    private void validateHttpUrl(String value, String message) {
+        String url = trim(value);
+        if (!hasText(url)) return;
+        try {
+            URI uri = URI.create(url);
+            String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+            if (!Set.of("http", "https").contains(scheme) || !hasText(uri.getHost())) {
+                throw new BusinessException(message);
+            }
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException(message);
         }
     }
 
     private void applyJob(JobPosting job, JobPostingRequest req) {
+        validateHttpUrl(req.getApplyUrl(), "岗位申请链接必须是 http 或 https 地址");
         job.setTitle(trimRequired(req.getTitle(), "岗位名称不能为空"));
         job.setCompanyName(trimRequired(req.getCompanyName(), "公司名称不能为空"));
         job.setCity(trim(req.getCity()));
         job.setIndustry(trim(req.getIndustry()));
+        job.setCompanyType(trim(req.getCompanyType()));
         job.setRoleType(trim(req.getRoleType()));
         job.setSalaryRange(trim(req.getSalaryRange()));
         job.setEducationRequirement(trim(req.getEducationRequirement()));
@@ -353,13 +434,13 @@ public class EmploymentService {
             String cityText = hasText(fair.getCity()) ? "在" + fair.getCity() : "";
             return new NotificationSource("新的招聘会：" + fair.getTitle(),
                 fair.getCompanyName() + "将" + cityText + "举办招聘会，请进入就业页面查看详情。",
-                fair.getCity(), fair.getIndustry(), fair.getTargetRoles());
+                fair.getCity(), fair.getIndustry(), fair.getTargetRoles(), null);
         }
         if ("JOB".equals(type)) {
             JobPosting job = jobRepository.findById(id).orElseThrow(() -> new BusinessException("岗位不存在"));
             return new NotificationSource("新的匹配岗位：" + job.getTitle(),
                 job.getCompanyName() + "发布了" + job.getTitle() + "岗位，请进入就业页面查看详情。",
-                job.getCity(), job.getIndustry(), job.getRoleType());
+                job.getCity(), job.getIndustry(), job.getRoleType(), job.getCompanyType());
         }
         throw new BusinessException("通知来源必须是 FAIR 或 JOB");
     }
@@ -377,6 +458,9 @@ public class EmploymentService {
         if (matchesText(job.getRoleType(), roleType) || (pref != null && matchesAny(pref.getRoleTypes(), job.getRoleType()))) {
             score += 20; reasons.add("岗位匹配");
         }
+        if (pref != null && matchesAny(pref.getCompanyTypes(), job.getCompanyType())) {
+            score += 10; reasons.add("企业类型匹配");
+        }
         if (matchesAny(job.getMajorKeywords(), user.getMajor())) {
             score += 20; reasons.add("专业匹配");
         }
@@ -393,11 +477,13 @@ public class EmploymentService {
         return map;
     }
 
-    private boolean matchesPreference(JobSubscriptionPreference pref, String city, String industry, String roleType) {
+    private boolean matchesPreference(JobSubscriptionPreference pref, String city, String industry, String roleType, String companyType) {
         return matchesAny(pref.getCities(), city)
             || matchesAny(pref.getIndustries(), industry)
             || matchesAny(pref.getRoleTypes(), roleType)
-            || (!hasText(pref.getCities()) && !hasText(pref.getIndustries()) && !hasText(pref.getRoleTypes()));
+            || matchesAny(pref.getCompanyTypes(), companyType)
+            || (!hasText(pref.getCities()) && !hasText(pref.getIndustries())
+                && !hasText(pref.getRoleTypes()) && !hasText(pref.getCompanyTypes()));
     }
 
     private JobPosting resolveJob(Long id) {
@@ -475,10 +561,26 @@ public class EmploymentService {
     }
 
     private String fairDedupKey(CareerFair fair) {
-        return normalizedKey(fair.getTitle()) + "|" +
-            normalizedKey(fair.getCompanyName()) + "|" +
-            normalizedKey(fair.getLocation()) + "|" +
-            normalizedKey(fair.getApplyUrl());
+        return fairDisplayKey(fair);
+    }
+
+    private String fairDisplayKey(CareerFair fair) {
+        return fairDisplayKey(fair.getTitle(), fair.getCompanyName(), fair.getLocation(), fair.getApplyUrl());
+    }
+
+    private String fairDisplayKey(String title, String companyName, String location, String applyUrl) {
+        return normalizedKey(title) + "|" +
+            normalizedKey(companyName) + "|" +
+            normalizedKey(location) + "|" +
+            normalizedKey(applyUrl);
+    }
+
+    private String fairBusinessKey(CareerFair fair) {
+        return fairBusinessKey(fair.getTitle(), fair.getCompanyName(), fair.getStartTime());
+    }
+
+    private String fairBusinessKey(String title, String companyName, LocalDateTime startTime) {
+        return normalizedKey(title) + "|" + normalizedKey(companyName) + "|" + (startTime == null ? "" : startTime.toString());
     }
 
     private String normalizedKey(String value) {
@@ -487,6 +589,59 @@ public class EmploymentService {
 
     private CareerFair betterFairForList(CareerFair left, CareerFair right, LocalDateTime now) {
         return fairListComparator(now).compare(left, right) <= 0 ? left : right;
+    }
+
+    private List<CareerFair> deduplicateFairs(List<CareerFair> fairs, LocalDateTime now) {
+        return fairs.stream()
+            .collect(
+                java.util.stream.Collectors.toMap(
+                    this::fairDedupKey,
+                    fair -> fair,
+                    (left, right) -> betterFairForList(left, right, now),
+                    LinkedHashMap::new
+                )
+            )
+            .values()
+            .stream()
+            .toList();
+    }
+
+    private void cleanupDuplicateFairs() {
+        LocalDateTime now = LocalDateTime.now();
+        List<CareerFair> fairs = fairRepository.findAll();
+        Set<Long> duplicateIds = new HashSet<>();
+        collectDuplicateIds(fairs, this::fairDisplayKey, now, duplicateIds);
+        collectDuplicateIds(fairs, this::fairBusinessKey, now, duplicateIds);
+        if (!duplicateIds.isEmpty()) {
+            fairRepository.deleteAllById(duplicateIds);
+            fairRepository.flush();
+        }
+        fairRepository.findAll().forEach(fair -> {
+            String businessKey = fairBusinessKey(fair);
+            if (!Objects.equals(fair.getBusinessKey(), businessKey)) {
+                fair.setBusinessKey(businessKey);
+                fairRepository.save(fair);
+            }
+        });
+    }
+
+    private void collectDuplicateIds(List<CareerFair> fairs,
+                                     java.util.function.Function<CareerFair, String> keyFunction,
+                                     LocalDateTime now,
+                                     Set<Long> duplicateIds) {
+        Map<String, List<CareerFair>> grouped = new LinkedHashMap<>();
+        for (CareerFair fair : fairs) {
+            if (fair.getId() == null) continue;
+            grouped.computeIfAbsent(keyFunction.apply(fair), key -> new ArrayList<>()).add(fair);
+        }
+        grouped.values().stream()
+            .filter(group -> group.size() > 1)
+            .forEach(group -> {
+                List<CareerFair> sorted = group.stream()
+                    .sorted(fairListComparator(now))
+                    .toList();
+                sorted.stream().skip(1).map(CareerFair::getId).forEach(duplicateIds::add);
+            });
     }
 
     private Comparator<CareerFair> fairListComparator(LocalDateTime now) {
@@ -528,6 +683,7 @@ public class EmploymentService {
         map.put("companyName", job.getCompanyName());
         map.put("city", job.getCity());
         map.put("industry", job.getIndustry());
+        map.put("companyType", job.getCompanyType());
         map.put("roleType", job.getRoleType());
         map.put("salaryRange", job.getSalaryRange());
         map.put("educationRequirement", job.getEducationRequirement());
@@ -590,6 +746,7 @@ public class EmploymentService {
         map.put("relatedType", notification.getRelatedType());
         map.put("relatedId", notification.getRelatedId());
         map.put("readFlag", notification.getReadFlag());
+        map.put("targetUrl", notificationTargetUrl(notification));
         map.put("createdAt", toString(notification.getCreatedAt()));
         map.put("readAt", toString(notification.getReadAt()));
         return map;
@@ -643,5 +800,44 @@ public class EmploymentService {
         return false;
     }
 
-    private record NotificationSource(String title, String content, String city, String industry, String roleType) {}
+    private String notificationTargetUrl(EmploymentNotification notification) {
+        if (notification.getRelatedId() == null || !hasText(notification.getRelatedType())) return null;
+        String type = notification.getRelatedType().trim().toUpperCase(Locale.ROOT);
+        if ("FAIR".equals(type)) {
+            return "/job/fairs/" + notification.getRelatedId();
+        }
+        if ("JOB".equals(type)) {
+            return "/job/postings/" + notification.getRelatedId();
+        }
+        return null;
+    }
+
+    private <T> Map<String, Object> pageResult(List<T> items, Integer page, Integer size,
+                                               java.util.function.Function<T, Map<String, Object>> mapper) {
+        int pageNumber = Math.max(page == null ? 1 : page, 1);
+        int pageSize = Math.min(Math.max(size == null ? 8 : size, 1), 50);
+        int fromIndex = Math.min((pageNumber - 1) * pageSize, items.size());
+        int toIndex = Math.min(fromIndex + pageSize, items.size());
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("items", items.subList(fromIndex, toIndex).stream().map(mapper).toList());
+        result.put("page", pageNumber);
+        result.put("size", pageSize);
+        result.put("totalPages", Math.max(1, (int) Math.ceil((double) items.size() / pageSize)));
+        result.put("totalItems", items.size());
+        return result;
+    }
+
+    private boolean matchesAdminKeyword(String keyword, String... values) {
+        String normalizedKeyword = blankToNull(keyword);
+        if (normalizedKeyword == null) return true;
+        String lowerKeyword = normalizedKeyword.toLowerCase(Locale.ROOT);
+        for (String value : values) {
+            if (hasText(value) && value.toLowerCase(Locale.ROOT).contains(lowerKeyword)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private record NotificationSource(String title, String content, String city, String industry, String roleType, String companyType) {}
 }
