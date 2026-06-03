@@ -11,6 +11,16 @@ import {
   getTimelineItems,
   saveTimelineItems,
 } from './studyAbroadStorage.js'
+import {
+  addMonthsDate,
+  appLabel,
+  createLocalId,
+  daysLeft,
+  deadlineText,
+  findApplication,
+  normalizeApplicationId,
+  urgencyClass,
+} from './studyAbroadUtils.js'
 import '../../App.css'
 
 const statusLabels = {
@@ -37,45 +47,8 @@ const emptyForm = {
   country: 'UK',
   school: '',
   phase: 'Documents',
-  dueDate: '2026-09-01',
+  dueDate: addMonthsDate(3),
   note: '',
-}
-
-function daysLeft(dateText) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const target = new Date(`${dateText}T00:00:00`)
-  return Math.ceil((target - today) / 86400000)
-}
-
-function deadlineText(left) {
-  if (left < 0) return `已逾期 ${Math.abs(left)} 天`
-  if (left === 0) return '今天截止'
-  if (left <= 7) return `${left} 天内截止`
-  return `${left} 天后截止`
-}
-
-function urgencyClass(left) {
-  if (left < 0) return 'danger'
-  if (left <= 7) return 'warning'
-  return 'subtle'
-}
-
-function createId() {
-  return `timeline-${Date.now()}`
-}
-
-function appLabel(app) {
-  return `${app.school} / ${app.program}`
-}
-
-function findApplication(applications, id) {
-  return applications.find((item) => String(item.id) === String(id))
-}
-
-function normalizeApplicationId(value, canUseRemote) {
-  if (!value) return null
-  return canUseRemote ? Number(value) : value
 }
 
 function toTimelinePayload(item, canUseRemote) {
@@ -98,7 +71,7 @@ function formFromItem(item) {
     country: item.country || 'UK',
     school: item.school || '',
     phase: item.phase || 'Documents',
-    dueDate: item.dueDate || '2026-09-01',
+    dueDate: item.dueDate || addMonthsDate(3),
     note: item.note || '',
   }
 }
@@ -107,12 +80,13 @@ export default function TimelinePage() {
   const { token } = useAuth()
   const isDevMode = token === 'dev-token'
   const canUseRemote = Boolean(token && token !== 'dev-token')
-  const [items, setItems] = useState(() => (isDevMode ? getTimelineItems() : defaultTimelineItems))
-  const [applications, setApplications] = useState(() => (isDevMode ? getApplicationItems() : defaultApplicationItems))
+  const [items, setItems] = useState(() => (canUseRemote ? [] : isDevMode ? getTimelineItems() : defaultTimelineItems))
+  const [applications, setApplications] = useState(() => (canUseRemote ? [] : isDevMode ? getApplicationItems() : defaultApplicationItems))
   const [phase, setPhase] = useState('all')
   const [syncNote, setSyncNote] = useState('')
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!canUseRemote) {
@@ -126,6 +100,7 @@ export default function TimelinePage() {
     let active = true
 
     async function loadRemoteData() {
+      setLoading(true)
       try {
         const [remoteApplications, remoteItems] = await Promise.all([
           studyAbroadApi.applications(token),
@@ -142,6 +117,8 @@ export default function TimelinePage() {
           setItems([])
           setSyncNote(error.message || '后端数据加载失败，请稍后重试。')
         }
+      } finally {
+        if (active) setLoading(false)
       }
     }
 
@@ -185,7 +162,10 @@ export default function TimelinePage() {
   const stats = useMemo(() => {
     const done = items.filter((item) => item.status === 'done').length
     const doing = items.filter((item) => item.status === 'doing').length
-    const overdue = items.filter((item) => item.status !== 'done' && daysLeft(item.dueDate) < 0).length
+    const overdue = items.filter((item) => {
+      const left = daysLeft(item.dueDate)
+      return item.status !== 'done' && left !== null && left < 0
+    }).length
     const rate = items.length ? Math.round((done / items.length) * 100) : 0
     return { done, doing, overdue, rate }
   }, [items])
@@ -237,7 +217,7 @@ export default function TimelinePage() {
       }
     } else if (isDevMode) {
       const saved = {
-        id: editingId || createId(),
+        id: editingId || createLocalId('timeline'),
         ...enrichWithApplication(payload),
       }
       const next = editingId
@@ -417,7 +397,7 @@ export default function TimelinePage() {
             {filteredItems.map((item) => {
               const left = daysLeft(item.dueDate)
               return (
-                <article className={`study-row ${item.status !== 'done' && left < 0 ? 'is-overdue' : item.status !== 'done' && left <= 7 ? 'is-due-soon' : ''}`} key={item.id}>
+                <article className={`study-row ${item.status !== 'done' && left !== null && left < 0 ? 'is-overdue' : item.status !== 'done' && left !== null && left <= 7 ? 'is-due-soon' : ''}`} key={item.id}>
                   <div className={`study-status ${item.status}`}>{statusLabels[item.status]}</div>
                   <div className="study-row-main">
                     <div className="study-row-title">{item.title}</div>
@@ -444,6 +424,15 @@ export default function TimelinePage() {
                 </article>
               )
             })}
+            {loading ? (
+              <div className="notice-box"><p className="muted">正在加载时间线...</p></div>
+            ) : null}
+            {!loading && !filteredItems.length ? (
+              <div className="notice-box">
+                <strong>没有匹配的时间线事项</strong>
+                <p className="muted">可以调整阶段筛选，或新增一个申请节点。</p>
+              </div>
+            ) : null}
           </div>
         </section>
       </main>

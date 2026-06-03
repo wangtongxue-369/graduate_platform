@@ -5,9 +5,10 @@ import Footer from '../../components/Footer.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { studyAbroadApi } from '../../lib/api.js'
 import { getExperienceItems, saveExperienceItems } from './studyAbroadStorage.js'
+import { countryLabelMap, countryOptions, createLocalId } from './studyAbroadUtils.js'
 import '../../App.css'
 
-const countries = ['all', 'UK', 'US', 'Australia', 'Canada', 'Singapore']
+const countries = ['all', ...countryOptions.filter((item) => item.value !== 'General').map((item) => item.value)]
 const topicOptions = [
   { value: 'all', label: '全部主题' },
   { value: 'School Selection', label: '选校定位' },
@@ -31,10 +32,6 @@ const emptyForm = {
   tags: '',
 }
 
-function createId() {
-  return `experience-${Date.now()}`
-}
-
 function normalizeTags(tags) {
   if (Array.isArray(tags)) return tags
   if (!tags) return []
@@ -53,18 +50,35 @@ export default function ExperiencePage() {
   const [page, setPage] = useState(0)
   const [pageInfo, setPageInfo] = useState({ page: 0, size: 6, totalPages: 1, totalElements: 0 })
   const [form, setForm] = useState(emptyForm)
+  const [editingId, setEditingId] = useState(null)
   const [notice, setNotice] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [debouncedKeyword, setDebouncedKeyword] = useState('')
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedKeyword(filters.keyword.trim())
+    }, 350)
+    return () => window.clearTimeout(timer)
+  }, [filters.keyword])
+
+  const remoteFilters = useMemo(() => ({
+    country: filters.country,
+    topic: filters.topic,
+    keyword: debouncedKeyword,
+  }), [debouncedKeyword, filters.country, filters.topic])
 
   useEffect(() => {
     setPage(0)
-  }, [filters.country, filters.topic, filters.keyword])
+  }, [filters.country, filters.topic, debouncedKeyword])
 
   useEffect(() => {
     let active = true
 
     async function loadExperiences() {
+      setLoading(true)
       try {
-        const data = await studyAbroadApi.experiencesPage({ ...filters, page, size: 6 })
+        const data = await studyAbroadApi.experiencesPage({ ...remoteFilters, page, size: 6 })
         if (!active) return
         setExperiences(data.content || [])
         setPageInfo({
@@ -86,6 +100,8 @@ export default function ExperiencePage() {
           setPageInfo({ page: 0, size: 6, totalPages: 1, totalElements: 0 })
           setNotice(error.message || '经验库加载失败，请稍后重试。')
         }
+      } finally {
+        if (active) setLoading(false)
       }
     }
 
@@ -93,11 +109,11 @@ export default function ExperiencePage() {
     return () => {
       active = false
     }
-  }, [filters, isDevMode, page])
+  }, [isDevMode, page, remoteFilters])
 
   const visibleExperiences = useMemo(() => {
     if (!isDevMode || pageInfo.totalElements !== experiences.length) return experiences
-    const keyword = filters.keyword.trim().toLowerCase()
+    const keyword = debouncedKeyword.toLowerCase()
     return experiences.filter((item) => {
       const matchCountry = filters.country === 'all' || item.country === filters.country
       const matchTopic = filters.topic === 'all' || item.topic === filters.topic
@@ -105,7 +121,7 @@ export default function ExperiencePage() {
       const matchKeyword = !keyword || text.includes(keyword)
       return matchCountry && matchTopic && matchKeyword
     })
-  }, [experiences, filters, isDevMode, pageInfo.totalElements])
+  }, [debouncedKeyword, experiences, filters.country, filters.topic, isDevMode, pageInfo.totalElements])
 
   function saveLocal(nextItems) {
     setExperiences(nextItems)
@@ -115,6 +131,25 @@ export default function ExperiencePage() {
 
   function updateForm(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
+  }
+
+  function resetForm() {
+    setForm(emptyForm)
+    setEditingId(null)
+  }
+
+  function startEdit(item) {
+    setEditingId(item.id)
+    setForm({
+      title: item.title || '',
+      country: item.country || 'UK',
+      topic: item.topic || 'Application',
+      authorName: item.authorName || '',
+      readTime: item.readTime || '5 min',
+      summary: item.summary || '',
+      content: item.content || '',
+      tags: normalizeTags(item.tags).join(', '),
+    })
   }
 
   async function handleSubmit(event) {
@@ -134,23 +169,35 @@ export default function ExperiencePage() {
 
     try {
       if (canUseRemote) {
-        const created = await studyAbroadApi.createExperience(payload, token)
-        setExperiences((current) => [created, ...current])
-        setPageInfo((current) => ({ ...current, totalElements: current.totalElements + 1 }))
-        setNotice('经验已发布到后端。')
+        const saved = editingId
+          ? await studyAbroadApi.updateExperience(editingId, payload, token)
+          : await studyAbroadApi.createExperience(payload, token)
+        setExperiences((current) => {
+          if (editingId) {
+            return current.map((item) => (item.id === editingId ? saved : item))
+          }
+          return [saved, ...current]
+        })
+        if (!editingId) {
+          setPageInfo((current) => ({ ...current, totalElements: current.totalElements + 1 }))
+        }
+        setNotice(editingId ? '经验已更新。' : '经验已发布到后端。')
       } else if (isDevMode) {
-        const created = {
+        const saved = {
           ...payload,
-          id: createId(),
+          id: editingId || createLocalId('experience'),
           tags: normalizeTags(payload.tags),
         }
-        saveLocal([created, ...experiences])
-        setNotice('本地演示经验已创建。真实发布需要登录正式账号。')
+        const next = editingId
+          ? experiences.map((item) => (item.id === editingId ? saved : item))
+          : [saved, ...experiences]
+        saveLocal(next)
+        setNotice(editingId ? '本地演示经验已更新。' : '本地演示经验已创建。真实发布需要登录正式账号。')
       } else {
         setNotice('请先登录，再发布留学经验。游客可以浏览，不能发布。')
         return
       }
-      setForm(emptyForm)
+      resetForm()
     } catch (error) {
       setNotice(error.message || '保存失败。')
     }
@@ -194,7 +241,7 @@ export default function ExperiencePage() {
                 <span>国家 / 地区</span>
                 <select value={filters.country} onChange={(event) => setFilters({ ...filters, country: event.target.value })}>
                   {countries.map((item) => (
-                    <option key={item} value={item}>{item === 'all' ? '全部国家' : item}</option>
+                    <option key={item} value={item}>{item === 'all' ? '全部国家' : countryLabelMap[item] || item}</option>
                   ))}
                 </select>
               </label>
@@ -232,7 +279,7 @@ export default function ExperiencePage() {
 
           <form className="feature-card" onSubmit={handleSubmit}>
             <div className="section-head compact">
-              <h2>发布经验</h2>
+              <h2>{editingId ? '编辑经验' : '发布经验'}</h2>
               <span className="tag subtle">{canUseRemote ? '后端保存' : isDevMode ? '本地演示' : '登录后发布'}</span>
             </div>
             <div className="filter-grid">
@@ -252,7 +299,7 @@ export default function ExperiencePage() {
                 <span>国家 / 地区</span>
                 <select value={form.country} onChange={(event) => updateForm('country', event.target.value)}>
                   {countries.slice(1).map((item) => (
-                    <option key={item} value={item}>{item}</option>
+                    <option key={item} value={item}>{countryLabelMap[item] || item}</option>
                   ))}
                 </select>
               </label>
@@ -281,7 +328,14 @@ export default function ExperiencePage() {
               <span>正文</span>
               <textarea rows="4" value={form.content} onChange={(event) => updateForm('content', event.target.value)} />
             </label>
-            <button className="btn primary" type="submit" disabled={!canUseRemote && !isDevMode}>发布经验</button>
+            <div className="hero-actions">
+              <button className="btn primary" type="submit" disabled={!canUseRemote && !isDevMode}>
+                {editingId ? '保存经验' : '发布经验'}
+              </button>
+              {editingId ? (
+                <button className="btn outline" type="button" onClick={resetForm}>取消编辑</button>
+              ) : null}
+            </div>
           </form>
 
           {notice ? (
@@ -296,7 +350,7 @@ export default function ExperiencePage() {
               <article className="track-card experience-card" key={item.id}>
                 <div className="track-head">
                   <h3>{item.title}</h3>
-                  <span className="tag subtle">{item.country}</span>
+                  <span className="tag subtle">{countryLabelMap[item.country] || item.country}</span>
                 </div>
                 <div className="detail-meta">
                   <span>{topicLabelMap[item.topic] || item.topic}</span>
@@ -311,11 +365,17 @@ export default function ExperiencePage() {
                   ))}
                 </div>
                 {(canUseRemote || isDevMode) ? (
-                  <button className="btn outline small" type="button" onClick={() => handleDelete(item.id)}>删除</button>
+                  <div className="hero-actions">
+                    <button className="btn outline small" type="button" onClick={() => startEdit(item)}>编辑</button>
+                    <button className="btn outline small" type="button" onClick={() => handleDelete(item.id)}>删除</button>
+                  </div>
                 ) : null}
               </article>
             ))}
-            {!visibleExperiences.length ? (
+            {loading ? (
+              <div className="notice-box"><p className="muted">正在加载经验库...</p></div>
+            ) : null}
+            {!loading && !visibleExperiences.length ? (
               <div className="feature-card soft">
                 <div className="card-title">暂无经验内容</div>
                 <p className="muted">可以调整筛选条件，或登录后发布第一篇留学经验。</p>

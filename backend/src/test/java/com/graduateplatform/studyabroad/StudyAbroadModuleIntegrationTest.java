@@ -153,6 +153,18 @@ class StudyAbroadModuleIntegrationTest {
                 ))))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.success").value(false));
+
+        mockMvc.perform(delete("/api/studyabroad/applications/" + applicationId)
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/studyabroad/timeline").header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data").isEmpty());
+
+        mockMvc.perform(get("/api/studyabroad/materials").header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data").isEmpty());
     }
 
     @Test
@@ -191,6 +203,39 @@ class StudyAbroadModuleIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.content[0].title").value("UK PS writing notes"))
             .andExpect(jsonPath("$.data.totalElements").value(1));
+
+        mockMvc.perform(put("/api/studyabroad/experiences/" + experienceId)
+                .header("Authorization", "Bearer " + otherToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "title", "Other edit",
+                    "country", "UK",
+                    "topic", "Writing",
+                    "authorName", "Other",
+                    "readTime", "3 min",
+                    "summary", "Should not edit.",
+                    "content", "Should not edit.",
+                    "tags", "blocked"
+                ))))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false));
+
+        mockMvc.perform(put("/api/studyabroad/experiences/" + experienceId)
+                .header("Authorization", "Bearer " + userToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "title", "Updated UK PS writing notes",
+                    "country", "UK",
+                    "topic", "Writing",
+                    "authorName", "Study Abroad User",
+                    "readTime", "7 min",
+                    "summary", "Updated summary.",
+                    "content", "Updated content.",
+                    "tags", "PS,updated"
+                ))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.title").value("Updated UK PS writing notes"))
+            .andExpect(jsonPath("$.data.tags[1]").value("updated"));
 
         mockMvc.perform(delete("/api/studyabroad/experiences/" + experienceId)
                 .header("Authorization", "Bearer " + otherToken))
