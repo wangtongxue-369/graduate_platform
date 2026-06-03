@@ -262,8 +262,10 @@ export const employmentApi = {
 }
 
 export const adminEmploymentApi = {
-  fairs(token) {
-    return request('/api/admin/employment/fairs', { token })
+  fairs(params = {}, token) {
+    const queryParams = typeof params === 'string' ? {} : params
+    const authToken = typeof params === 'string' ? params : token
+    return request(appendParams('/api/admin/employment/fairs', queryParams), { token: authToken })
   },
   createFair(payload, token) {
     return request('/api/admin/employment/fairs', { method: 'POST', body: payload, token })
@@ -274,8 +276,10 @@ export const adminEmploymentApi = {
   deleteFair(id, token) {
     return request(`/api/admin/employment/fairs/${id}`, { method: 'DELETE', token })
   },
-  jobs(token) {
-    return request('/api/admin/employment/jobs', { token })
+  jobs(params = {}, token) {
+    const queryParams = typeof params === 'string' ? {} : params
+    const authToken = typeof params === 'string' ? params : token
+    return request(appendParams('/api/admin/employment/jobs', queryParams), { token: authToken })
   },
   createJob(payload, token) {
     return request('/api/admin/employment/jobs', { method: 'POST', body: payload, token })

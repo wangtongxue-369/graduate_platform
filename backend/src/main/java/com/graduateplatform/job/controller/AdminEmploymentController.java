@@ -18,7 +18,13 @@ public class AdminEmploymentController {
     }
 
     @GetMapping("/fairs")
-    public ApiResponse<?> fairs() {
+    public ApiResponse<?> fairs(@RequestParam(required = false) String keyword,
+                                @RequestParam(required = false) Boolean active,
+                                @RequestParam(required = false) Integer page,
+                                @RequestParam(required = false) Integer size) {
+        if (keyword != null || active != null || page != null || size != null) {
+            return ApiResponse.ok(employmentService.adminFairsPage(keyword, active, page, size));
+        }
         return ApiResponse.ok(employmentService.adminFairs());
     }
 
@@ -38,7 +44,13 @@ public class AdminEmploymentController {
     }
 
     @GetMapping("/jobs")
-    public ApiResponse<?> jobs() {
+    public ApiResponse<?> jobs(@RequestParam(required = false) String keyword,
+                               @RequestParam(required = false) Boolean active,
+                               @RequestParam(required = false) Integer page,
+                               @RequestParam(required = false) Integer size) {
+        if (keyword != null || active != null || page != null || size != null) {
+            return ApiResponse.ok(employmentService.adminJobsPage(keyword, active, page, size));
+        }
         return ApiResponse.ok(employmentService.adminJobs());
     }
 

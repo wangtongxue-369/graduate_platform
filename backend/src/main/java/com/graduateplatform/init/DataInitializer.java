@@ -158,6 +158,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private void initEmploymentData() {
         updateLegacyEmploymentSeedData();
+        cleanupDuplicateCareerFairs();
 
         java.time.LocalDateTime fairStart = java.time.LocalDateTime.now().plusDays(7).withHour(14).withMinute(0).withSecond(0).withNano(0);
         boolean hasInternetFair = careerFairRepository.existsByTitleAndCompanyName("Internet Campus Career Fair", "Future Tech")
@@ -206,6 +207,7 @@ public class DataInitializer implements CommandLineRunner {
                 .companyName("未来科技")
                 .city("上海")
                 .industry("互联网")
+                .companyType("民企")
                 .roleType("后端")
                 .salaryRange("18k-25k")
                 .educationRequirement("本科及以上")
@@ -225,6 +227,7 @@ public class DataInitializer implements CommandLineRunner {
                 .companyName("港湾装备集团")
                 .city("苏州")
                 .industry("智能制造")
+                .companyType("国企")
                 .roleType("产品运营")
                 .salaryRange("10k-15k")
                 .educationRequirement("本科及以上")
@@ -235,6 +238,7 @@ public class DataInitializer implements CommandLineRunner {
                 .active(true)
                 .build());
         }
+        cleanupDuplicateCareerFairs();
     }
 
     private void updateLegacyEmploymentSeedData() {
@@ -267,6 +271,7 @@ public class DataInitializer implements CommandLineRunner {
             job.setCompanyName("未来科技");
             job.setCity("上海");
             job.setIndustry("互联网");
+            job.setCompanyType("民企");
             job.setRoleType("后端");
             job.setSalaryRange("18k-25k");
             job.setEducationRequirement("本科及以上");
@@ -282,6 +287,7 @@ public class DataInitializer implements CommandLineRunner {
             job.setCompanyName("港湾装备集团");
             job.setCity("苏州");
             job.setIndustry("智能制造");
+            job.setCompanyType("国企");
             job.setRoleType("产品运营");
             job.setSalaryRange("10k-15k");
             job.setEducationRequirement("本科及以上");
@@ -291,6 +297,93 @@ public class DataInitializer implements CommandLineRunner {
             job.setApplyUrl("https://jobs.example.com/product-operation");
             jobPostingRepository.save(job);
         }
+    }
+
+    private void cleanupDuplicateCareerFairs() {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.util.List<CareerFair> fairs = careerFairRepository.findAll();
+        java.util.Set<Long> duplicateIds = new java.util.HashSet<>();
+        collectDuplicateCareerFairIds(fairs, this::careerFairDisplayKey, now, duplicateIds);
+        collectDuplicateCareerFairIds(fairs, this::careerFairBusinessKey, now, duplicateIds);
+        if (!duplicateIds.isEmpty()) {
+            careerFairRepository.deleteAllById(duplicateIds);
+            careerFairRepository.flush();
+        }
+        careerFairRepository.findAll().forEach(fair -> {
+            String businessKey = careerFairBusinessKey(fair);
+            if (!java.util.Objects.equals(fair.getBusinessKey(), businessKey)) {
+                fair.setBusinessKey(businessKey);
+                careerFairRepository.save(fair);
+            }
+        });
+    }
+
+    private void collectDuplicateCareerFairIds(java.util.List<CareerFair> fairs,
+                                               java.util.function.Function<CareerFair, String> keyFunction,
+                                               java.time.LocalDateTime now,
+                                               java.util.Set<Long> duplicateIds) {
+        java.util.Map<String, java.util.List<CareerFair>> grouped = new java.util.LinkedHashMap<>();
+        for (CareerFair fair : fairs) {
+            if (fair.getId() == null) continue;
+            grouped.computeIfAbsent(keyFunction.apply(fair), key -> new java.util.ArrayList<>()).add(fair);
+        }
+        grouped.values().stream()
+            .filter(group -> group.size() > 1)
+            .forEach(group -> {
+                java.util.List<CareerFair> sorted = group.stream()
+                    .sorted(careerFairComparator(now))
+                    .toList();
+                sorted.stream().skip(1).map(CareerFair::getId).forEach(duplicateIds::add);
+            });
+    }
+
+    private java.util.Comparator<CareerFair> careerFairComparator(java.time.LocalDateTime now) {
+        return java.util.Comparator
+            .comparingInt((CareerFair fair) -> careerFairStatusRank(fair, now))
+            .thenComparing(fair -> careerFairSortTime(fair, now), java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+            .thenComparing(CareerFair::getCreatedAt, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()));
+    }
+
+    private int careerFairStatusRank(CareerFair fair, java.time.LocalDateTime now) {
+        if (fair.getStartTime() != null && fair.getEndTime() != null
+            && !fair.getStartTime().isAfter(now) && !fair.getEndTime().isBefore(now)) {
+            return 0;
+        }
+        if (fair.getStartTime() != null && fair.getStartTime().isAfter(now)) {
+            return 1;
+        }
+        if (fair.getEndTime() != null && fair.getEndTime().isBefore(now)) {
+            return 2;
+        }
+        return 3;
+    }
+
+    private java.time.LocalDateTime careerFairSortTime(CareerFair fair, java.time.LocalDateTime now) {
+        if (fair.getStartTime() != null && fair.getStartTime().isAfter(now)) {
+            return fair.getStartTime();
+        }
+        if (fair.getStartTime() != null && fair.getEndTime() != null
+            && !fair.getStartTime().isAfter(now) && !fair.getEndTime().isBefore(now)) {
+            return fair.getEndTime();
+        }
+        return fair.getEndTime() != null ? fair.getEndTime() : fair.getStartTime();
+    }
+
+    private String careerFairDisplayKey(CareerFair fair) {
+        return normalizeEmploymentKey(fair.getTitle()) + "|" +
+            normalizeEmploymentKey(fair.getCompanyName()) + "|" +
+            normalizeEmploymentKey(fair.getLocation()) + "|" +
+            normalizeEmploymentKey(fair.getApplyUrl());
+    }
+
+    private String careerFairBusinessKey(CareerFair fair) {
+        return normalizeEmploymentKey(fair.getTitle()) + "|" +
+            normalizeEmploymentKey(fair.getCompanyName()) + "|" +
+            (fair.getStartTime() == null ? "" : fair.getStartTime().toString());
+    }
+
+    private String normalizeEmploymentKey(String value) {
+        return value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     private void createBank(String name, String target, String subject, String desc, String difficulty, String[][] questions) {

@@ -12,12 +12,21 @@ export default function CareerFairDetailPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    setLoading(true)
-    setError('')
-    employmentApi.fairDetail(id)
-      .then(setFair)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false))
+    let cancelled = false
+    Promise.resolve().then(async () => {
+      if (cancelled) return
+      setLoading(true)
+      setError('')
+      try {
+        const data = await employmentApi.fairDetail(id)
+        if (!cancelled) setFair(data)
+      } catch (e) {
+        if (!cancelled) setError(e.message)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })
+    return () => { cancelled = true }
   }, [id])
 
   return (
@@ -44,13 +53,16 @@ export default function CareerFairDetailPage() {
                 <span className="tag subtle">{fair.industry || '行业待定'}</span>
                 <span className="tag subtle">{fair.targetRoles || '岗位待定'}</span>
                 <span className="tag subtle">{fair.location || '地点待定'}</span>
+                <span className="tag subtle">{fair.statusLabel || (fair.expired ? '已结束' : '时间待定')}</span>
+                <span className="tag subtle">{fair.applyStatusLabel || (fair.applicationClosed ? '网申已截止' : '网申待公布')}</span>
               </div>
               <p className="room-sub">开始时间：{fair.startTime || '待定'}</p>
               <p className="room-sub">结束时间：{fair.endTime || '待定'}</p>
               <p className="room-sub">网申截止：{fair.applyDeadline || '待定'}</p>
               <p>{fair.description || '暂无详细介绍。'}</p>
               <div className="tag-row">
-                {fair.applyUrl ? <a className="btn primary small" href={fair.applyUrl} target="_blank" rel="noreferrer">打开申请链接</a> : null}
+                {fair.applyUrl && !fair.applicationClosed ? <a className="btn primary small" href={fair.applyUrl} target="_blank" rel="noreferrer">打开申请链接</a> : null}
+                {fair.applyUrl && fair.applicationClosed ? <span className="tag subtle">申请已截止</span> : null}
                 <Link className="btn outline small" to="/job/fairs">返回招聘会列表</Link>
               </div>
             </article>

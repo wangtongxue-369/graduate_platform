@@ -38,7 +38,12 @@ public class EmploymentController {
     public ApiResponse<?> postings(@RequestParam(required = false) String city,
                                    @RequestParam(required = false) String industry,
                                    @RequestParam(required = false) String roleType,
-                                   @RequestParam(required = false) String keyword) {
+                                   @RequestParam(required = false) String keyword,
+                                   @RequestParam(required = false) Integer page,
+                                   @RequestParam(required = false) Integer size) {
+        if (page != null || size != null) {
+            return ApiResponse.ok(employmentService.listPostingsPage(city, industry, roleType, keyword, page, size));
+        }
         return ApiResponse.ok(employmentService.listPostings(city, industry, roleType, keyword));
     }
 
