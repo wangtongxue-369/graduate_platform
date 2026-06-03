@@ -14,7 +14,10 @@ public interface CounselingMessageRepository extends JpaRepository<CounselingMes
 
     Page<CounselingMessage> findBySessionIdOrderByCreatedAtAsc(Long sessionId, Pageable pageable);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE CounselingMessage m SET m.isRead = true WHERE m.session.id = :sessionId AND m.sender.id != :userId")
     void markAsReadBySessionIdAndNotSender(@Param("sessionId") Long sessionId, @Param("userId") Long userId);
+
+    @Query("SELECT COUNT(m) FROM CounselingMessage m WHERE m.session.id = :sessionId AND m.sender.id != :userId AND m.isRead = false")
+    long countUnreadBySessionIdAndNotSender(@Param("sessionId") Long sessionId, @Param("userId") Long userId);
 }

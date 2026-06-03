@@ -38,6 +38,15 @@ export default function StudyPlanDetailPage() {
   async function handleCheckIn(e) {
     e.preventDefault()
     if (!checkInForm.durationHours) return
+    const hours = parseFloat(checkInForm.durationHours)
+    if (!Number.isFinite(hours) || hours <= 0) {
+      alert('请输入大于 0 的学习时长')
+      return
+    }
+    if (hours >= 24) {
+      alert('单次打卡时长必须小于 24 小时')
+      return
+    }
     setSubmitting(true)
     try {
       await studyPlanApi.addCheckIn(id, {
@@ -393,10 +402,11 @@ export default function StudyPlanDetailPage() {
                 <input
                   type="number"
                   min="0.1"
-                  step="0.5"
+                  max="24"
+                  step="0.1"
                   value={checkInForm.durationHours}
                   onChange={e => setCheckInForm({ ...checkInForm, durationHours: e.target.value })}
-                  placeholder="如：2.5"
+                  placeholder="如：2.5（最多一位小数，且小于 24 小时）"
                   required
                   autoFocus
                 />
