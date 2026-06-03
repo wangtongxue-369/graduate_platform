@@ -46,12 +46,24 @@ public class MentorService {
 
     public MentorProfile createOrUpdateProfile(Long userId, Map<String, Object> body) {
         User user = findUser(userId);
-        Optional<MentorProfile> existing = mentorRepository.findByUserIdAndActiveTrue(userId);
+        Optional<MentorProfile> existing = mentorRepository.findByUserId(userId);
         if (existing.isPresent()) {
-            throw new BusinessException("您已完成入驻，无需重复入驻");
+            MentorProfile profile = existing.get();
+            if (Boolean.TRUE.equals(profile.getActive())) {
+                throw new BusinessException("您已完成入驻，无需重复入驻");
+            }
+            applyProfileFields(profile, user, body);
+            profile.setActive(true);
+            return mentorRepository.save(profile);
         }
         MentorProfile profile = new MentorProfile();
         profile.setUser(user);
+        applyProfileFields(profile, user, body);
+        profile.setActive(true);
+        return mentorRepository.save(profile);
+    }
+
+    private void applyProfileFields(MentorProfile profile, User user, Map<String, Object> body) {
         if (body.containsKey("avatar")) profile.setAvatar(str(body.get("avatar")));
         if (body.containsKey("nickname")) profile.setNickname(str(body.get("nickname")));
         if (profile.getNickname() == null || profile.getNickname().isBlank()) profile.setNickname(user.getName());
@@ -61,8 +73,6 @@ public class MentorService {
         if (body.containsKey("major")) profile.setMajor(str(body.get("major")));
         if (body.containsKey("expertiseSubjects")) profile.setExpertiseSubjects(str(body.get("expertiseSubjects")));
         if (body.containsKey("examSubjects")) profile.setExamSubjects(str(body.get("examSubjects")));
-        if (body.containsKey("active")) profile.setActive(bool(body.get("active")));
-        return mentorRepository.save(profile);
     }
 
     public Map<String, Object> getMyProfile(Long userId) {
@@ -100,7 +110,7 @@ public class MentorService {
 
     // ========== Counseling ==========
 
-    public CounselingSession createSession(Long studentId, Long mentorId, String subject) {
+    public Map<String, Object> createSession(Long studentId, Long mentorId, String subject) {
         if (studentId.equals(mentorId)) {
             throw new BusinessException("不能咨询自己");
         }
@@ -117,21 +127,27 @@ public class MentorService {
                 .student(student)
                 .subject(subject != null ? subject : "")
                 .build();
-        return sessionRepository.save(session);
+        CounselingSession saved = sessionRepository.save(session);
+        return toSessionMap(saved);
     }
 
     public Map<String, Object> listSentSessions(Long userId, Map<String, String> filters) {
         Page<CounselingSession> rows = sessionRepository.findByStudentIdAndStatusNot(
                 userId, "closed", PageRequest.of(pageNumber(filters), pageSize(filters), Sort.by(Sort.Direction.DESC, "id"))
         );
-        return page(rows.map(this::toSessionMap));
+        return page(rows.map(s -> withUnread(toSessionMap(s), s.getId(), userId)));
     }
 
     public Map<String, Object> listReceivedSessions(Long userId, Map<String, String> filters) {
         Page<CounselingSession> rows = sessionRepository.findByMentorIdAndStatusNot(
                 userId, "closed", PageRequest.of(pageNumber(filters), pageSize(filters), Sort.by(Sort.Direction.DESC, "id"))
         );
-        return page(rows.map(this::toSessionMap));
+        return page(rows.map(s -> withUnread(toSessionMap(s), s.getId(), userId)));
+    }
+
+    private Map<String, Object> withUnread(Map<String, Object> map, Long sessionId, Long userId) {
+        map.put("unreadCount", messageRepository.countUnreadBySessionIdAndNotSender(sessionId, userId));
+        return map;
     }
 
     public List<Map<String, Object>> getSessionMessages(Long sessionId, Long userId) {
