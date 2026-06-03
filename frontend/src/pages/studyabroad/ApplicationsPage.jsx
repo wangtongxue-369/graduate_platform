@@ -9,16 +9,22 @@ import {
   getApplicationItems,
   saveApplicationItems,
 } from './studyAbroadStorage.js'
+import {
+  addMonthsDate,
+  applicationStatusClass,
+  countryLabelMap,
+  countryOptions,
+} from './studyAbroadUtils.js'
 import '../../App.css'
 
 const emptyForm = {
   country: 'UK',
   school: '',
   program: '',
-  degree: 'Master',
-  intake: '2027 Fall',
-  applicationRound: 'Round 1',
-  deadline: '2026-10-15',
+  degree: '硕士',
+  intake: '2027 秋季',
+  applicationRound: '第一轮',
+  deadline: addMonthsDate(4),
   status: 'planning',
   priority: 'match',
   note: '',
@@ -49,11 +55,12 @@ export default function ApplicationsPage() {
   const { token } = useAuth()
   const isDevMode = token === 'dev-token'
   const canUseRemote = Boolean(token && token !== 'dev-token')
-  const [items, setItems] = useState(() => (isDevMode ? getApplicationItems() : defaultApplicationItems))
+  const [items, setItems] = useState(() => (canUseRemote ? [] : isDevMode ? getApplicationItems() : defaultApplicationItems))
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [filter, setFilter] = useState({ status: 'all', keyword: '' })
   const [notice, setNotice] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const dataNotice = notice || (
     canUseRemote
@@ -71,6 +78,7 @@ export default function ApplicationsPage() {
 
     let active = true
     async function loadApplications() {
+      setLoading(true)
       try {
         const data = await studyAbroadApi.applications(token)
         if (active) {
@@ -82,6 +90,8 @@ export default function ApplicationsPage() {
           setItems([])
           setNotice(error.message || '后端数据加载失败，请稍后重试。')
         }
+      } finally {
+        if (active) setLoading(false)
       }
     }
 
@@ -254,7 +264,11 @@ export default function ApplicationsPage() {
             <div className="filter-grid">
               <label className="field">
                 <span>国家 / 地区</span>
-                <input value={form.country} onChange={(event) => updateForm('country', event.target.value)} />
+                <select value={form.country} onChange={(event) => updateForm('country', event.target.value)}>
+                  {countryOptions.filter((item) => item.value !== 'General').map((item) => (
+                    <option value={item.value} key={item.value}>{item.label}</option>
+                  ))}
+                </select>
               </label>
               <label className="field">
                 <span>院校</span>
@@ -333,13 +347,13 @@ export default function ApplicationsPage() {
                   <div className="study-row-title">{item.school}</div>
                   <p className="muted">{item.program} / {item.degree} / {item.intake}</p>
                   <div className="tag-row">
-                    <span className="tag subtle">{item.country}</span>
+                    <span className="tag subtle">{countryLabelMap[item.country] || item.country}</span>
                     <span className="tag subtle">{item.applicationRound}</span>
                     <span className="tag subtle">{priorityLabelMap[item.priority] || item.priority}</span>
                   </div>
                   <p className="muted">{item.note}</p>
                 </div>
-                <span className={`study-status ${item.status === 'offer' ? 'done' : item.status === 'planning' ? 'todo' : 'doing'}`}>
+                <span className={`study-status ${applicationStatusClass(item.status)}`}>
                   {statusLabelMap[item.status] || item.status}
                 </span>
                 <div className="study-row-side">
@@ -349,6 +363,15 @@ export default function ApplicationsPage() {
                 </div>
               </article>
             ))}
+            {loading ? (
+              <div className="notice-box"><p className="muted">正在加载申请项目...</p></div>
+            ) : null}
+            {!loading && !filteredItems.length ? (
+              <div className="notice-box">
+                <strong>没有匹配的申请项目</strong>
+                <p className="muted">可以调整筛选条件，或新增一个目标院校项目。</p>
+              </div>
+            ) : null}
           </div>
         </section>
       </main>

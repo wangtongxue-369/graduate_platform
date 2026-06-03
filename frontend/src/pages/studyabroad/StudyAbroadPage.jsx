@@ -9,6 +9,7 @@ import {
   defaultMaterialItems,
   defaultTimelineItems,
 } from './studyAbroadStorage.js'
+import { daysLeft, deadlineText, urgencyClass } from './studyAbroadUtils.js'
 import '../../App.css'
 
 const featureCards = [
@@ -38,30 +39,6 @@ const sharedEntries = [
   { title: '社区交流', desc: '进入综合社区的留学分类，继续发帖讨论和提问。', to: '/community?category=liuxue' },
   { title: '题库练习', desc: '使用平台通用题库能力，保留刷题记录和错题反馈。', to: '/practice' },
 ]
-
-function daysLeft(dateText) {
-  if (!dateText) return null
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const target = new Date(`${dateText}T00:00:00`)
-  if (Number.isNaN(target.getTime())) return null
-  return Math.ceil((target - today) / 86400000)
-}
-
-function urgencyLabel(left) {
-  if (left == null) return '未设置日期'
-  if (left < 0) return `已逾期 ${Math.abs(left)} 天`
-  if (left === 0) return '今天截止'
-  if (left <= 7) return `${left} 天内截止`
-  return `${left} 天后截止`
-}
-
-function urgencyClass(left) {
-  if (left == null) return 'subtle'
-  if (left < 0) return 'danger'
-  if (left <= 7) return 'warning'
-  return 'subtle'
-}
 
 function isSameApplication(item, application) {
   return item.applicationId !== null
@@ -273,7 +250,7 @@ export default function StudyAbroadPage() {
               <article className={`project-card ${item.left != null && item.left < 0 ? 'is-overdue' : item.left != null && item.left <= 7 ? 'is-due-soon' : ''}`} key={item.id}>
                 <div className="track-head">
                   <h3>{item.school}</h3>
-                  <span className={`tag ${urgencyClass(item.left)}`}>{urgencyLabel(item.left)}</span>
+                  <span className={`tag ${urgencyClass(item.left)}`}>{deadlineText(item.left)}</span>
                 </div>
                 <p className="muted">{item.program} / {item.degree} / {item.intake}</p>
                 <div className="tag-row">
@@ -312,7 +289,7 @@ export default function StudyAbroadPage() {
                   <p className="muted">{item.source} / {item.date || '未设置日期'}</p>
                 </div>
                 <div className="study-row-side">
-                  <span className={`tag ${urgencyClass(item.left)}`}>{urgencyLabel(item.left)}</span>
+                  <span className={`tag ${urgencyClass(item.left)}`}>{deadlineText(item.left)}</span>
                   <Link className="btn outline small" to={item.to}>处理</Link>
                 </div>
               </article>

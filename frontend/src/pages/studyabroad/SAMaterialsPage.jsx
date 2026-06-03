@@ -11,12 +11,21 @@ import {
   getMaterialItems,
   saveMaterialItems,
 } from './studyAbroadStorage.js'
+import {
+  addMonthsDate,
+  appLabel,
+  countryLabelMap,
+  countryOptions,
+  createLocalId,
+  daysLeft,
+  deadlineText,
+  findApplication,
+  normalizeApplicationId,
+  urgencyClass,
+} from './studyAbroadUtils.js'
 import '../../App.css'
 
-const countries = ['全部国家', 'General', 'UK', 'US', 'Australia', 'Canada', 'Singapore']
-const countryLabelMap = {
-  General: '通用',
-}
+const countries = ['全部国家', ...countryOptions.map((item) => item.value)]
 
 const stageOptions = [
   { value: 'all', label: '全部阶段' },
@@ -36,45 +45,8 @@ const emptyForm = {
   country: 'General',
   stage: 'Documents',
   category: 'Writing',
-  deadline: '2026-08-01',
+  deadline: addMonthsDate(3),
   note: '',
-}
-
-function daysLeft(dateText) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const target = new Date(`${dateText}T00:00:00`)
-  return Math.ceil((target - today) / 86400000)
-}
-
-function deadlineText(left) {
-  if (left < 0) return `已逾期 ${Math.abs(left)} 天`
-  if (left === 0) return '今天截止'
-  if (left <= 7) return `${left} 天内截止`
-  return `${left} 天后截止`
-}
-
-function urgencyClass(left) {
-  if (left < 0) return 'danger'
-  if (left <= 7) return 'warning'
-  return 'subtle'
-}
-
-function createId() {
-  return `material-${Date.now()}`
-}
-
-function appLabel(app) {
-  return `${app.school} / ${app.program}`
-}
-
-function findApplication(applications, id) {
-  return applications.find((item) => String(item.id) === String(id))
-}
-
-function normalizeApplicationId(value, canUseRemote) {
-  if (!value) return null
-  return canUseRemote ? Number(value) : value
 }
 
 function toMaterialPayload(item, canUseRemote) {
@@ -97,7 +69,7 @@ function formFromItem(item) {
     country: item.country || 'General',
     stage: item.stage || 'Documents',
     category: item.category || 'Other',
-    deadline: item.deadline || '2026-08-01',
+    deadline: item.deadline || addMonthsDate(3),
     note: item.note || '',
   }
 }
@@ -113,14 +85,15 @@ export default function SAMaterialsPage() {
   const { token } = useAuth()
   const isDevMode = token === 'dev-token'
   const canUseRemote = Boolean(token && token !== 'dev-token')
-  const [items, setItems] = useState(() => (isDevMode ? getMaterialItems() : defaultMaterialItems))
-  const [applications, setApplications] = useState(() => (isDevMode ? getApplicationItems() : defaultApplicationItems))
+  const [items, setItems] = useState(() => (canUseRemote ? [] : isDevMode ? getMaterialItems() : defaultMaterialItems))
+  const [applications, setApplications] = useState(() => (canUseRemote ? [] : isDevMode ? getApplicationItems() : defaultApplicationItems))
   const [filters, setFilters] = useState({ country: '全部国家', stage: 'all', keyword: '' })
   const [syncNote, setSyncNote] = useState('')
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [selectedFiles, setSelectedFiles] = useState({})
   const [uploadProgress, setUploadProgress] = useState({})
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!canUseRemote) {
@@ -134,6 +107,7 @@ export default function SAMaterialsPage() {
     let active = true
 
     async function loadRemoteData() {
+      setLoading(true)
       try {
         const [remoteApplications, remoteItems] = await Promise.all([
           studyAbroadApi.applications(token),
@@ -150,6 +124,8 @@ export default function SAMaterialsPage() {
           setItems([])
           setSyncNote(error.message || '后端数据加载失败，请稍后重试。')
         }
+      } finally {
+        if (active) setLoading(false)
       }
     }
 
@@ -197,7 +173,10 @@ export default function SAMaterialsPage() {
 
   const stats = useMemo(() => {
     const completed = items.filter((item) => item.completed).length
-    const overdue = items.filter((item) => !item.completed && daysLeft(item.deadline) < 0).length
+    const overdue = items.filter((item) => {
+      const left = daysLeft(item.deadline)
+      return !item.completed && left !== null && left < 0
+    }).length
     const attachmentCount = items.reduce((sum, item) => sum + (item.attachments?.length || 0), 0)
     const rate = items.length ? Math.round((completed / items.length) * 100) : 0
     return { completed, overdue, attachmentCount, rate }
@@ -250,7 +229,7 @@ export default function SAMaterialsPage() {
       }
     } else if (isDevMode) {
       const saved = {
-        id: editingId || createId(),
+        id: editingId || createLocalId('material'),
         ...enrichWithApplication(payload),
         attachments: existing?.attachments || [],
       }
@@ -499,7 +478,7 @@ export default function SAMaterialsPage() {
               const files = selectedFiles[item.id] || []
               const progress = uploadProgress[item.id]
               return (
-                <article className={`study-row material-row ${item.completed ? 'is-complete' : left < 0 ? 'is-overdue' : left <= 7 ? 'is-due-soon' : ''}`} key={item.id}>
+                <article className={`study-row material-row ${item.completed ? 'is-complete' : left !== null && left < 0 ? 'is-overdue' : left !== null && left <= 7 ? 'is-due-soon' : ''}`} key={item.id}>
                   <label className="study-check">
                     <input type="checkbox" checked={Boolean(item.completed)} onChange={() => toggleCompleted(item.id)} />
                     <span>{item.completed ? '已完成' : '待完成'}</span>
@@ -566,6 +545,15 @@ export default function SAMaterialsPage() {
                 </article>
               )
             })}
+            {loading ? (
+              <div className="notice-box"><p className="muted">正在加载材料清单...</p></div>
+            ) : null}
+            {!loading && !filteredItems.length ? (
+              <div className="notice-box">
+                <strong>没有匹配的材料条目</strong>
+                <p className="muted">可以调整筛选条件，或新增一项申请材料。</p>
+              </div>
+            ) : null}
           </div>
         </section>
       </main>

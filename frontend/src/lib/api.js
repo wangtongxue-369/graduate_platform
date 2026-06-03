@@ -402,6 +402,9 @@ export const studyAbroadApi = {
   createExperience(payload, token) {
     return request('/api/studyabroad/experiences', { method: 'POST', body: payload, token })
   },
+  updateExperience(id, payload, token) {
+    return request(`/api/studyabroad/experiences/${id}`, { method: 'PUT', body: payload, token })
+  },
   deleteExperience(id, token) {
     return request(`/api/studyabroad/experiences/${id}`, { method: 'DELETE', token })
   },
