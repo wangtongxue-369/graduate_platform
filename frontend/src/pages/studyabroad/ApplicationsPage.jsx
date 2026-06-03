@@ -5,6 +5,7 @@ import Footer from '../../components/Footer.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { studyAbroadApi } from '../../lib/api.js'
 import {
+  defaultApplicationItems,
   getApplicationItems,
   saveApplicationItems,
 } from './studyAbroadStorage.js'
@@ -46,21 +47,25 @@ function byDeadline(a, b) {
 
 export default function ApplicationsPage() {
   const { token } = useAuth()
-  const [items, setItems] = useState(() => getApplicationItems())
+  const isDevMode = token === 'dev-token'
+  const canUseRemote = Boolean(token && token !== 'dev-token')
+  const [items, setItems] = useState(() => (isDevMode ? getApplicationItems() : defaultApplicationItems))
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
   const [filter, setFilter] = useState({ status: 'all', keyword: '' })
   const [notice, setNotice] = useState('')
 
-  const canUseRemote = Boolean(token && token !== 'dev-token')
   const dataNotice = notice || (
     canUseRemote
       ? ''
-      : '当前使用本地演示数据。使用真实账号登录后可保存到后端。'
+      : isDevMode
+        ? '当前是开发演示账号，操作只会保存到本机 localStorage，不会进入真实后端。'
+        : '请登录后管理真实申请项目。未登录时仅展示示例，不会伪装成保存结果。'
   )
 
   useEffect(() => {
     if (!canUseRemote) {
+      setItems(isDevMode ? getApplicationItems() : defaultApplicationItems)
       return undefined
     }
 
@@ -74,7 +79,8 @@ export default function ApplicationsPage() {
         }
       } catch (error) {
         if (active) {
-          setNotice(error.message || '后端暂不可用，当前展示本地演示数据。')
+          setItems([])
+          setNotice(error.message || '后端数据加载失败，请稍后重试。')
         }
       }
     }
@@ -83,7 +89,7 @@ export default function ApplicationsPage() {
     return () => {
       active = false
     }
-  }, [canUseRemote, token])
+  }, [canUseRemote, isDevMode, token])
 
   const filteredItems = useMemo(() => {
     const keyword = filter.keyword.trim().toLowerCase()
@@ -143,13 +149,16 @@ export default function ApplicationsPage() {
           return next.sort(byDeadline)
         })
         setNotice(editingId ? '申请项目已更新。' : '申请项目已创建。')
-      } else {
+      } else if (isDevMode) {
         const saved = { ...payload, id: editingId || `local-${Date.now()}` }
         const next = editingId
           ? items.map((item) => (item.id === editingId ? saved : item))
           : [...items, saved]
         saveLocal(next.sort(byDeadline))
-        setNotice(editingId ? '本地申请项目已更新。' : '本地申请项目已创建。')
+        setNotice(editingId ? '本地演示项目已更新。' : '本地演示项目已创建。')
+      } else {
+        setNotice('请先登录真实账号，再保存申请项目。')
+        return
       }
       resetForm()
     } catch (error) {
@@ -179,8 +188,11 @@ export default function ApplicationsPage() {
       if (canUseRemote) {
         await studyAbroadApi.deleteApplication(id, token)
         setItems((current) => current.filter((item) => item.id !== id))
-      } else {
+      } else if (isDevMode) {
         saveLocal(items.filter((item) => item.id !== id))
+      } else {
+        setNotice('请先登录真实账号，再删除申请项目。')
+        return
       }
       if (editingId === id) resetForm()
       setNotice('申请项目已删除。')
@@ -196,9 +208,9 @@ export default function ApplicationsPage() {
         <section className="section">
           <div className="detail-header">
             <div>
-              <p className="eyebrow">留学 · 申请项目</p>
+              <p className="eyebrow">留学 / 申请项目</p>
               <h2>申请项目追踪</h2>
-              <p className="muted">管理目标院校、专业、申请轮次、截止日期、当前状态和冲刺梯度。</p>
+              <p className="muted">管理目标院校、专业、申请轮次、截止日期、当前状态和梯度。</p>
             </div>
             <Link className="btn ghost" to="/studyabroad">返回工作台</Link>
           </div>
@@ -222,7 +234,7 @@ export default function ApplicationsPage() {
             <strong>最近截止</strong>
             <p className="muted">
               {summary.nearest
-                ? `${summary.nearest.deadline} · ${summary.nearest.school} · ${summary.nearest.program}`
+                ? `${summary.nearest.deadline} / ${summary.nearest.school} / ${summary.nearest.program}`
                 : '还没有申请项目。'}
             </p>
           </div>
@@ -319,7 +331,7 @@ export default function ApplicationsPage() {
               <article className="study-row" key={item.id}>
                 <div className="study-row-main">
                   <div className="study-row-title">{item.school}</div>
-                  <p className="muted">{item.program} · {item.degree} · {item.intake}</p>
+                  <p className="muted">{item.program} / {item.degree} / {item.intake}</p>
                   <div className="tag-row">
                     <span className="tag subtle">{item.country}</span>
                     <span className="tag subtle">{item.applicationRound}</span>

@@ -52,6 +52,7 @@ import StudyAbroadPage from './pages/studyabroad/StudyAbroadPage.jsx'
 import ApplicationsPage from './pages/studyabroad/ApplicationsPage.jsx'
 import TimelinePage from './pages/studyabroad/TimelinePage.jsx'
 import SAMaterialsPage from './pages/studyabroad/SAMaterialsPage.jsx'
+import ExperiencePage from './pages/studyabroad/ExperiencePage.jsx'
 
 // 管理员页面
 import AdminPage from './pages/admin/AdminPage.jsx'
@@ -122,6 +123,7 @@ export default function App() {
       <Route path="/studyabroad/applications" element={<ApplicationsPage />} />
       <Route path="/studyabroad/timeline" element={<TimelinePage />} />
       <Route path="/studyabroad/materials" element={<SAMaterialsPage />} />
+      <Route path="/studyabroad/experience" element={<ExperiencePage />} />
 
       {/* 管理员后台 */}
       <Route path="/admin" element={<AdminPage />} />
