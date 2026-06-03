@@ -3,6 +3,7 @@ package com.graduateplatform.studyabroad.service;
 import com.graduateplatform.common.entity.User;
 import com.graduateplatform.common.exception.BusinessException;
 import com.graduateplatform.common.repository.UserRepository;
+import com.graduateplatform.common.service.CosService;
 import com.graduateplatform.studyabroad.dto.ApplicationRequest;
 import com.graduateplatform.studyabroad.dto.ExperienceRequest;
 import com.graduateplatform.studyabroad.dto.MaterialRequest;
@@ -10,18 +11,27 @@ import com.graduateplatform.studyabroad.dto.TimelineRequest;
 import com.graduateplatform.studyabroad.entity.StudyAbroadApplication;
 import com.graduateplatform.studyabroad.entity.StudyAbroadExperience;
 import com.graduateplatform.studyabroad.entity.StudyAbroadMaterial;
+import com.graduateplatform.studyabroad.entity.StudyAbroadMaterialAttachment;
 import com.graduateplatform.studyabroad.entity.StudyAbroadTimeline;
 import com.graduateplatform.studyabroad.repository.StudyAbroadApplicationRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadExperienceRepository;
+import com.graduateplatform.studyabroad.repository.StudyAbroadMaterialAttachmentRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadMaterialRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadTimelineRepository;
+import com.qcloud.cos.model.COSObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class StudyAbroadService {
@@ -30,23 +40,31 @@ public class StudyAbroadService {
     private static final Set<String> VALID_APPLICATION_STATUSES =
         Set.of("planning", "preparing", "submitted", "offer", "rejected");
     private static final Set<String> VALID_PRIORITIES = Set.of("dream", "match", "safe");
+    private static final long MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
+    private static final int MAX_ATTACHMENT_COUNT = 5;
 
     private final StudyAbroadApplicationRepository applicationRepository;
     private final StudyAbroadExperienceRepository experienceRepository;
     private final StudyAbroadTimelineRepository timelineRepository;
     private final StudyAbroadMaterialRepository materialRepository;
+    private final StudyAbroadMaterialAttachmentRepository materialAttachmentRepository;
     private final UserRepository userRepository;
+    private final CosService cosService;
 
     public StudyAbroadService(StudyAbroadApplicationRepository applicationRepository,
                               StudyAbroadExperienceRepository experienceRepository,
                               StudyAbroadTimelineRepository timelineRepository,
                               StudyAbroadMaterialRepository materialRepository,
-                              UserRepository userRepository) {
+                              StudyAbroadMaterialAttachmentRepository materialAttachmentRepository,
+                              UserRepository userRepository,
+                              CosService cosService) {
         this.applicationRepository = applicationRepository;
         this.experienceRepository = experienceRepository;
         this.timelineRepository = timelineRepository;
         this.materialRepository = materialRepository;
+        this.materialAttachmentRepository = materialAttachmentRepository;
         this.userRepository = userRepository;
+        this.cosService = cosService;
     }
 
     @Transactional(readOnly = true)
@@ -59,6 +77,23 @@ public class StudyAbroadService {
             .stream()
             .map(this::toExperienceMap)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getExperiencesPage(String country, String topic, String keyword, int page, int size) {
+        Page<StudyAbroadExperience> result = experienceRepository.searchPage(
+            normalizeFilter(country),
+            normalizeFilter(topic),
+            normalizeFilter(keyword),
+            PageRequest.of(Math.max(0, page), Math.max(1, Math.min(size, 50)), Sort.by(Sort.Direction.DESC, "createdAt"))
+        );
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("content", result.getContent().stream().map(this::toExperienceMap).toList());
+        map.put("page", result.getNumber());
+        map.put("size", result.getSize());
+        map.put("totalElements", result.getTotalElements());
+        map.put("totalPages", Math.max(1, result.getTotalPages()));
+        return map;
     }
 
     @Transactional
@@ -243,6 +278,62 @@ public class StudyAbroadService {
         materialRepository.delete(item);
     }
 
+    @Transactional
+    public Map<String, Object> uploadMaterialAttachments(Long userId, Long materialId, List<MultipartFile> files) {
+        ensureUser(userId);
+        StudyAbroadMaterial material = materialRepository.findByIdAndUserId(materialId, userId)
+            .orElseThrow(() -> new BusinessException("Material item not found or access denied"));
+        List<MultipartFile> normalizedFiles = normalizeFiles(files);
+        int currentCount = material.getAttachments() == null ? 0 : material.getAttachments().size();
+        if (currentCount + normalizedFiles.size() > MAX_ATTACHMENT_COUNT) {
+            throw new BusinessException("Each material can upload at most " + MAX_ATTACHMENT_COUNT + " files");
+        }
+
+        for (MultipartFile file : normalizedFiles) {
+            validateAttachmentFile(file);
+            String originalName = normalize(file.getOriginalFilename(), "attachment");
+            String contentType = normalize(file.getContentType(), "application/octet-stream");
+            String cosKey = "studyabroad/materials/" + materialId + "/" + UUID.randomUUID();
+            try {
+                cosService.uploadFile(file.getInputStream(), file.getSize(), cosKey, contentType);
+            } catch (IOException e) {
+                throw new BusinessException("Failed to read file: " + originalName);
+            }
+            material.addAttachment(StudyAbroadMaterialAttachment.builder()
+                .originalName(originalName)
+                .fileSize(file.getSize())
+                .cosKey(cosKey)
+                .fileType(contentType)
+                .downloadCount(0)
+                .build());
+        }
+        return toMaterialMap(materialRepository.save(material));
+    }
+
+    @Transactional
+    public Object[] getMaterialAttachmentDownloadStream(Long userId, Long materialId, Long attachmentId) {
+        ensureUser(userId);
+        StudyAbroadMaterialAttachment attachment = materialAttachmentRepository
+            .findByIdAndMaterialIdAndMaterialUserId(attachmentId, materialId, userId)
+            .orElseThrow(() -> new BusinessException("Attachment not found or access denied"));
+        attachment.setDownloadCount(attachment.getDownloadCount() + 1);
+        materialAttachmentRepository.save(attachment);
+        COSObject cosObject = cosService.getObject(attachment.getCosKey());
+        return new Object[]{cosObject.getObjectContent(), cosObject.getObjectMetadata(), attachment.getOriginalName()};
+    }
+
+    @Transactional
+    public void deleteMaterialAttachment(Long userId, Long materialId, Long attachmentId) {
+        ensureUser(userId);
+        StudyAbroadMaterial material = materialRepository.findByIdAndUserId(materialId, userId)
+            .orElseThrow(() -> new BusinessException("Material item not found or access denied"));
+        StudyAbroadMaterialAttachment attachment = materialAttachmentRepository
+            .findByIdAndMaterialIdAndMaterialUserId(attachmentId, materialId, userId)
+            .orElseThrow(() -> new BusinessException("Attachment not found or access denied"));
+        material.removeAttachment(attachment);
+        materialRepository.save(material);
+    }
+
     private User ensureUser(Long userId) {
         if (userId == null) {
             throw new BusinessException("Please sign in before using study abroad management");
@@ -365,8 +456,24 @@ public class StudyAbroadService {
         map.put("deadline", item.getDeadline().toString());
         map.put("completed", item.getCompleted());
         map.put("note", item.getNote());
+        map.put("attachments", item.getAttachments() == null
+            ? List.of()
+            : item.getAttachments().stream().map(this::toAttachmentMap).toList());
         map.put("createdAt", item.getCreatedAt() != null ? item.getCreatedAt().toString() : null);
         map.put("updatedAt", item.getUpdatedAt() != null ? item.getUpdatedAt().toString() : null);
+        return map;
+    }
+
+    private Map<String, Object> toAttachmentMap(StudyAbroadMaterialAttachment attachment) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", attachment.getId());
+        map.put("originalName", attachment.getOriginalName());
+        map.put("fileSize", attachment.getFileSize());
+        map.put("fileType", attachment.getFileType());
+        map.put("downloadCount", attachment.getDownloadCount());
+        map.put("createdAt", attachment.getCreatedAt() != null ? attachment.getCreatedAt().toString() : null);
+        map.put("downloadUrl", "/api/studyabroad/materials/" + attachment.getMaterial().getId()
+            + "/attachments/" + attachment.getId() + "/download");
         return map;
     }
 
@@ -374,5 +481,24 @@ public class StudyAbroadService {
         map.put("applicationId", application != null ? application.getId() : null);
         map.put("applicationSchool", application != null ? application.getSchool() : null);
         map.put("applicationProgram", application != null ? application.getProgram() : null);
+    }
+
+    private List<MultipartFile> normalizeFiles(List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            throw new BusinessException("Please upload at least one file");
+        }
+        List<MultipartFile> normalized = files.stream()
+            .filter(file -> file != null && !file.isEmpty())
+            .toList();
+        if (normalized.isEmpty()) {
+            throw new BusinessException("Please upload at least one file");
+        }
+        return normalized;
+    }
+
+    private void validateAttachmentFile(MultipartFile file) {
+        if (file.getSize() > MAX_ATTACHMENT_SIZE) {
+            throw new BusinessException("File " + file.getOriginalFilename() + " exceeds 10MB");
+        }
     }
 }

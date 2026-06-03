@@ -5,6 +5,8 @@ import Footer from '../../components/Footer.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { studyAbroadApi } from '../../lib/api.js'
 import {
+  defaultApplicationItems,
+  defaultTimelineItems,
   getApplicationItems,
   getTimelineItems,
   saveTimelineItems,
@@ -64,7 +66,7 @@ function createId() {
 }
 
 function appLabel(app) {
-  return `${app.school} · ${app.program}`
+  return `${app.school} / ${app.program}`
 }
 
 function findApplication(applications, id) {
@@ -103,17 +105,22 @@ function formFromItem(item) {
 
 export default function TimelinePage() {
   const { token } = useAuth()
-  const [items, setItems] = useState(() => getTimelineItems())
-  const [applications, setApplications] = useState(() => getApplicationItems())
+  const isDevMode = token === 'dev-token'
+  const canUseRemote = Boolean(token && token !== 'dev-token')
+  const [items, setItems] = useState(() => (isDevMode ? getTimelineItems() : defaultTimelineItems))
+  const [applications, setApplications] = useState(() => (isDevMode ? getApplicationItems() : defaultApplicationItems))
   const [phase, setPhase] = useState('all')
   const [syncNote, setSyncNote] = useState('')
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
 
-  const canUseRemote = Boolean(token && token !== 'dev-token')
-
   useEffect(() => {
     if (!canUseRemote) {
+      setItems(isDevMode ? getTimelineItems() : defaultTimelineItems)
+      setApplications(isDevMode ? getApplicationItems() : defaultApplicationItems)
+      setSyncNote(isDevMode
+        ? '当前是开发演示账号，时间线只保存到本机 localStorage。'
+        : '请登录后管理真实时间线。未登录时仅展示示例数据。')
       return undefined
     }
     let active = true
@@ -131,7 +138,9 @@ export default function TimelinePage() {
         }
       } catch (error) {
         if (active) {
-          setSyncNote(error.message || '后端暂不可用，当前展示本地演示时间线。')
+          setApplications([])
+          setItems([])
+          setSyncNote(error.message || '后端数据加载失败，请稍后重试。')
         }
       }
     }
@@ -140,7 +149,7 @@ export default function TimelinePage() {
     return () => {
       active = false
     }
-  }, [canUseRemote, token])
+  }, [canUseRemote, isDevMode, token])
 
   function updateLocalItems(nextItems) {
     setItems(nextItems)
@@ -226,7 +235,7 @@ export default function TimelinePage() {
         setSyncNote(error.message || '保存失败。')
         return
       }
-    } else {
+    } else if (isDevMode) {
       const saved = {
         id: editingId || createId(),
         ...enrichWithApplication(payload),
@@ -235,7 +244,10 @@ export default function TimelinePage() {
         ? items.map((item) => (item.id === editingId ? saved : item))
         : [...items, saved]
       updateLocalItems(next.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate))))
-      setSyncNote(editingId ? '本地时间线事项已更新。' : '本地时间线事项已创建。')
+      setSyncNote(editingId ? '本地演示时间线已更新。' : '本地演示时间线已创建。')
+    } else {
+      setSyncNote('请先登录真实账号，再保存时间线事项。')
+      return
     }
     resetForm()
   }
@@ -263,7 +275,11 @@ export default function TimelinePage() {
       return
     }
 
-    updateLocalItems(items.map((item) => (item.id === targetId ? nextItem : item)))
+    if (isDevMode) {
+      updateLocalItems(items.map((item) => (item.id === targetId ? nextItem : item)))
+      return
+    }
+    setSyncNote('请先登录真实账号，再更新时间线状态。')
   }
 
   async function removeItem(targetId) {
@@ -278,8 +294,12 @@ export default function TimelinePage() {
       }
       return
     }
-    updateLocalItems(items.filter((item) => item.id !== targetId))
-    setSyncNote('本地时间线事项已删除。')
+    if (isDevMode) {
+      updateLocalItems(items.filter((item) => item.id !== targetId))
+      setSyncNote('本地演示时间线已删除。')
+      return
+    }
+    setSyncNote('请先登录真实账号，再删除时间线事项。')
   }
 
   return (
@@ -289,7 +309,7 @@ export default function TimelinePage() {
         <section className="section">
           <div className="detail-header">
             <div>
-              <p className="eyebrow">留学 · 时间线</p>
+              <p className="eyebrow">留学 / 时间线</p>
               <h2>申请时间线</h2>
               <p className="muted">创建、编辑并推进语言考试、文书、网申、面试和签证节点。</p>
             </div>

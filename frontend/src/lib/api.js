@@ -380,6 +380,31 @@ export const adminMaterialApi = {
 }
 
 export const studyAbroadApi = {
+  experiences(params = {}) {
+    const search = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '' && value !== 'all') {
+        search.set(key, value)
+      }
+    })
+    const query = search.toString()
+    return request(`/api/studyabroad/experiences${query ? `?${query}` : ''}`)
+  },
+  experiencesPage(params = {}) {
+    const search = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '' && value !== 'all') {
+        search.set(key, value)
+      }
+    })
+    return request(`/api/studyabroad/experiences/page?${search.toString()}`)
+  },
+  createExperience(payload, token) {
+    return request('/api/studyabroad/experiences', { method: 'POST', body: payload, token })
+  },
+  deleteExperience(id, token) {
+    return request(`/api/studyabroad/experiences/${id}`, { method: 'DELETE', token })
+  },
   applications(token) {
     return request('/api/studyabroad/applications', { token })
   },
@@ -415,6 +440,61 @@ export const studyAbroadApi = {
   },
   deleteMaterial(id, token) {
     return request(`/api/studyabroad/materials/${id}`, { method: 'DELETE', token })
+  },
+  async uploadMaterialAttachments(materialId, files, token, onProgress) {
+    const formData = new FormData()
+    Array.from(files || []).forEach((file) => formData.append('files', file))
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', `${API_BASE}/api/studyabroad/materials/${materialId}/attachments`)
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && typeof onProgress === 'function') {
+          onProgress(Math.round((event.loaded / event.total) * 100))
+        }
+      }
+      xhr.onload = () => {
+        const data = (() => {
+          try {
+            return JSON.parse(xhr.responseText)
+          } catch {
+            return null
+          }
+        })()
+        if (xhr.status < 200 || xhr.status >= 300 || !data?.success) {
+          reject(new Error(data?.message || `Request failed: ${xhr.status}`))
+          return
+        }
+        resolve(data.data)
+      }
+      xhr.onerror = () => reject(new Error('Upload failed. Please check the network and try again.'))
+      xhr.onabort = () => reject(new Error('Upload canceled.'))
+      xhr.send(formData)
+    })
+  },
+  async downloadMaterialAttachment(materialId, attachmentId, token) {
+    const response = await fetch(`${API_BASE}/api/studyabroad/materials/${materialId}/attachments/${attachmentId}/download`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      throw new Error(data?.message || `Request failed: ${response.status}`)
+    }
+    const blob = await response.blob()
+    const disposition = response.headers.get('content-disposition') || ''
+    const match = disposition.match(/filename\*=UTF-8''([^;]+)/)
+    const fileName = match ? decodeURIComponent(match[1]) : `studyabroad-attachment-${attachmentId}`
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  },
+  deleteMaterialAttachment(materialId, attachmentId, token) {
+    return request(`/api/studyabroad/materials/${materialId}/attachments/${attachmentId}`, { method: 'DELETE', token })
   },
 }
 
