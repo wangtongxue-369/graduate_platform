@@ -48,10 +48,25 @@ public class PracticeController {
                                          @RequestParam(required = false) String subject,
                                          @RequestParam(required = false) String chapter,
                                          @RequestParam(required = false) Integer minWrongCount,
+                                         @RequestParam(defaultValue = "0") int page,
+                                         @RequestParam(defaultValue = "20") int size,
                                          Authentication auth) {
         return ApiResponse.ok(practiceService.getWrongQuestions(
-            currentUserId(auth), target, subject, chapter, minWrongCount
+            currentUserId(auth), target, subject, chapter, minWrongCount, page, size
         ));
+    }
+
+    @PostMapping("/wrong-questions/rebuild-session")
+    public ApiResponse<?> rebuildWrongSession(@RequestBody java.util.Map<String, java.util.List<Long>> body,
+                                               Authentication auth) {
+        java.util.List<Long> ids = body.get("wrongQuestionIds");
+        if (ids == null || ids.isEmpty()) {
+            return ApiResponse.fail("错题ID列表不能为空");
+        }
+        CreatePracticeSessionRequest req = new CreatePracticeSessionRequest();
+        req.setMode("wrong_retry");
+        req.setWrongQuestionIds(ids);
+        return ApiResponse.ok(practiceService.createSession(currentUserId(auth), req), "错题重练会话已创建");
     }
 
     @GetMapping("/statistics")

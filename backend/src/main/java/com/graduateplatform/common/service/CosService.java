@@ -70,6 +70,16 @@ public class CosService {
         }
     }
 
+    public void deleteFile(String cosKey) {
+        try {
+            cosClient.deleteObject(cosProperties.getBucket(), cosKey);
+            log.info("File deleted from COS: {}", cosKey);
+        } catch (CosServiceException e) {
+            log.error("Failed to delete file from COS: {}", cosKey, e);
+            throw new RuntimeException("文件删除失败: " + e.getMessage());
+        }
+    }
+
     public COSClient getCosClient() {
         return cosClient;
     }
