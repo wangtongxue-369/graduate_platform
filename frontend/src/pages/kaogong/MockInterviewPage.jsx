@@ -584,13 +584,17 @@ export default function MockInterviewPage() {
                 const mine = user?.id && Number(item.senderId) === Number(user.id)
                 return (
                   <div className={`chat-bubble-row ${mine ? 'mine' : ''}`} key={item.id}>
-                    <div className="chat-bubble">
+                    {!mine ? <span className="chat-avatar">{(item.senderName || '用').slice(0, 1)}</span> : null}
+                    <div className="chat-bubble-wrap">
                       <div className="chat-bubble-head">
                         <strong>{item.senderName}</strong>
                         <span>{formatTime(item.createdAt)}</span>
                       </div>
-                      <p>{item.content}</p>
+                      <div className="chat-bubble">
+                        <p>{item.content}</p>
+                      </div>
                     </div>
+                    {mine ? <span className="chat-avatar mine-avatar">{(item.senderName || user?.name || '我').slice(0, 1)}</span> : null}
                   </div>
                 )
               })}
@@ -634,7 +638,7 @@ export default function MockInterviewPage() {
                 disabled={busy || roomEnded}
                 onClick={() => attachmentInputRef.current?.click()}
               >
-                <span className="paperclip-icon" aria-hidden="true" />
+                <span className="chat-plus-icon" aria-hidden="true" />
               </button>
               <textarea
                 value={newMessage}
