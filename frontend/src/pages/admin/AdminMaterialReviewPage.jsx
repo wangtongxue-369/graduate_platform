@@ -21,7 +21,7 @@ export default function AdminMaterialReviewPage() {
   const [totalElements, setTotalElements] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
   const [page, setPage] = useState(0)
-  const [size, setSize] = useState(10)
+  const size = 10
   const [activeTab, setActiveTab] = useState('pending')
   const [loading, setLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState(null)
@@ -138,10 +138,10 @@ export default function AdminMaterialReviewPage() {
             ))}
           </div>
 
-          <div className="feature-card">
+          <div className="admin-surface-card">
             <div className="track-head">
               <h3>审核列表</h3>
-              <span className="tag subtle">共 {totalElements} 条</span>
+              <span className="admin-status-chip is-neutral">共 {totalElements} 条</span>
             </div>
             {loading ? (
               <p className="muted">加载中...</p>
@@ -185,18 +185,18 @@ export default function AdminMaterialReviewPage() {
                       </div>
                     </div>
                     <div className="tag-row">
-                      {m.school && <span className="tag subtle">📍 {m.school}</span>}
-                      {m.major && <span className="tag subtle">📚 {m.major}</span>}
-                      {m.subject && <span className="tag subtle">📖 {m.subject}</span>}
-                      {m.year && <span className="tag subtle">📅 {m.year}</span>}
-                      {m.materialType && <span className="tag subtle">{m.materialType}</span>}
+                      {m.school && <span className="admin-status-chip is-neutral">📍 {m.school}</span>}
+                      {m.major && <span className="admin-status-chip is-neutral">📚 {m.major}</span>}
+                      {m.subject && <span className="admin-status-chip is-neutral">📖 {m.subject}</span>}
+                      {m.year && <span className="admin-status-chip is-neutral">📅 {m.year}</span>}
+                      {m.materialType && <span className="admin-status-chip is-neutral">{m.materialType}</span>}
                       <span className="muted small">上传者ID: {m.uploaderId}</span>
                     </div>
                     {m.description && <p className="muted">{m.description}</p>}
                     {m.attachments?.length > 0 && (
                       <div className="material-files">
                         {m.attachments.map(a => (
-                          <span key={a.id} className="muted small" style={{ marginRight: '0.75rem' }}>📎 {a.originalName} ({formatFileSize(a.fileSize)})</span>
+                          <span key={a.id} className="muted small admin-attachment-pill">📎 {a.originalName} ({formatFileSize(a.fileSize)})</span>
                         ))}
                       </div>
                     )}

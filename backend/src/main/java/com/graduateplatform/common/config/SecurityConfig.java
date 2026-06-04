@@ -29,7 +29,8 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Public authentication POST endpoints
-                .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/send-code").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/send-code", "/api/auth/reset-password").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/studyabroad/experiences", "/api/studyabroad/experiences/page").permitAll()
                 // Study abroad management APIs require authenticated users
                 .requestMatchers("/api/studyabroad/**").authenticated()
                 // Kaoyan materials - my page and download require auth
@@ -38,6 +39,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/kaoyan/materials").authenticated()
                 // Admin APIs must be declared before generic /api/** GET allow rules
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/community/notifications/**").authenticated()
                 // Kaogong endpoints that require authenticated users
                 .requestMatchers(HttpMethod.GET, "/api/kaogong/jobs/favorites").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/kaogong/jobs/match-history").authenticated()

@@ -10,4 +10,6 @@ public interface StudyAbroadMaterialRepository extends JpaRepository<StudyAbroad
     List<StudyAbroadMaterial> findByUserIdOrderByDeadlineAsc(Long userId);
 
     Optional<StudyAbroadMaterial> findByIdAndUserId(Long id, Long userId);
+
+    void deleteByUserIdAndApplicationId(Long userId, Long applicationId);
 }

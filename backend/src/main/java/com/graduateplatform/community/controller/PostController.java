@@ -1,14 +1,21 @@
 package com.graduateplatform.community.controller;
 
+import com.graduateplatform.common.dto.ApiResponse;
 import com.graduateplatform.community.dto.CreatePostRequest;
 import com.graduateplatform.community.dto.ReportPostRequest;
-import com.graduateplatform.common.dto.ApiResponse;
 import com.graduateplatform.community.service.PostService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
+import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -38,6 +45,47 @@ public class PostController {
     @GetMapping("/{id}")
     public ApiResponse<?> detail(@PathVariable Long id, Authentication auth) {
         return ApiResponse.ok(postService.getPostDetail(id, getCurrentUserId(auth), isAdmin(auth)));
+    }
+
+    @GetMapping("/{postId}/attachments/{attachmentId}/download")
+    public ResponseEntity<StreamingResponseBody> downloadAttachment(@PathVariable Long postId,
+                                                                    @PathVariable Long attachmentId,
+                                                                    Authentication auth) {
+        Object[] result = postService.getPostAttachmentDownloadStream(
+            postId,
+            attachmentId,
+            getCurrentUserId(auth),
+            isAdmin(auth)
+        );
+
+        InputStream inputStream = (InputStream) result[0];
+        com.qcloud.cos.model.ObjectMetadata metadata = (com.qcloud.cos.model.ObjectMetadata) result[1];
+        String originalName = (String) result[2];
+
+        String contentType = metadata.getContentType();
+        if (contentType == null || contentType.isBlank()) {
+            contentType = "application/octet-stream";
+        }
+        String safeName = originalName.replace("\"", "");
+        String encodedName = URLEncoder.encode(originalName, StandardCharsets.UTF_8).replace("+", "%20");
+
+        StreamingResponseBody stream = out -> {
+            try {
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
+                }
+            } finally {
+                inputStream.close();
+            }
+        };
+
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + safeName + "\"; filename*=UTF-8''" + encodedName)
+            .contentType(MediaType.parseMediaType(contentType))
+            .contentLength(metadata.getContentLength())
+            .body(stream);
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

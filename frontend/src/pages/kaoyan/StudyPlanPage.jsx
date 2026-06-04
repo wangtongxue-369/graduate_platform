@@ -191,9 +191,8 @@ function PlanCard({ plan, onDelete }) {
       <p className="muted" style={{ fontSize: '0.85rem', margin: 0 }}>
         计划总时长：{plan.totalDurationHours} 小时
       </p>
-      <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto', paddingTop: '0.5rem' }}>
-        <Link to={`/kaoyan/plan/${plan.id}`} className="btn primary" style={{ flex: 1, textAlign: 'center' }}>查看详情</Link>
-        <button type="button" className="btn ghost" onClick={() => onDelete(plan.id)} style={{ color: '#e74c3c' }}>删除</button>
+      <div style={{ marginTop: 'auto', paddingTop: '0.5rem', textAlign: 'center' }}>
+        <Link to={`/kaoyan/plan/${plan.id}`} className="btn primary" style={{ display: 'block' }}>查看详情</Link>
       </div>
     </div>
   )

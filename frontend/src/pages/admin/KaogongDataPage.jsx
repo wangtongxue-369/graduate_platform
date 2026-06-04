@@ -71,6 +71,11 @@ const emptyFilters = {
 
 const pageSize = 8
 
+const activeStatusClassMap = {
+  true: 'is-success',
+  false: 'is-neutral',
+}
+
 export default function KaogongDataPage() {
   const { user, token, isAuthed } = useAuth()
   const [active, setActive] = useState('jobs')
@@ -221,9 +226,7 @@ export default function KaogongDataPage() {
             <h2>岗位、分数线与考试节点</h2>
             <p className="muted">后台可以新增基础数据，列表通过后端分页返回，前台查询与订阅会直接使用这些数据。</p>
           </div>
-        </section>
 
-        <section className="section">
           <div className="admin-tabs">
             {tabs.map((tab) => (
               <button
@@ -237,88 +240,92 @@ export default function KaogongDataPage() {
             ))}
           </div>
 
-          <form className="feature-card calendar-filter-panel" onSubmit={handleFilter}>
-            <div className="filter-grid">
-              <label className="field">
-                <span>地区</span>
-                <input value={filters.region} onChange={(event) => updateFilter('region', event.target.value)} placeholder="如：北京" />
-              </label>
-              <label className="field">
-                <span>考试类型</span>
-                <input value={filters.examType} onChange={(event) => updateFilter('examType', event.target.value)} placeholder="如：国家公务员考试" />
-              </label>
-              <label className="field">
-                <span>年份</span>
-                <input value={filters.year} onChange={(event) => updateFilter('year', event.target.value)} placeholder="如：2026" />
-              </label>
-              {active !== 'events' ? (
-                <>
-                  <label className="field">
-                    <span>岗位类别</span>
-                    <input value={filters.jobCategory} onChange={(event) => updateFilter('jobCategory', event.target.value)} placeholder="如：综合管理" />
-                  </label>
-                  <label className="field">
-                    <span>单位类型</span>
-                    <input value={filters.unitType} onChange={(event) => updateFilter('unitType', event.target.value)} placeholder="如：中央机关直属机构" />
-                  </label>
-                </>
-              ) : null}
-            </div>
-            <div className="question-actions">
-              <button className="btn primary" type="submit" disabled={loading}>{loading ? '查询中...' : '查询'}</button>
-              <button className="btn ghost" type="button" onClick={() => { setFilters(emptyFilters); setPage(0) }}>清空</button>
-            </div>
-            {message ? <div className="muted">{message}</div> : null}
-          </form>
-
-          <form className="feature-card" onSubmit={createRecord}>
-            <div className="track-head">
-              <h3>{editingId ? '编辑' : '新增'}{activeTab?.label}</h3>
-              <span className="tag subtle">后台维护</span>
-            </div>
-            {active === 'jobs' ? renderJobForm(jobForm, (key, value) => updateForm(setJobForm, key, value)) : null}
-            {active === 'scores' ? renderScoreForm(scoreForm, (key, value) => updateForm(setScoreForm, key, value)) : null}
-            {active === 'events' ? renderEventForm(eventForm, (key, value) => updateForm(setEventForm, key, value)) : null}
-            <div className="question-actions">
-              <button className="btn primary" type="submit" disabled={loading}>保存</button>
-              {editingId ? (
-                <button
-                  className="btn ghost"
-                  type="button"
-                  onClick={() => {
-                    setEditingId(null)
-                    setJobForm(emptyJob)
-                    setScoreForm(emptyScore)
-                    setEventForm(emptyEvent)
-                    setMessage('')
-                  }}
-                >
-                  取消编辑
-                </button>
-              ) : null}
-            </div>
-          </form>
-
-          <div className="feature-card">
-            <div className="track-head">
-              <h3>{activeTab?.label}列表</h3>
-              <span className="tag subtle">共 {pageInfo.totalElements} 条</span>
-            </div>
-            {rows.length === 0 ? (
-              <p className="muted">暂无数据</p>
-            ) : (
-              <div className="admin-data-list">
-                {active === 'jobs' ? rows.map((row) => renderJobRow(row, editRecord, deleteRecord)) : null}
-                {active === 'scores' ? rows.map((row) => renderScoreRow(row, editRecord, deleteRecord)) : null}
-                {active === 'events' ? rows.map((row) => renderEventRow(row, editRecord, deleteRecord)) : null}
+          <div className="admin-page-shell">
+            <form className="admin-toolbar-card admin-filter-stack" onSubmit={handleFilter}>
+              <div className="filter-grid">
+                <label className="field">
+                  <span>地区</span>
+                  <input value={filters.region} onChange={(event) => updateFilter('region', event.target.value)} placeholder="如：北京" />
+                </label>
+                <label className="field">
+                  <span>考试类型</span>
+                  <input value={filters.examType} onChange={(event) => updateFilter('examType', event.target.value)} placeholder="如：国家公务员考试" />
+                </label>
+                <label className="field">
+                  <span>年份</span>
+                  <input value={filters.year} onChange={(event) => updateFilter('year', event.target.value)} placeholder="如：2026" />
+                </label>
+                {active !== 'events' ? (
+                  <>
+                    <label className="field">
+                      <span>岗位类别</span>
+                      <input value={filters.jobCategory} onChange={(event) => updateFilter('jobCategory', event.target.value)} placeholder="如：综合管理" />
+                    </label>
+                    <label className="field">
+                      <span>单位类型</span>
+                      <input value={filters.unitType} onChange={(event) => updateFilter('unitType', event.target.value)} placeholder="如：中央机关直属机构" />
+                    </label>
+                  </>
+                ) : null}
               </div>
-            )}
-            <Pagination
-              page={page + 1}
-              total={pageInfo.totalPages}
-              totalItems={pageInfo.totalElements}
-              onChange={(nextPage) => setPage(nextPage - 1)}
-            />
+              <div className="admin-filter-bar">
+                <button className="btn primary" type="submit" disabled={loading}>{loading ? '查询中...' : '查询'}</button>
+                <button className="btn ghost" type="button" onClick={() => { setFilters(emptyFilters); setPage(0) }}>清空</button>
+                <span className="admin-filter-pill is-active">{activeTab?.label || '数据'}</span>
+                <span className="admin-filter-pill">共 {pageInfo.totalElements} 条</span>
+              </div>
+              {message ? <div className="admin-note-panel"><p>{message}</p></div> : null}
+            </form>
+
+            <form className="admin-form-surface" onSubmit={createRecord}>
+              <div className="track-head">
+                <h3>{editingId ? '编辑' : '新增'}{activeTab?.label}</h3>
+                <span className="admin-status-chip is-neutral">后台维护</span>
+              </div>
+              {active === 'jobs' ? renderJobForm(jobForm, (key, value) => updateForm(setJobForm, key, value)) : null}
+              {active === 'scores' ? renderScoreForm(scoreForm, (key, value) => updateForm(setScoreForm, key, value)) : null}
+              {active === 'events' ? renderEventForm(eventForm, (key, value) => updateForm(setEventForm, key, value)) : null}
+              <div className="question-actions">
+                <button className="btn primary" type="submit" disabled={loading}>保存</button>
+                {editingId ? (
+                  <button
+                    className="btn ghost"
+                    type="button"
+                    onClick={() => {
+                      setEditingId(null)
+                      setJobForm(emptyJob)
+                      setScoreForm(emptyScore)
+                      setEventForm(emptyEvent)
+                      setMessage('')
+                    }}
+                  >
+                    取消编辑
+                  </button>
+                ) : null}
+              </div>
+            </form>
+
+            <div className="admin-surface-card">
+              <div className="track-head">
+                <h3>{activeTab?.label}列表</h3>
+                <span className="admin-status-chip is-neutral">共 {pageInfo.totalElements} 条</span>
+              </div>
+              {rows.length === 0 ? (
+                <p className="muted">暂无数据</p>
+              ) : (
+                <div className="admin-record-grid">
+                  {active === 'jobs' ? rows.map((row) => renderJobRow(row, editRecord, deleteRecord)) : null}
+                  {active === 'scores' ? rows.map((row) => renderScoreRow(row, editRecord, deleteRecord)) : null}
+                  {active === 'events' ? rows.map((row) => renderEventRow(row, editRecord, deleteRecord)) : null}
+                </div>
+              )}
+              <Pagination
+                page={page + 1}
+                total={pageInfo.totalPages}
+                totalItems={pageInfo.totalElements}
+                onChange={(nextPage) => setPage(nextPage - 1)}
+              />
+            </div>
           </div>
         </section>
       </main>
@@ -380,11 +387,11 @@ function renderEventForm(form, update) {
   )
 }
 
-function TextField({ label, value, onChange, type = 'text', required = false }) {
+function TextField({ label, value, onChange, type = 'text', required = false, placeholder }) {
   return (
     <label className="field">
       <span>{label}</span>
-      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} required={required} />
+      <input type={type} value={value || ''} onChange={(event) => onChange(event.target.value)} required={required} placeholder={placeholder} />
     </label>
   )
 }
@@ -400,23 +407,28 @@ function normalizeDates(row) {
 
 function rowActions(row, onEdit, onDelete) {
   return (
-    <div className="admin-row-actions">
-      <span className={`tag subtle ${row.active === false ? 'danger-tag' : ''}`}>{row.active === false ? '已停用' : '启用中'}</span>
-      <button className="btn outline small" type="button" onClick={() => onEdit(row)}>编辑</button>
-      <button className="btn ghost small" type="button" onClick={() => onDelete(row.id)} disabled={row.active === false}>停用</button>
+    <div className="admin-record-side">
+      <span className={`admin-status-chip ${activeStatusClassMap[String(row.active !== false)] || 'is-neutral'}`}>{row.active === false ? '已停用' : '启用中'}</span>
+      <div className="admin-inline-actions">
+        <button className="btn outline small" type="button" onClick={() => onEdit(row)}>编辑</button>
+        <button className="btn outline-neutral small" type="button" onClick={() => onDelete(row.id)} disabled={row.active === false}>停用</button>
+      </div>
     </div>
   )
 }
 
 function renderJobRow(row, onEdit, onDelete) {
   return (
-    <article className="admin-data-row" key={row.id}>
-      <div>
+    <article className="admin-record-card" key={row.id}>
+      <div className="admin-record-main">
         <strong>{row.jobName}</strong>
         <p className="muted">{row.recruitingUnit}</p>
+        <div className="admin-record-meta">
+          <span>地区：{row.region}</span>
+          <span>考试：{row.examType}</span>
+          <span>类别：{row.jobCategory || '待补充'}</span>
+        </div>
       </div>
-      <span>{row.region}</span>
-      <span>{row.examType}</span>
       {rowActions(row, onEdit, onDelete)}
     </article>
   )
@@ -424,13 +436,16 @@ function renderJobRow(row, onEdit, onDelete) {
 
 function renderScoreRow(row, onEdit, onDelete) {
   return (
-    <article className="admin-data-row" key={row.id}>
-      <div>
+    <article className="admin-record-card" key={row.id}>
+      <div className="admin-record-main">
         <strong>{row.jobName}</strong>
         <p className="muted">{row.recruitingUnit}</p>
+        <div className="admin-record-meta">
+          <span>地区：{row.region}</span>
+          <span>年份：{row.year}</span>
+          <span>分数：{row.scoreLine || '待补充'}</span>
+        </div>
       </div>
-      <span>{row.region}</span>
-      <span>{row.year}</span>
       {rowActions(row, onEdit, onDelete)}
     </article>
   )
@@ -438,13 +453,16 @@ function renderScoreRow(row, onEdit, onDelete) {
 
 function renderEventRow(row, onEdit, onDelete) {
   return (
-    <article className="admin-data-row" key={row.id}>
-      <div>
+    <article className="admin-record-card" key={row.id}>
+      <div className="admin-record-main">
         <strong>{row.title}</strong>
         <p className="muted">{row.description || row.examType}</p>
+        <div className="admin-record-meta">
+          <span>地区：{row.region}</span>
+          <span>节点：{row.nodeType}</span>
+          <span>日期：{row.eventDate || '待补充'}</span>
+        </div>
       </div>
-      <span>{row.region}</span>
-      <span>{row.nodeType}</span>
       {rowActions(row, onEdit, onDelete)}
     </article>
   )

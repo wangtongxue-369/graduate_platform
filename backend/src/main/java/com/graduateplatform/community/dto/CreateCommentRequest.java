@@ -8,4 +8,7 @@ public class CreateCommentRequest {
     @NotBlank
     @Size(max = 300)
     private String content;
+
+    @Positive(message = "parentId must be greater than 0")
+    private Long parentId;
 }

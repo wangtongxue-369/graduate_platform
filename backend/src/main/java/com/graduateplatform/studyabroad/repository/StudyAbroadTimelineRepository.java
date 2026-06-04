@@ -10,4 +10,6 @@ public interface StudyAbroadTimelineRepository extends JpaRepository<StudyAbroad
     List<StudyAbroadTimeline> findByUserIdOrderByDueDateAsc(Long userId);
 
     Optional<StudyAbroadTimeline> findByIdAndUserId(Long id, Long userId);
+
+    void deleteByUserIdAndApplicationId(Long userId, Long applicationId);
 }

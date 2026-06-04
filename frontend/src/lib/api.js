@@ -17,7 +17,9 @@ async function request(path, options = {}) {
   const data = await response.json().catch(() => null)
   if (!response.ok || !data?.success) {
     const message = data?.message || `Request failed: ${response.status}`
-    throw new Error(message)
+    const error = new Error(message)
+    error.status = response.status
+    throw error
   }
   return data.data
 }
@@ -31,6 +33,9 @@ export const authApi = {
   },
   login(payload) {
     return request('/api/auth/login', { method: 'POST', body: payload })
+  },
+  resetPassword(payload) {
+    return request('/api/auth/reset-password', { method: 'POST', body: payload })
   },
   me(token) {
     return request('/api/auth/me', { token })
@@ -69,6 +74,19 @@ export const communityApi = {
   createComment(postId, payload, token) {
     return request(`/api/posts/${postId}/comments`, { method: 'POST', body: payload, token })
   },
+  updateComment(postId, commentId, payload, token) {
+    return request(`/api/posts/${postId}/comments/${commentId}`, { method: 'PUT', body: payload, token })
+  },
+  deleteComment(postId, commentId, token) {
+    return request(`/api/posts/${postId}/comments/${commentId}`, { method: 'DELETE', token })
+  },
+  reportComment(postId, commentId, reason, token) {
+    return request(`/api/posts/${postId}/comments/${commentId}/report`, {
+      method: 'POST',
+      body: { reason },
+      token,
+    })
+  },
   toggleLike(postId, token) {
     return request(`/api/posts/${postId}/like`, { method: 'POST', token })
   },
@@ -81,6 +99,36 @@ export const communityApi = {
       body: { reason },
       token,
     })
+  },
+  attachmentDownloadUrl(postId, attachmentId) {
+    return `${API_BASE}/api/posts/${postId}/attachments/${attachmentId}/download`
+  },
+  async downloadPostAttachment(postId, attachmentId, token) {
+    const response = await fetch(`${API_BASE}/api/posts/${postId}/attachments/${attachmentId}/download`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      throw new Error(data?.message || `Request failed: ${response.status}`)
+    }
+    const blob = await response.blob()
+    const disposition = response.headers.get('content-disposition') || ''
+    const match = disposition.match(/filename\*=UTF-8''([^;]+)/)
+    const fileName = match ? decodeURIComponent(match[1]) : `attachment-${attachmentId}`
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  },
+  notifications(page = 0, size = 8, token) {
+    return request(`/api/community/notifications?page=${page}&size=${size}`, { token })
+  },
+  markNotificationRead(id, token) {
+    return request(`/api/community/notifications/${id}/read`, { method: 'PUT', token })
   },
 }
 
@@ -221,8 +269,10 @@ export const employmentApi = {
 }
 
 export const adminEmploymentApi = {
-  fairs(token) {
-    return request('/api/admin/employment/fairs', { token })
+  fairs(params = {}, token) {
+    const queryParams = typeof params === 'string' ? {} : params
+    const authToken = typeof params === 'string' ? params : token
+    return request(appendParams('/api/admin/employment/fairs', queryParams), { token: authToken })
   },
   createFair(payload, token) {
     return request('/api/admin/employment/fairs', { method: 'POST', body: payload, token })
@@ -233,8 +283,10 @@ export const adminEmploymentApi = {
   deleteFair(id, token) {
     return request(`/api/admin/employment/fairs/${id}`, { method: 'DELETE', token })
   },
-  jobs(token) {
-    return request('/api/admin/employment/jobs', { token })
+  jobs(params = {}, token) {
+    const queryParams = typeof params === 'string' ? {} : params
+    const authToken = typeof params === 'string' ? params : token
+    return request(appendParams('/api/admin/employment/jobs', queryParams), { token: authToken })
   },
   createJob(payload, token) {
     return request('/api/admin/employment/jobs', { method: 'POST', body: payload, token })
@@ -339,7 +391,7 @@ export const adminMaterialApi = {
 }
 
 export const studyAbroadApi = {
-  experiences(params = {}, token) {
+  experiences(params = {}) {
     const search = new URLSearchParams()
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '' && value !== 'all') {
@@ -347,10 +399,22 @@ export const studyAbroadApi = {
       }
     })
     const query = search.toString()
-    return request(`/api/studyabroad/experiences${query ? `?${query}` : ''}`, { token })
+    return request(`/api/studyabroad/experiences${query ? `?${query}` : ''}`)
+  },
+  experiencesPage(params = {}) {
+    const search = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '' && value !== 'all') {
+        search.set(key, value)
+      }
+    })
+    return request(`/api/studyabroad/experiences/page?${search.toString()}`)
   },
   createExperience(payload, token) {
     return request('/api/studyabroad/experiences', { method: 'POST', body: payload, token })
+  },
+  updateExperience(id, payload, token) {
+    return request(`/api/studyabroad/experiences/${id}`, { method: 'PUT', body: payload, token })
   },
   deleteExperience(id, token) {
     return request(`/api/studyabroad/experiences/${id}`, { method: 'DELETE', token })
@@ -390,6 +454,61 @@ export const studyAbroadApi = {
   },
   deleteMaterial(id, token) {
     return request(`/api/studyabroad/materials/${id}`, { method: 'DELETE', token })
+  },
+  async uploadMaterialAttachments(materialId, files, token, onProgress) {
+    const formData = new FormData()
+    Array.from(files || []).forEach((file) => formData.append('files', file))
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', `${API_BASE}/api/studyabroad/materials/${materialId}/attachments`)
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && typeof onProgress === 'function') {
+          onProgress(Math.round((event.loaded / event.total) * 100))
+        }
+      }
+      xhr.onload = () => {
+        const data = (() => {
+          try {
+            return JSON.parse(xhr.responseText)
+          } catch {
+            return null
+          }
+        })()
+        if (xhr.status < 200 || xhr.status >= 300 || !data?.success) {
+          reject(new Error(data?.message || `Request failed: ${xhr.status}`))
+          return
+        }
+        resolve(data.data)
+      }
+      xhr.onerror = () => reject(new Error('Upload failed. Please check the network and try again.'))
+      xhr.onabort = () => reject(new Error('Upload canceled.'))
+      xhr.send(formData)
+    })
+  },
+  async downloadMaterialAttachment(materialId, attachmentId, token) {
+    const response = await fetch(`${API_BASE}/api/studyabroad/materials/${materialId}/attachments/${attachmentId}/download`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      throw new Error(data?.message || `Request failed: ${response.status}`)
+    }
+    const blob = await response.blob()
+    const disposition = response.headers.get('content-disposition') || ''
+    const match = disposition.match(/filename\*=UTF-8''([^;]+)/)
+    const fileName = match ? decodeURIComponent(match[1]) : `studyabroad-attachment-${attachmentId}`
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  },
+  deleteMaterialAttachment(materialId, attachmentId, token) {
+    return request(`/api/studyabroad/materials/${materialId}/attachments/${attachmentId}`, { method: 'DELETE', token })
   },
 }
 
@@ -801,6 +920,40 @@ export const adminApi = {
     return request(`/api/admin/reports/${id}/review`, {
       method: 'PUT',
       body: { action, note },
+      token,
+    })
+  },
+  commentReports(status, page, size, token) {
+    const q = status ? `?status=${status}&page=${page}&size=${size}` : `?page=${page}&size=${size}`
+    return request(`/api/admin/comment-reports${q}`, { token })
+  },
+  reviewCommentReport(id, action, note, token) {
+    return request(`/api/admin/comment-reports/${id}/review`, {
+      method: 'PUT',
+      body: { action, note },
+      token,
+    })
+  },
+  postCategories(token) {
+    return request('/api/admin/post-categories', { token })
+  },
+  createPostCategory(payload, token) {
+    return request('/api/admin/post-categories', { method: 'POST', body: payload, token })
+  },
+  updatePostCategory(id, payload, token) {
+    return request(`/api/admin/post-categories/${id}`, { method: 'PUT', body: payload, token })
+  },
+  updatePostCategoryStatus(id, active, token) {
+    return request(`/api/admin/post-categories/${id}/status`, {
+      method: 'PUT',
+      body: { active },
+      token,
+    })
+  },
+  mergePostCategory(sourceId, targetId, token) {
+    return request(`/api/admin/post-categories/${sourceId}/merge`, {
+      method: 'POST',
+      body: { targetId },
       token,
     })
   },

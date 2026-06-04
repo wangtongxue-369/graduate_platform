@@ -8,6 +8,7 @@ import com.graduateplatform.community.entity.PostReport;
 import com.graduateplatform.community.repository.CommentRepository;
 import com.graduateplatform.community.repository.PostReportRepository;
 import com.graduateplatform.community.repository.PostRepository;
+import com.graduateplatform.community.service.CommunityNotificationService;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,15 +23,18 @@ public class AdminService {
     private final PostReportRepository reportRepository;
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
+    private final CommunityNotificationService notificationService;
 
     public AdminService(PostRepository postRepository,
                         PostReportRepository reportRepository,
                         UserRepository userRepository,
-                        CommentRepository commentRepository) {
+                        CommentRepository commentRepository,
+                        CommunityNotificationService notificationService) {
         this.postRepository = postRepository;
         this.reportRepository = reportRepository;
         this.userRepository = userRepository;
         this.commentRepository = commentRepository;
+        this.notificationService = notificationService;
     }
 
     // ==================== 内容审核 ====================
@@ -76,7 +80,8 @@ public class AdminService {
             throw new BusinessException("无效操作，支持: " + validActions);
         }
 
-        switch (action.toUpperCase()) {
+        String normalizedAction = action.toUpperCase();
+        switch (normalizedAction) {
             case "APPROVE":
                 if (!"PENDING".equals(post.getStatus())) {
                     throw new BusinessException("只能审核待审核状态的帖子");
@@ -108,6 +113,7 @@ public class AdminService {
         post.setReviewedAt(LocalDateTime.now());
 
         postRepository.save(post);
+        notifyPostReviewResult(post, normalizedAction, reason);
         return toPostDetail(post);
     }
 
@@ -159,6 +165,14 @@ public class AdminService {
                 post.setReviewReason("举报成立自动下架: " + (note == null ? "" : note.trim()));
                 post.setReviewedById(adminUserId);
                 post.setReviewedAt(LocalDateTime.now());
+                notificationService.create(
+                    post.getAuthor(),
+                    "帖子举报处理成立",
+                    "你的帖子《" + post.getTitle() + "》因举报成立已被下架。处理说明："
+                        + (note == null || note.isBlank() ? "管理员审核通过举报" : note.trim()),
+                    "POST",
+                    post.getId()
+                );
             }
         } else {
             report.setStatus("REJECTED");
@@ -309,5 +323,28 @@ public class AdminService {
             "authorName", report.getPost().getAuthor().getName()
         ));
         return map;
+    }
+
+    private void notifyPostReviewResult(Post post, String action, String reason) {
+        String title;
+        String content;
+        String cleanReason = reason == null || reason.isBlank() ? "无" : reason.trim();
+        switch (action) {
+            case "APPROVE":
+                title = "帖子审核已通过";
+                content = "你的帖子《" + post.getTitle() + "》已通过审核并公开展示。";
+                break;
+            case "REJECT":
+                title = "帖子审核未通过";
+                content = "你的帖子《" + post.getTitle() + "》未通过审核。原因：" + cleanReason;
+                break;
+            case "OFFLINE":
+                title = "帖子已下架";
+                content = "你的帖子《" + post.getTitle() + "》已被管理员下架。原因：" + cleanReason;
+                break;
+            default:
+                return;
+        }
+        notificationService.create(post.getAuthor(), title, content, "POST", post.getId());
     }
 }

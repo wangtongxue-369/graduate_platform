@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface ApplicationRecordRepository extends JpaRepository<ApplicationRecord, Long> {
     List<ApplicationRecord> findByUserIdOrderByAppliedAtDescCreatedAtDesc(Long userId);
     Optional<ApplicationRecord> findByIdAndUserId(Long id, Long userId);
+    boolean existsByJobPostingId(Long jobPostingId);
 }

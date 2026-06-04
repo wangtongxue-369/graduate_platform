@@ -21,5 +21,7 @@ public interface JobPostingRepository extends JpaRepository<JobPosting, Long> {
 
     List<JobPosting> findByActiveTrueOrderByCreatedAtDesc();
 
+    List<JobPosting> findByTitleAndCompanyName(String title, String companyName);
+
     boolean existsByTitleAndCompanyName(String title, String companyName);
 }

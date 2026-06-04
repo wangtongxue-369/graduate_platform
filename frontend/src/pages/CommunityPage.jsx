@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
@@ -31,8 +31,8 @@ const statusLabelMap = {
   DRAFT: '草稿',
   PENDING: '待审核',
   PUBLISHED: '已发布',
-  REJECTED: '驳回',
-  OFFLINE: '已下架',
+  REJECTED: '已驳回',
+  OFFLINE: '已下线',
 }
 
 function parseTags(post) {
@@ -48,6 +48,7 @@ function parseTags(post) {
 }
 
 function normalizePost(post) {
+  const attachments = Array.isArray(post.attachments) ? post.attachments : []
   return {
     ...post,
     tags: parseTags(post),
@@ -58,7 +59,9 @@ function normalizePost(post) {
       Boolean(post.hasAttachment) ||
       Boolean(post.attachmentUrl) ||
       Boolean(post.attachmentNote) ||
-      Boolean(post.fileCount),
+      Boolean(post.fileCount) ||
+      attachments.length > 0,
+    attachmentCount: Number(post.attachmentCount ?? post.fileCount ?? attachments.length ?? 0),
     viewCount: post.viewCount ?? post.views ?? 0,
     commentCount: post.commentCount ?? 0,
     likeCount: post.likeCount ?? 0,
@@ -76,6 +79,32 @@ function createPlainPreview(content) {
     .replace(/[*_~`>#-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+function normalizeLiuxueMeta(meta = {}) {
+  return {
+    country: String(meta.country || '').trim(),
+    topic: String(meta.topic || '').trim(),
+    phase: String(meta.phase || '').trim(),
+    targetSchool: String(meta.targetSchool || '').trim(),
+    targetMajor: String(meta.targetMajor || '').trim(),
+    intakeTerm: String(meta.intakeTerm || '').trim(),
+    summary: String(meta.summary || '').trim(),
+  }
+}
+
+function buildLiuxueMarkdownPrefix(meta) {
+  const lines = [
+    '## 留学信息卡',
+    `- 申请国家/地区：${meta.country || '未填写'}`,
+    `- 主题方向：${meta.topic || '未填写'}`,
+    `- 申请阶段：${meta.phase || '未填写'}`,
+  ]
+  if (meta.targetSchool) lines.push(`- 目标院校：${meta.targetSchool}`)
+  if (meta.targetMajor) lines.push(`- 专业方向：${meta.targetMajor}`)
+  if (meta.intakeTerm) lines.push(`- 入学季：${meta.intakeTerm}`)
+  if (meta.summary) lines.push(`- 经验摘要：${meta.summary}`)
+  return `${lines.join('\n')}\n\n---\n\n`
 }
 
 export default function CommunityPage() {
@@ -129,18 +158,18 @@ export default function CommunityPage() {
   }, [token])
 
   const availableTags = useMemo(() => {
-    const tagSet = new Set(['复试节奏', '资料分享', '岗位信息', '报录比', '模拟面试'])
-    posts.forEach((post) => {
-      post.tags.forEach((tag) => tagSet.add(tag))
+    const tagSet = new Set(['复试节奏', '资料分享', '岗位信息', '报名笔记', '模拟面试'])
+    posts.forEach((postItem) => {
+      postItem.tags.forEach((tag) => tagSet.add(tag))
     })
     return Array.from(tagSet).slice(0, 12)
   }, [posts])
 
   const communityMetrics = useMemo(() => ({
     postCount: posts.length,
-    attachmentCount: posts.filter((post) => post.hasAttachment).length,
-    pendingCount: posts.filter((post) => post.status === 'PENDING').length,
-    reportCount: posts.reduce((sum, post) => sum + post.reportCount, 0),
+    attachmentCount: posts.filter((postItem) => postItem.hasAttachment).length,
+    pendingCount: posts.filter((postItem) => postItem.status === 'PENDING').length,
+    reportCount: posts.reduce((sum, postItem) => sum + postItem.reportCount, 0),
   }), [posts])
 
   async function handleCreatePost(form) {
@@ -152,6 +181,9 @@ export default function CommunityPage() {
     setPostError('')
     setPosting(true)
     try {
+      const isLiuxue = String(form.categoryCode || '').toLowerCase() === 'liuxue'
+      const liuxueMeta = normalizeLiuxueMeta(form.studyAbroadMeta || {})
+
       const payload = new FormData()
       payload.append('title', form.title.trim())
       payload.append('categoryCode', form.categoryCode)
@@ -160,13 +192,31 @@ export default function CommunityPage() {
       payload.append('hasAttachment', String(Boolean(form.hasAttachment)))
       payload.append('attachmentNote', form.attachmentNote?.trim() || '')
       payload.append('status', form.submitAction === 'draft' ? 'DRAFT' : 'PENDING')
-      payload.append('markdownFile', form.markdownFile)
 
-      form.tags
+      let markdownContent = form.markdownContent || ''
+      if (isLiuxue) {
+        markdownContent = `${buildLiuxueMarkdownPrefix(liuxueMeta)}${markdownContent}`.trim()
+      }
+      payload.append('content', markdownContent)
+      if (form.markdownFile) {
+        payload.append('markdownFile', form.markdownFile)
+      }
+
+      const derivedLiuxueTags = isLiuxue
+        ? [liuxueMeta.country, liuxueMeta.topic, liuxueMeta.phase].filter(Boolean)
+        : []
+
+      const mergedTags = [...form.tags
         .split(',')
         .map((item) => item.trim())
-        .filter(Boolean)
-        .forEach((tag) => payload.append('tags', tag))
+        .filter(Boolean), ...derivedLiuxueTags]
+      mergedTags.forEach((tag) => payload.append('tags', tag))
+
+      if (Array.isArray(form.attachments) && form.attachments.length) {
+        form.attachments.forEach((file) => {
+          payload.append('attachments', file)
+        })
+      }
 
       await communityApi.createPost(payload, token)
       await loadPosts()
@@ -204,16 +254,16 @@ export default function CommunityPage() {
           <div className="section-head">
             <p className="eyebrow">社区</p>
             <h2>公开浏览 + 登录互动 + 审核发布</h2>
-            <p className="muted">现在发帖支持直接上传 Markdown 文档，系统会读取文件内容并创建帖子。</p>
+            <p className="muted">支持上传 Markdown 正文并附带学习资料附件，系统会自动进入审核流。</p>
           </div>
 
           <div className="grid-two">
             <div className="feature-card">
-              <div className="card-title">检索与筛选</div>
+              <div className="card-title">搜索与筛选</div>
               <form className="search-row" onSubmit={handleSearch}>
                 <input
                   type="text"
-                  placeholder="搜索帖子标题或正文关键字"
+                  placeholder="搜索帖子标题或正文关键词"
                   value={keywordInput}
                   onChange={(event) => setKeywordInput(event.target.value)}
                 />
@@ -343,7 +393,7 @@ export default function CommunityPage() {
                     </span>
                     {post.contentFormat === 'markdown' ? <span className="tag subtle">Markdown</span> : null}
                     {post.anonymous ? <span className="tag subtle">匿名发布</span> : null}
-                    {post.hasAttachment ? <span className="tag subtle">含附加资料</span> : null}
+                    {post.hasAttachment ? <span className="tag subtle">含附件（{post.attachmentCount}）</span> : null}
                   </div>
 
                   {post.tags.length ? (
@@ -365,7 +415,7 @@ export default function CommunityPage() {
                   </div>
 
                   <div className="panel-footer">
-                    <span>{post.sourceFileName || (post.anonymous ? '匿名用户' : `作者ID: ${post.authorId}`)}</span>
+                    <span>{post.sourceFileName || (post.anonymous ? '匿名用户' : `作者 ID: ${post.authorId}`)}</span>
                     <span>{post.createdAt?.replace('T', ' ').slice(0, 16)}</span>
                   </div>
 

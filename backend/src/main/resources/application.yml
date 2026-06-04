@@ -45,9 +45,9 @@ tencent:
   cos:
     secret-id: ${COS_SECRET_ID:}
     secret-key: ${COS_SECRET_KEY:}
-    bucket: rjxt-1331431081     # 请填写你的 COS bucket 名称
-    region: ap-shanghai      # 请填写你的 COS 区域，如 ap-nanjing
-    base-url: https://rjxt-1331431081.cos.ap-shanghai.myqcloud.com    # 请填写你的 COS bucket 访问地址，如 https://your-bucket.cos.myqcloud.com
+    bucket: rjxt-1331431081
+    region: ap-shanghai
+    base-url: https://rjxt-1331431081.cos.ap-shanghai.myqcloud.com
 
 logging:
   level:

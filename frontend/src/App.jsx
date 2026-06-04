@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import DevBar from './components/DevBar.jsx'
+import PreferencesPanel from './components/PreferencesPanel.jsx'
 
 // 通用功能页面
 import HomePage from './pages/HomePage.jsx'
@@ -12,6 +13,7 @@ import WrongQuestionPage from './pages/WrongQuestionPage.jsx'
 import PracticeStatisticsPage from './pages/PracticeStatisticsPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import RegisterPage from './pages/RegisterPage.jsx'
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import PostEditPage from './pages/PostEditPage.jsx'
 
@@ -63,11 +65,13 @@ import AdminKaoyanDataPage from './pages/admin/AdminKaoyanDataPage.jsx'
 import AdminMaterialReviewPage from './pages/admin/AdminMaterialReviewPage.jsx'
 import AdminQuestionBankPage from './pages/admin/AdminQuestionBankPage.jsx'
 import AdminQuestionsPage from './pages/admin/AdminQuestionsPage.jsx'
+import CategoryManagementPage from './pages/admin/CategoryManagementPage.jsx'
 
 export default function App() {
   return (
     <>
     <DevBar />
+    <PreferencesPanel />
     <Routes>
       {/* 通用功能 */}
       <Route path="/" element={<HomePage />} />
@@ -80,6 +84,7 @@ export default function App() {
       <Route path="/practice/statistics" element={<PracticeStatisticsPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/profile/posts/:postId/edit" element={<PostEditPage />} />
 
@@ -131,6 +136,7 @@ export default function App() {
       <Route path="/admin/material-review" element={<AdminMaterialReviewPage />} />
       <Route path="/admin/question-banks" element={<AdminQuestionBankPage />} />
       <Route path="/admin/question-banks/:bankId/questions" element={<AdminQuestionsPage />} />
+      <Route path="/admin/categories" element={<CategoryManagementPage />} />
     </Routes>
     </>
   )

@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext.jsx'
 import '../App.css'
 
 const credentialTypeOptions = [
+  { value: 'username', label: '用户名登录' },
   { value: 'email', label: '邮箱登录' },
   { value: 'phone', label: '手机号登录' },
   { value: 'studentId', label: '学号登录' },
@@ -15,17 +16,17 @@ function validateCredential(type, value) {
   const trimmed = value.trim()
   if (!trimmed) return '请输入账号'
 
-  if (type === 'email') {
-    const matched = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)
-    if (!matched) return '邮箱格式不正确'
+  if (type === 'username' && !/^[A-Za-z][A-Za-z0-9_]{3,19}$/.test(trimmed)) {
+    return '用户名需以字母开头，4-20 位（字母/数字/下划线）'
   }
-  if (type === 'phone') {
-    const matched = /^1[3-9]\d{9}$/.test(trimmed)
-    if (!matched) return '手机号格式不正确'
+  if (type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    return '邮箱格式不正确'
   }
-  if (type === 'studentId') {
-    const matched = /^[A-Za-z0-9_-]{6,20}$/.test(trimmed)
-    if (!matched) return '学号格式不正确'
+  if (type === 'phone' && !/^1[3-9]\d{9}$/.test(trimmed)) {
+    return '手机号格式不正确'
+  }
+  if (type === 'studentId' && !/^[A-Za-z0-9_-]{6,20}$/.test(trimmed)) {
+    return '学号格式不正确'
   }
   return ''
 }
@@ -34,7 +35,7 @@ function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
   const [form, setForm] = useState({
-    credentialType: 'email',
+    credentialType: 'username',
     credential: '',
     password: '',
   })
@@ -44,6 +45,7 @@ function LoginPage() {
   async function handleSubmit(event) {
     event.preventDefault()
     setError('')
+
     const credentialError = validateCredential(form.credentialType, form.credential)
     if (credentialError) {
       setError(credentialError)
@@ -56,15 +58,16 @@ function LoginPage() {
 
     setSubmitting(true)
     try {
-      const payload = {
-        password: form.password,
+      const credential = form.credential.trim()
+      await login({
         loginType: form.credentialType,
-        credential: form.credential.trim(),
-        email: form.credentialType === 'email' ? form.credential.trim() : form.credential.trim(),
-        phone: form.credentialType === 'phone' ? form.credential.trim() : undefined,
-        studentId: form.credentialType === 'studentId' ? form.credential.trim() : undefined,
-      }
-      await login(payload)
+        credential,
+        password: form.password,
+        username: form.credentialType === 'username' ? credential : undefined,
+        email: form.credentialType === 'email' ? credential : undefined,
+        phone: form.credentialType === 'phone' ? credential : undefined,
+        studentId: form.credentialType === 'studentId' ? credential : undefined,
+      })
       navigate('/profile')
     } catch (err) {
       setError(err.message || '登录失败')
@@ -74,6 +77,7 @@ function LoginPage() {
   }
 
   const placeholderMap = {
+    username: '请输入用户名',
     email: '请输入邮箱账号',
     phone: '请输入手机号',
     studentId: '请输入学号',
@@ -87,9 +91,13 @@ function LoginPage() {
           <div className="section-head">
             <p className="eyebrow">登录</p>
             <h2>统一认证入口</h2>
-            <p className="muted">支持手机号 / 邮箱 / 学号登录，连续输错密码将触发临时锁定。</p>
+            <p className="muted">支持用户名/手机号/邮箱/学号登录，连续输错密码会触发临时锁定。</p>
           </div>
-          <form className="auth-card" onSubmit={handleSubmit}>
+
+          <form className="auth-card" onSubmit={handleSubmit} autoComplete="off">
+            <input type="text" name="fake_username" autoComplete="username" tabIndex={-1} style={{ display: 'none' }} />
+            <input type="password" name="fake_password" autoComplete="new-password" tabIndex={-1} style={{ display: 'none' }} />
+
             <label className="field">
               <span>登录方式</span>
               <select
@@ -101,36 +109,42 @@ function LoginPage() {
                 ))}
               </select>
             </label>
+
             <label className="field">
               <span>账号</span>
               <input
+                name="gp_login_credential"
                 value={form.credential}
                 onChange={(event) => setForm({ ...form, credential: event.target.value })}
                 type="text"
+                autoComplete="off"
                 placeholder={placeholderMap[form.credentialType]}
                 required
               />
             </label>
+
             <label className="field">
               <span>密码</span>
               <input
+                name="gp_login_password"
                 value={form.password}
                 onChange={(event) => setForm({ ...form, password: event.target.value })}
                 type="password"
+                autoComplete="new-password"
                 placeholder="请输入密码"
                 required
               />
             </label>
-            <div className="notice-box">
-              <strong>安全提示</strong>
-              <p className="muted">若账号被临时锁定，可通过验证码找回密码并重新登录。</p>
-            </div>
+
             {error ? <div className="error-text">{error}</div> : null}
+
             <button className="btn primary" type="submit" disabled={submitting}>
               {submitting ? '登录中...' : '登录'}
             </button>
-            <div className="muted auth-tip">
-              还没有账号？<Link to="/register">去注册</Link>
+
+            <div className="muted auth-tip" style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+              <Link to="/forgot-password">忘记密码？</Link>
+              <span>还没有账号？<Link to="/register">去注册</Link></span>
             </div>
           </form>
         </section>
@@ -141,4 +155,3 @@ function LoginPage() {
 }
 
 export default LoginPage
-

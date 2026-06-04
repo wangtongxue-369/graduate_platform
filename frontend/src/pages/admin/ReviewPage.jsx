@@ -8,11 +8,22 @@ import { useAuth } from '../../context/AuthContext.jsx'
 import '../../App.css'
 
 const statusLabelMap = {
-  PENDING: '待审核', PUBLISHED: '已发布', REJECTED: '驳回', OFFLINE: '已下架', DRAFT: '草稿',
+  PENDING: '待审核',
+  PUBLISHED: '已发布',
+  REJECTED: '驳回',
+  OFFLINE: '已下架',
+  DRAFT: '草稿',
 }
-const statusColors = {
-  PENDING: '#d97706', PUBLISHED: '#0f766e', REJECTED: '#b91c1c', OFFLINE: '#6b7280', DRAFT: '#9ca3af',
+
+const statusClassMap = {
+  PENDING: 'is-warning',
+  PUBLISHED: 'is-success',
+  REJECTED: 'is-danger',
+  OFFLINE: 'is-neutral',
+  DRAFT: 'is-neutral',
 }
+
+const filterStatuses = ['PENDING', 'PUBLISHED', 'REJECTED', 'OFFLINE']
 
 export default function ReviewPage() {
   const { user, token, isAuthed } = useAuth()
@@ -52,7 +63,7 @@ export default function ReviewPage() {
     setActing(postId)
     try {
       await adminApi.reviewPost(postId, action, reason.trim(), token)
-      setPosts(prev => prev.filter(p => p.id !== postId))
+      setPosts(prev => prev.filter((post) => post.id !== postId))
     } catch (e) {
       setError(e.message)
     } finally {
@@ -74,94 +85,105 @@ export default function ReviewPage() {
             {error && <div className="error-text">{error}</div>}
           </div>
 
-          <div className="feature-card">
-            <div className="card-title">筛选</div>
-            <div className="tag-row">
-              {['PENDING', 'PUBLISHED', 'REJECTED', 'OFFLINE'].map(s => (
-                <button
-                  key={s}
-                  type="button"
-                  className={`tag tag-btn ${filterStatus === s ? 'selected' : ''}`}
-                  onClick={() => setFilterStatus(s)}
-                  style={filterStatus === s ? { background: statusColors[s] } : undefined}
-                >
-                  {statusLabelMap[s]} ({s})
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="feature-card">加载中...</div>
-          ) : posts.length === 0 ? (
-            <div className="feature-card">
-              <div className="card-title">暂无 {statusLabelMap[filterStatus] || ''} 帖子</div>
-            </div>
-          ) : (
-            <div className="track-grid">
-              {posts.map(post => (
-                <article className="track-card" key={post.id}>
-                  <div className="track-head">
-                    <h3>{post.title}</h3>
-                    <span className="tag subtle" style={{ background: statusColors[post.status] + '18', color: statusColors[post.status] }}>
-                      {statusLabelMap[post.status]}
-                    </span>
-                  </div>
-                  <div className="notice-box review-markdown-preview">
-                    <MarkdownContent content={post.content || ''} />
-                  </div>
-                  <div className="tag-row">
-                    <span className="tag subtle">{post.category?.name}</span>
-                    <span className="tag subtle">作者: {post.authorName || post.authorId}</span>
-                    {post.tags?.split(',').filter(Boolean).map(t => (
-                      <span className="tag subtle" key={t}>#{t.trim()}</span>
-                    ))}
-                  </div>
-                  <div className="metric-row">
-                    <span>浏览{post.viewCount}</span>
-                    <span>评论{post.commentCount}</span>
-                    <span>举报{post.reportCount}</span>
-                  </div>
-                  {post.reviewReason ? <div className="muted">处理原因：{post.reviewReason}</div> : null}
-                  <div className="muted" style={{ fontSize: 12 }}>
-                    {post.createdAt?.replace('T', ' ').slice(0, 16)}
-                  </div>
-
-                  {post.status === 'PENDING' && (
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        className="btn primary small"
-                        disabled={acting === post.id}
-                        onClick={() => handleAction(post.id, 'APPROVE')}
-                      >
-                        通过
-                      </button>
-                      <button
-                        className="btn outline small"
-                        disabled={acting === post.id}
-                        onClick={() => handleAction(post.id, 'REJECT')}
-                        style={{ color: '#b91c1c', borderColor: '#b91c1c' }}
-                      >
-                        驳回
-                      </button>
-                    </div>
-                  )}
-                  {post.status === 'PUBLISHED' && (
+          <div className="admin-page-shell">
+            <div className="admin-toolbar-card">
+              <div className="track-head">
+                <h3>筛选</h3>
+                <span className="admin-status-chip is-neutral">状态队列</span>
+              </div>
+              <div className="admin-filter-stack">
+                <div className="admin-filter-bar">
+                  {filterStatuses.map((status) => (
                     <button
-                      className="btn outline small"
-                      disabled={acting === post.id}
-                      onClick={() => handleAction(post.id, 'OFFLINE')}
-                      style={{ color: '#6b7280', borderColor: '#6b7280' }}
+                      key={status}
+                      type="button"
+                      className={`admin-filter-pill ${filterStatus === status ? 'is-active' : ''}`}
+                      onClick={() => setFilterStatus(status)}
                     >
-                      下架
+                      {statusLabelMap[status]} ({status})
                     </button>
-                  )}
-                </article>
-              ))}
+                  ))}
+                </div>
+              </div>
             </div>
-          )}
 
-          <Link className="btn ghost" to="/admin">返回控制台</Link>
+            {loading ? (
+              <div className="admin-surface-card">加载中...</div>
+            ) : posts.length === 0 ? (
+              <div className="admin-surface-card">
+                <div className="track-head">
+                  <h3>暂无 {statusLabelMap[filterStatus] || ''} 帖子</h3>
+                  <span className="admin-status-chip is-neutral">0 项</span>
+                </div>
+              </div>
+            ) : (
+              <div className="admin-record-grid">
+                {posts.map((post) => (
+                  <article className="admin-record-card" key={post.id}>
+                    <div className="track-head">
+                      <h3>{post.title}</h3>
+                      <span className={`admin-status-chip ${statusClassMap[post.status] || 'is-neutral'}`}>
+                        {statusLabelMap[post.status]}
+                      </span>
+                    </div>
+                    <div className="admin-record-main">
+                      <div className="notice-box review-markdown-preview">
+                        <MarkdownContent content={post.content || ''} />
+                      </div>
+                      {post.reviewReason ? <div className="muted">处理原因：{post.reviewReason}</div> : null}
+                    </div>
+                    <div className="admin-record-meta">
+                      <span className="admin-status-chip is-neutral">{post.category?.name || '未分类'}</span>
+                      <span>作者: {post.authorName || post.authorId}</span>
+                      <span>浏览{post.viewCount}</span>
+                      <span>评论{post.commentCount}</span>
+                      <span>举报{post.reportCount}</span>
+                      {post.tags?.split(',').filter(Boolean).map((tag) => (
+                        <span className="admin-status-chip is-neutral" key={tag}>#{tag.trim()}</span>
+                      ))}
+                    </div>
+                    <div className="admin-record-side">
+                      <span className="muted small">
+                        {post.createdAt?.replace('T', ' ').slice(0, 16)}
+                      </span>
+                      {post.status === 'PENDING' ? (
+                        <div className="admin-inline-actions">
+                          <button
+                            className="btn primary small"
+                            type="button"
+                            disabled={acting === post.id}
+                            onClick={() => handleAction(post.id, 'APPROVE')}
+                          >
+                            通过
+                          </button>
+                          <button
+                            className="btn outline-danger small"
+                            type="button"
+                            disabled={acting === post.id}
+                            onClick={() => handleAction(post.id, 'REJECT')}
+                          >
+                            驳回
+                          </button>
+                        </div>
+                      ) : null}
+                      {post.status === 'PUBLISHED' ? (
+                        <button
+                          className="btn outline-neutral small"
+                          type="button"
+                          disabled={acting === post.id}
+                          onClick={() => handleAction(post.id, 'OFFLINE')}
+                        >
+                          下架
+                        </button>
+                      ) : null}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+
+            <Link className="btn ghost" to="/admin">返回控制台</Link>
+          </div>
         </section>
       </main>
       <Footer />

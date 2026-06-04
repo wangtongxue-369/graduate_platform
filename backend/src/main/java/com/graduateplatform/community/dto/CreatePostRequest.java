@@ -24,5 +24,9 @@ public class CreatePostRequest {
 
     private String status = "PENDING"; // DRAFT / PENDING
 
+    private String content;
+
     private MultipartFile markdownFile;
+
+    private java.util.List<MultipartFile> attachments;
 }
