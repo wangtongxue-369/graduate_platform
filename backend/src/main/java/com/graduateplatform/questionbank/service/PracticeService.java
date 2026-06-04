@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 @Service
 public class PracticeService {
 
-    private static final Set<String> VALID_MODES = Set.of("chapter", "random", "mock");
+    private static final Set<String> VALID_MODES = Set.of("chapter", "random", "mock", "wrong_retry");
     private static final Set<String> SUBJECTIVE_TYPES = Set.of("subjective", "essay", "short_answer");
 
     private final UserRepository userRepository;
@@ -64,29 +64,56 @@ public class PracticeService {
     public Map<String, Object> createSession(Long userId, CreatePracticeSessionRequest req) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new BusinessException("用户不存在"));
-        QuestionBank bank = bankRepository.findById(req.getBankId())
-            .orElseThrow(() -> new BusinessException("题库不存在"));
 
         String mode = normalize(req.getMode());
         if (!VALID_MODES.contains(mode)) {
-            throw new BusinessException("练习模式仅支持章节、随机或模拟");
+            throw new BusinessException("练习模式仅支持章节、随机、模拟或错题重练");
         }
 
-        List<Question> questions = new ArrayList<>(questionRepository.findPracticeCandidates(
-            bank.getId(),
-            normalize(req.getChapter()),
-            normalize(req.getQuestionType()),
-            normalize(req.getDifficulty()),
-            req.getYear()
-        ));
-        if (questions.isEmpty()) {
-            throw new BusinessException("当前条件下暂无可练习题目");
+        List<Question> questions;
+        QuestionBank bank;
+
+        if ("wrong_retry".equals(mode)) {
+            // 错题重练模式：从错题本加载指定题目
+            if (req.getWrongQuestionIds() == null || req.getWrongQuestionIds().isEmpty()) {
+                throw new BusinessException("错题重练模式必须指定错题ID列表");
+            }
+            questions = new ArrayList<>();
+            for (Long wqId : req.getWrongQuestionIds()) {
+                WrongQuestion wq = wrongQuestionRepository.findById(wqId)
+                    .orElse(null);
+                if (wq != null && wq.getUser() != null && userId.equals(wq.getUser().getId())
+                    && wq.getQuestion() != null && wq.getQuestion().getActive()) {
+                    questions.add(wq.getQuestion());
+                }
+            }
+            if (questions.isEmpty()) {
+                throw new BusinessException("所选错题均不可练习");
+            }
+            bank = questions.get(0).getBank();
+        } else {
+            // 标准模式：按题库条件筛选
+            if (req.getBankId() == null) {
+                throw new BusinessException("题库ID不能为空");
+            }
+            bank = bankRepository.findById(req.getBankId())
+                .orElseThrow(() -> new BusinessException("题库不存在"));
+            questions = new ArrayList<>(questionRepository.findPracticeCandidates(
+                bank.getId(),
+                normalize(req.getChapter()),
+                normalize(req.getQuestionType()),
+                normalize(req.getDifficulty()),
+                req.getYear()
+            ));
+            if (questions.isEmpty()) {
+                throw new BusinessException("当前条件下暂无可练习题目");
+            }
+            if ("random".equals(mode) || "mock".equals(mode)) {
+                Collections.shuffle(questions);
+            }
+            int limit = resolveLimit(req.getLimit(), mode, questions.size());
+            questions = questions.stream().limit(limit).toList();
         }
-        if ("random".equals(mode) || "mock".equals(mode)) {
-            Collections.shuffle(questions);
-        }
-        int limit = resolveLimit(req.getLimit(), mode, questions.size());
-        questions = questions.stream().limit(limit).toList();
 
         PracticeSession session = PracticeSession.builder()
             .user(user)
@@ -237,15 +264,24 @@ public class PracticeService {
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getWrongQuestions(Long userId, String target, String subject,
-                                                       String chapter, Integer minWrongCount) {
-        return wrongQuestionRepository.findReviewList(
+    public Map<String, Object> getWrongQuestions(Long userId, String target, String subject,
+                                                  String chapter, Integer minWrongCount,
+                                                  int page, int size) {
+        var pageResult = wrongQuestionRepository.findReviewListPaged(
             userId,
             normalize(target),
             normalize(subject),
             normalize(chapter),
-            minWrongCount
-        ).stream().map(this::toWrongQuestionReviewMap).toList();
+            minWrongCount,
+            org.springframework.data.domain.PageRequest.of(page, size)
+        );
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("items", pageResult.getContent().stream().map(this::toWrongQuestionReviewMap).toList());
+        result.put("total", pageResult.getTotalElements());
+        result.put("page", pageResult.getNumber());
+        result.put("size", pageResult.getSize());
+        result.put("totalPages", pageResult.getTotalPages());
+        return result;
     }
 
     @Transactional(readOnly = true)
