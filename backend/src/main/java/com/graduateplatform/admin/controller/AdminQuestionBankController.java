@@ -4,6 +4,7 @@ import com.graduateplatform.admin.service.AdminQuestionBankService;
 import com.graduateplatform.common.dto.ApiResponse;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -74,5 +75,11 @@ public class AdminQuestionBankController {
             return ApiResponse.fail("questions 数组不能为空");
         }
         return ApiResponse.ok(service.batchCreateQuestions(bankId, questions), "批量导入完成");
+    }
+
+    @PostMapping("/{bankId}/questions/import")
+    public ApiResponse<?> importQuestions(@PathVariable Long bankId,
+                                          @RequestParam("file") MultipartFile file) {
+        return ApiResponse.ok(service.importQuestions(bankId, file), "文件导入完成");
     }
 }

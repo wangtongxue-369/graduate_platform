@@ -130,6 +130,13 @@ export const practiceApi = {
     const query = search.toString()
     return request(`/api/practice/wrong-questions${query ? `?${query}` : ''}`, { token })
   },
+  rebuildWrongSession(questionIds, token) {
+    return request('/api/practice/wrong-questions/rebuild-session', {
+      method: 'POST',
+      body: { wrongQuestionIds: questionIds },
+      token,
+    })
+  },
   statistics(granularity = 'day', token) {
     return request(`/api/practice/statistics?granularity=${granularity}`, { token })
   },
@@ -918,6 +925,13 @@ export const adminQuestionBankApi = {
   batchCreateQuestions(bankId, questions, token) {
     return request(`/api/admin/question-banks/${bankId}/questions/batch`, {
       method: 'POST', body: { questions }, token,
+    })
+  },
+  importQuestions(bankId, file, token) {
+    const fd = new FormData()
+    fd.append('file', file)
+    return request(`/api/admin/question-banks/${bankId}/questions/import`, {
+      method: 'POST', body: fd, token,
     })
   },
   snapshots(questionId, token) {

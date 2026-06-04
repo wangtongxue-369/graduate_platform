@@ -23,6 +23,9 @@ export default function AdminQuestionsPage() {
   const [showBatch, setShowBatch] = useState(false)
   const [batchJson, setBatchJson] = useState('')
   const [batchResult, setBatchResult] = useState(null)
+  const [importFile, setImportFile] = useState(null)
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState(null)
   const [snapshots, setSnapshots] = useState([])
   const [showSnapshots, setShowSnapshots] = useState(false)
   const [snapshotQuestionId, setSnapshotQuestionId] = useState(null)
@@ -135,6 +138,23 @@ export default function AdminQuestionsPage() {
     }
   }
 
+  const handleFileImport = async () => {
+    if (!importFile) return
+    setError('')
+    setImportResult(null)
+    setImporting(true)
+    try {
+      const result = await adminQuestionBankApi.importQuestions(Number(bankId), importFile, token)
+      setImportResult(result)
+      setImportFile(null)
+      loadQuestions()
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setImporting(false)
+    }
+  }
+
   const handleViewSnapshots = async (qId) => {
     setSnapshotQuestionId(qId)
     try {
@@ -212,7 +232,41 @@ export default function AdminQuestionsPage() {
           {showBatch && (
             <div className="card" style={{ marginBottom: '1.5rem', padding: '1.25rem' }}>
               <h3 style={{ marginBottom: '0.5rem' }}>批量导入题目</h3>
-              <p className="muted" style={{ marginBottom: '1rem' }}>粘贴 JSON 数组，每项包含 stem(answer 必填)、optionsJson、analysis、chapter、questionType、difficulty、year 等字段。</p>
+
+              {/* 文件上传区域 */}
+              <div style={{ marginBottom: '1rem', padding: '1rem', border: '2px dashed var(--line)', borderRadius: '8px', textAlign: 'center' }}>
+                <p className="muted" style={{ marginBottom: '0.75rem' }}>上传 CSV 或 JSON 文件（最大 5MB）</p>
+                <input
+                  type="file"
+                  accept=".csv,.json"
+                  onChange={(e) => setImportFile(e.target.files[0] || null)}
+                  style={{ fontSize: '13px' }}
+                />
+                {importFile && (
+                  <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
+                    <span className="muted">已选: {importFile.name} ({(importFile.size / 1024).toFixed(1)}KB)</span>
+                    <button className="btn primary small" type="button" disabled={importing} onClick={handleFileImport}>
+                      {importing ? '导入中...' : '开始导入'}
+                    </button>
+                    <button className="btn outline small" type="button" onClick={() => { setImportFile(null); setImportResult(null) }}>清除</button>
+                  </div>
+                )}
+                {importResult && (
+                  <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(15,118,110,0.06)', borderRadius: '6px', textAlign: 'left', fontSize: '13px' }}>
+                    <p>共 {importResult.total} 条，成功 <strong>{importResult.created}</strong> 条，失败 {importResult.failed} 条</p>
+                    {importResult.errors && importResult.errors.length > 0 && (
+                      <ul style={{ marginTop: '0.5rem', color: '#b91c1c' }}>
+                        {importResult.errors.map((e, i) => (
+                          <li key={i}>第 {e.index} 条 (stem: {e.stem}) — {e.error}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* JSON 粘贴区域 */}
+              <p className="muted" style={{ marginBottom: '1rem' }}>或粘贴 JSON 数组，每项包含 stem(answer 必填)、optionsJson、analysis、chapter、questionType、difficulty、year 等字段。</p>
               <textarea
                 rows={10} value={batchJson}
                 placeholder={'[\n  {"stem": "中国的首都是？", "optionsJson": "[\"A. 北京\",\"B. 上海\",\"C. 广州\",\"D. 深圳\"]", "answer": "A", "chapter": "地理", "questionType": "single", "difficulty": "easy"}\n]'}
