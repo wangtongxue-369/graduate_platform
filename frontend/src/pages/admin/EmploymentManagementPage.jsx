@@ -26,6 +26,7 @@ const emptyJob = {
   companyName: '',
   city: '',
   industry: '',
+  companyType: '',
   roleType: '',
   salaryRange: '',
   educationRequirement: '',
@@ -41,6 +42,9 @@ const activeStatusClassMap = {
   false: 'is-neutral',
 }
 
+const ADMIN_PAGE_SIZE = 5
+const emptyListQuery = { keyword: '', active: 'all', page: 1 }
+
 function normalizeDateFields(payload, keys) {
   const next = { ...payload }
   keys.forEach((key) => {
@@ -52,6 +56,21 @@ function normalizeDateFields(payload, keys) {
 function formatDateTime(value) {
   if (!value) return '未设置'
   return value.replace('T', ' ').slice(0, 16)
+}
+
+function filterManagedItems(items, query, fields) {
+  const keyword = query.keyword.trim().toLowerCase()
+  const expectedActive = query.active === 'all' ? null : query.active === 'true'
+  return items.filter((item) => {
+    if (expectedActive !== null && (item.active !== false) !== expectedActive) return false
+    if (!keyword) return true
+    return fields.some((field) => String(item[field] || '').toLowerCase().includes(keyword))
+  })
+}
+
+function pageItems(items, page) {
+  const start = (page - 1) * ADMIN_PAGE_SIZE
+  return items.slice(start, start + ADMIN_PAGE_SIZE)
 }
 
 export default function EmploymentManagementPage() {
@@ -67,9 +86,23 @@ export default function EmploymentManagementPage() {
   const [message, setMessage] = useState('')
   const [actingKey, setActingKey] = useState('')
   const [activePanel, setActivePanel] = useState('fairs')
+  const [fairListQuery, setFairListQuery] = useState(emptyListQuery)
+  const [jobListQuery, setJobListQuery] = useState(emptyListQuery)
 
   const activeFairCount = fairs.filter((item) => item.active !== false).length
   const activeJobCount = jobs.filter((item) => item.active !== false).length
+  const filteredFairs = filterManagedItems(fairs, fairListQuery, [
+    'title', 'companyName', 'city', 'industry', 'targetRoles', 'location', 'applyUrl',
+  ])
+  const filteredJobs = filterManagedItems(jobs, jobListQuery, [
+    'title', 'companyName', 'city', 'industry', 'companyType', 'roleType', 'salaryRange', 'applyUrl',
+  ])
+  const fairTotalPages = Math.max(1, Math.ceil(filteredFairs.length / ADMIN_PAGE_SIZE))
+  const jobTotalPages = Math.max(1, Math.ceil(filteredJobs.length / ADMIN_PAGE_SIZE))
+  const currentFairPage = Math.min(fairListQuery.page, fairTotalPages)
+  const currentJobPage = Math.min(jobListQuery.page, jobTotalPages)
+  const pagedFairs = pageItems(filteredFairs, currentFairPage)
+  const pagedJobs = pageItems(filteredJobs, currentJobPage)
 
   const panelMeta = {
     fairs: {
@@ -129,6 +162,14 @@ export default function EmploymentManagementPage() {
   const updateJob = (field, value) => {
     setMessage('')
     setJobForm((current) => ({ ...current, [field]: value }))
+  }
+
+  const updateFairListQuery = (field, value) => {
+    setFairListQuery((current) => ({ ...current, [field]: value, page: field === 'page' ? value : 1 }))
+  }
+
+  const updateJobListQuery = (field, value) => {
+    setJobListQuery((current) => ({ ...current, [field]: value, page: field === 'page' ? value : 1 }))
   }
 
   function startEditFair(fair) {
@@ -212,7 +253,8 @@ export default function EmploymentManagementPage() {
     setActingKey(`notify-${relatedType}-${relatedId}`)
     try {
       const result = await adminEmploymentApi.triggerNotification({ relatedType, relatedId }, token)
-      setMessage(`站内提醒已触发，生成 ${result.createdCount || 0} 条匹配提醒。`)
+      const skipped = result.skippedDuplicateCount || 0
+      setMessage(`站内提醒已触发，生成 ${result.createdCount || 0} 条匹配提醒${skipped ? `，跳过 ${skipped} 条重复提醒` : ''}。`)
     } catch (e) {
       setError(e.message || '触发提醒失败')
     } finally {
@@ -243,8 +285,8 @@ export default function EmploymentManagementPage() {
     setMessage('')
     setActingKey(`delete-job-${id}`)
     try {
-      await adminEmploymentApi.deleteJob(id, token)
-      setMessage('岗位已删除。')
+      const result = await adminEmploymentApi.deleteJob(id, token)
+      setMessage(result?.deactivated ? '岗位已有投递记录引用，已改为停用以保留历史关联。' : '岗位已删除。')
       if (editingJobId === id) resetJobForm()
       await loadAll()
     } catch (e) {
@@ -361,6 +403,10 @@ export default function EmploymentManagementPage() {
             <input value={jobForm.industry || ''} onChange={(event) => updateJob('industry', event.target.value)} />
           </label>
           <label className="field">
+            <span>企业类型</span>
+            <input value={jobForm.companyType || ''} onChange={(event) => updateJob('companyType', event.target.value)} placeholder="国企 / 民企 / 外企" />
+          </label>
+          <label className="field">
             <span>岗位类型</span>
             <input value={jobForm.roleType || ''} onChange={(event) => updateJob('roleType', event.target.value)} />
           </label>
@@ -410,6 +456,47 @@ export default function EmploymentManagementPage() {
     </>
   )
 
+  const renderListControls = (query, updateQuery, totalItems, totalPages, currentPage) => (
+    <div className="admin-form-grid two-columns">
+      <label className="field">
+        <span>关键词</span>
+        <input
+          value={query.keyword}
+          onChange={(event) => updateQuery('keyword', event.target.value)}
+          placeholder="按标题、企业、城市、行业筛选"
+        />
+      </label>
+      <label className="field">
+        <span>状态</span>
+        <select value={query.active} onChange={(event) => updateQuery('active', event.target.value)}>
+          <option value="all">全部状态</option>
+          <option value="true">仅启用</option>
+          <option value="false">仅停用</option>
+        </select>
+      </label>
+      <div className="admin-inline-actions admin-field-wide">
+        <span className="admin-status-chip is-neutral">匹配 {totalItems} 条</span>
+        <button
+          className="btn outline small"
+          type="button"
+          disabled={currentPage <= 1}
+          onClick={() => updateQuery('page', Math.max(1, currentPage - 1))}
+        >
+          上一页
+        </button>
+        <span className="admin-status-chip is-neutral">{currentPage} / {totalPages}</span>
+        <button
+          className="btn outline small"
+          type="button"
+          disabled={currentPage >= totalPages}
+          onClick={() => updateQuery('page', Math.min(totalPages, currentPage + 1))}
+        >
+          下一页
+        </button>
+      </div>
+    </div>
+  )
+
   const renderFairListBlock = () => (
     <>
       <div className="track-head">
@@ -420,13 +507,19 @@ export default function EmploymentManagementPage() {
         <span className="admin-status-chip is-warning">{activeFairCount} 条启用中</span>
       </div>
 
+      {!loading && fairs.length > 0 ? renderListControls(
+        fairListQuery, updateFairListQuery, filteredFairs.length, fairTotalPages, currentFairPage,
+      ) : null}
+
       {loading ? (
         <p className="muted">正在加载招聘会...</p>
       ) : fairs.length === 0 ? (
         <p className="muted">暂无招聘会，可先在左侧创建第一条记录。</p>
+      ) : filteredFairs.length === 0 ? (
+        <p className="muted">当前筛选条件下没有招聘会。</p>
       ) : (
         <div className="admin-employment-list-grid">
-          {fairs.map((fair) => (
+          {pagedFairs.map((fair) => (
             <article className="admin-record-card" key={fair.id}>
               <div className="admin-record-main">
                 <div className="track-head">
@@ -481,13 +574,19 @@ export default function EmploymentManagementPage() {
         <span className="admin-status-chip is-warning">{activeJobCount} 条启用中</span>
       </div>
 
+      {!loading && jobs.length > 0 ? renderListControls(
+        jobListQuery, updateJobListQuery, filteredJobs.length, jobTotalPages, currentJobPage,
+      ) : null}
+
       {loading ? (
         <p className="muted">正在加载岗位...</p>
       ) : jobs.length === 0 ? (
         <p className="muted">暂无岗位，可先在左侧创建第一条记录。</p>
+      ) : filteredJobs.length === 0 ? (
+        <p className="muted">当前筛选条件下没有岗位。</p>
       ) : (
         <div className="admin-employment-list-grid">
-          {jobs.map((job) => (
+          {pagedJobs.map((job) => (
             <article className="admin-record-card" key={job.id}>
               <div className="admin-record-main">
                 <div className="track-head">
@@ -496,7 +595,7 @@ export default function EmploymentManagementPage() {
                     {job.active !== false ? '启用中' : '已停用'}
                   </span>
                 </div>
-                <p className="muted">{job.companyName || '未设置企业'} · {job.city || '城市待定'} · {job.roleType || '岗位类型待定'}</p>
+                <p className="muted">{job.companyName || '未设置企业'} · {job.city || '城市待定'} · {job.companyType || '企业类型待定'} · {job.roleType || '岗位类型待定'}</p>
                 <div className="admin-record-meta">
                   <span>{job.salaryRange || '薪资待补充'}</span>
                   <span>{job.educationRequirement || '学历要求待补充'}</span>

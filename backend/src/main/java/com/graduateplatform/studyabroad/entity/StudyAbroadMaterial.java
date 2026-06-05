@@ -4,6 +4,8 @@ import com.graduateplatform.common.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -48,6 +50,10 @@ public class StudyAbroadMaterial {
     @Column(length = 500)
     private String note;
 
+    @Builder.Default
+    @OneToMany(mappedBy = "material", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<StudyAbroadMaterialAttachment> attachments = new ArrayList<>();
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -62,5 +68,15 @@ public class StudyAbroadMaterial {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public void addAttachment(StudyAbroadMaterialAttachment attachment) {
+        attachments.add(attachment);
+        attachment.setMaterial(this);
+    }
+
+    public void removeAttachment(StudyAbroadMaterialAttachment attachment) {
+        attachments.remove(attachment);
+        attachment.setMaterial(null);
     }
 }

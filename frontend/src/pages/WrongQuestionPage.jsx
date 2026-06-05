@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
+import Pagination from '../components/Pagination.jsx'
 import { practiceApi } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import '../App.css'
 
 function WrongQuestionPage() {
   const { token, isAuthed } = useAuth()
+  const navigate = useNavigate()
   const canUsePractice = Boolean(isAuthed && token && token !== 'dev-token')
 
   const [filters, setFilters] = useState({
@@ -20,6 +22,11 @@ function WrongQuestionPage() {
   const [options, setOptions] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [retrying, setRetrying] = useState(false)
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const SIZE = 20
 
   useEffect(() => {
     if (!canUsePractice) {
@@ -34,26 +41,68 @@ function WrongQuestionPage() {
     setLoading(true)
     setError('')
     try {
-      const query = {}
+      const query = { page, size: SIZE }
       if (filters.target) query.target = filters.target
       if (filters.subject) query.subject = filters.subject
       if (filters.chapter) query.chapter = filters.chapter
       if (filters.minWrongCount) query.minWrongCount = Number(filters.minWrongCount)
       const data = await practiceApi.wrongQuestions(query, token)
-      setWrongs(data || [])
+      if (Array.isArray(data)) {
+        setWrongs(data)
+        setTotalPages(1)
+      } else {
+        setWrongs(data.items || data.content || [])
+        setTotalPages(data.totalPages || 1)
+      }
     } catch (err) {
       setError(err.message || '加载错题失败')
     } finally {
       setLoading(false)
     }
-  }, [canUsePractice, filters, token])
+  }, [canUsePractice, filters, token, page])
 
   useEffect(() => {
     loadWrongs()
   }, [loadWrongs])
 
+  useEffect(() => {
+    setPage(0)
+    setSelectedIds(new Set())
+  }, [filters])
+
   function updateFilter(key, value) {
     setFilters((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function toggleSelect(id) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === wrongs.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(wrongs.map((w) => w.id)))
+    }
+  }
+
+  async function handleRetry(ids) {
+    if (ids.length === 0) return
+    setRetrying(true)
+    setError('')
+    try {
+      const data = await practiceApi.rebuildWrongSession(ids, token)
+      navigate(`/practice/${data.id}`)
+    } catch (err) {
+      setError(err.message || '创建重练会话失败')
+    } finally {
+      setRetrying(false)
+    }
   }
 
   function formatDateTime(dateStr) {
@@ -135,6 +184,39 @@ function WrongQuestionPage() {
             </div>
           </div>
 
+          {/* 操作栏 */}
+          {wrongs.length > 0 && (
+            <div className="feature-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size === wrongs.length && wrongs.length > 0}
+                  onChange={toggleSelectAll}
+                />
+                <span>全选</span>
+              </label>
+              <span className="muted">已选 {selectedIds.size} 题</span>
+              {selectedIds.size > 0 && (
+                <button
+                  className="btn primary small"
+                  type="button"
+                  disabled={retrying}
+                  onClick={() => handleRetry(Array.from(selectedIds))}
+                >
+                  {retrying ? '创建中...' : `重练选中 (${selectedIds.size})`}
+                </button>
+              )}
+              <button
+                className="btn outline small"
+                type="button"
+                disabled={retrying}
+                onClick={() => handleRetry(wrongs.map((w) => w.id))}
+              >
+                {retrying ? '创建中...' : '重练全部'}
+              </button>
+            </div>
+          )}
+
           {loading ? (
             <div className="feature-card">加载中...</div>
           ) : error ? (
@@ -150,26 +232,38 @@ function WrongQuestionPage() {
               <Link className="btn primary small" to="/practice">去练习</Link>
             </div>
           ) : (
-            <div className="wrong-list-full">
-              {wrongs.map((item) => (
-                <div className="feature-card" key={item.id}>
-                  <div className="track-head">
-                    <h3 className="wrong-stem">{item.stem}</h3>
-                    <span className="tag subtle">错误 {item.wrongCount} 次</span>
+            <>
+              <div className="wrong-list-full">
+                {wrongs.map((item) => (
+                  <div className="feature-card" key={item.id} style={{ position: 'relative' }}>
+                    <label style={{ position: 'absolute', top: '1rem', right: '1rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(item.id)}
+                        onChange={() => toggleSelect(item.id)}
+                      />
+                    </label>
+                    <div className="track-head">
+                      <h3 className="wrong-stem">{item.stem}</h3>
+                      <span className="tag subtle">错误 {item.wrongCount} 次</span>
+                    </div>
+                    <div className="metric-row">
+                      <span>方向 {item.target || '-'}</span>
+                      <span>科目 {item.subject || '-'}</span>
+                      <span>章节 {item.chapter || '-'}</span>
+                      <span>知识点 {item.knowledgePoint || '-'}</span>
+                    </div>
+                    <div className="metric-row">
+                      <span className="muted">最近错误：{formatDateTime(item.lastWrongAt)}</span>
+                      <span className="muted">最近作答：{item.lastAnswer || '-'}</span>
+                    </div>
                   </div>
-                  <div className="metric-row">
-                    <span>方向 {item.target || '-'}</span>
-                    <span>科目 {item.subject || '-'}</span>
-                    <span>章节 {item.chapter || '-'}</span>
-                    <span>知识点 {item.knowledgePoint || '-'}</span>
-                  </div>
-                  <div className="metric-row">
-                    <span className="muted">最近错误：{formatDateTime(item.lastWrongAt)}</span>
-                    <span className="muted">最近作答：{item.lastAnswer || '-'}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+              )}
+            </>
           )}
         </section>
       </main>

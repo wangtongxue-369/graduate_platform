@@ -2,6 +2,8 @@ package com.graduateplatform.questionbank.repository;
 
 import com.graduateplatform.questionbank.entity.WrongQuestion;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -26,11 +28,12 @@ public interface WrongQuestionRepository extends JpaRepository<WrongQuestion, Lo
            "AND (:chapter IS NULL OR w.question.chapter = :chapter) " +
            "AND (:minWrongCount IS NULL OR w.wrongCount >= :minWrongCount) " +
            "ORDER BY w.lastWrongAt DESC")
-    List<WrongQuestion> findReviewList(
+    Page<WrongQuestion> findReviewListPaged(
         @Param("userId") Long userId,
         @Param("target") String target,
         @Param("subject") String subject,
         @Param("chapter") String chapter,
-        @Param("minWrongCount") Integer minWrongCount
+        @Param("minWrongCount") Integer minWrongCount,
+        Pageable pageable
     );
 }

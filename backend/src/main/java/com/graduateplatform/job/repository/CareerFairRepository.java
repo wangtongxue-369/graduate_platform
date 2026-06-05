@@ -32,4 +32,16 @@ public interface CareerFairRepository extends JpaRepository<CareerFair, Long> {
                             @Param("companyName") String companyName,
                             @Param("startTime") LocalDateTime startTime,
                             @Param("excludeId") Long excludeId);
+
+    @Query("SELECT COUNT(f) > 0 FROM CareerFair f WHERE f.businessKey = :businessKey " +
+           "AND (:excludeId IS NULL OR f.id <> :excludeId)")
+    boolean existsDuplicateBusinessKey(@Param("businessKey") String businessKey,
+                                       @Param("excludeId") Long excludeId);
+
+    @Query("SELECT f FROM CareerFair f WHERE LOWER(TRIM(f.title)) = :title " +
+           "AND LOWER(TRIM(f.companyName)) = :companyName " +
+           "AND (:excludeId IS NULL OR f.id <> :excludeId)")
+    List<CareerFair> findDuplicateCandidates(@Param("title") String title,
+                                             @Param("companyName") String companyName,
+                                             @Param("excludeId") Long excludeId);
 }

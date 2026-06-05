@@ -66,6 +66,8 @@ export default function MaterialsPage() {
     setFilters(prev => ({ ...prev, [key]: value }))
   }
 
+  const hasActiveFilters = Object.values(filters).some(v => v !== '' && v != null)
+
   const statusLabel = (s) => ({ PENDING: '待审核', APPROVED: '已通过', REJECTED: '已拒绝' }[s] || s)
   const statusClass = (s) => ({ PENDING: 'pending', APPROVED: 'approved', REJECTED: 'rejected' }[s] || '')
 
@@ -138,62 +140,62 @@ export default function MaterialsPage() {
             {message ? <div className="muted" style={{ marginTop: '8px' }}>{message}</div> : null}
           </form>
 
-          <div className="action-row" style={{ marginBottom: '1rem' }}>
+          <div className="action-row" style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
             <button className="btn primary" onClick={() => isAuthed ? navigate('/kaoyan/materials/upload') : navigate('/login')}>
               上传资料
             </button>
-            <button className="btn outline" onClick={() => isAuthed ? navigate('/kaoyan/materials/my') : navigate('/login')}>
+            <button className="btn outline" style={{ marginLeft: 'auto' }} onClick={() => isAuthed ? navigate('/kaoyan/materials/my') : navigate('/login')}>
               我的资料
             </button>
           </div>
 
-          <div className="feature-card">
-            <div className="track-head">
+          {hasActiveFilters && (
+            <div className="track-head" style={{ marginBottom: '0.75rem' }}>
               <h3>查询结果</h3>
               <span className="tag subtle">共 {totalElements} 条</span>
             </div>
-            {materials.length === 0 && !loading ? (
-              <p className="muted">暂无相关资料，请调整筛选条件</p>
-            ) : (
-              <div className="material-list">
-                {materials.map(m => (
-                  <article className="material-card" key={m.id} onClick={() => navigate(`/kaoyan/materials/${m.id}`)}>
-                    <div className="track-head">
-                      <h3>{m.title}</h3>
-                      <span className={`material-status status-${statusClass(m.status)}`}>{statusLabel(m.status)}</span>
-                    </div>
-                    <div className="tag-row">
-                      {m.school && <span className="tag subtle">📍 {m.school}</span>}
-                      {m.major && <span className="tag subtle">📚 {m.major}</span>}
-                      {m.subject && <span className="tag subtle">📖 {m.subject}</span>}
-                      {m.year && <span className="tag subtle">📅 {m.year}</span>}
-                      {m.materialType && <span className="tag subtle">{m.materialType}</span>}
-                    </div>
-                    {m.description && <p className="muted">{m.description.slice(0, 80)}{m.description.length > 80 ? '...' : ''}</p>}
-                    <div className="metric-row">
-                      <span>附件 {m.attachments?.length || 0} 个</span>
-                      <span>👁 {m.viewCount || 0} 浏览</span>
-                      <span>⬇ {m.downloadCount || 0} 下载</span>
-                    </div>
-                    <div className="panel-footer">
-                      <span>{m.createdAt?.slice(0, 10)}</span>
-                      <button className="btn outline small" type="button" onClick={e => { e.stopPropagation(); navigate(`/kaoyan/materials/${m.id}`) }}>
-                        查看详情
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-            {materials.length > 0 && (
-              <Pagination
-                page={page + 1}
-                total={totalPages}
-                totalItems={totalElements}
-                onChange={(nextPage) => setPage(nextPage - 1)}
-              />
-            )}
-          </div>
+          )}
+          {materials.length === 0 && !loading ? (
+            <p className="muted">暂无相关资料，请调整筛选条件</p>
+          ) : (
+            <div className="material-list">
+              {materials.map(m => (
+                <article className="material-card" key={m.id} onClick={() => navigate(`/kaoyan/materials/${m.id}`)}>
+                  <div className="track-head">
+                    <h3>{m.title}</h3>
+                    <span className={`material-status status-${statusClass(m.status)}`}>{statusLabel(m.status)}</span>
+                  </div>
+                  <div className="tag-row">
+                    {m.school && <span className="tag subtle">📍 {m.school}</span>}
+                    {m.major && <span className="tag subtle">📚 {m.major}</span>}
+                    {m.subject && <span className="tag subtle">📖 {m.subject}</span>}
+                    {m.year && <span className="tag subtle">📅 {m.year}</span>}
+                    {m.materialType && <span className="tag subtle">{m.materialType}</span>}
+                  </div>
+                  {m.description && <p className="muted">{m.description.slice(0, 80)}{m.description.length > 80 ? '...' : ''}</p>}
+                  <div className="metric-row">
+                    <span>附件 {m.attachments?.length || 0} 个</span>
+                    <span>👁 {m.viewCount || 0} 浏览</span>
+                    <span>⬇ {m.downloadCount || 0} 下载</span>
+                  </div>
+                  <div className="panel-footer">
+                    <span>{m.createdAt?.slice(0, 10)}</span>
+                    <button className="btn outline small" type="button" onClick={e => { e.stopPropagation(); navigate(`/kaoyan/materials/${m.id}`) }}>
+                      查看详情
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+          {materials.length > 0 && (
+            <Pagination
+              page={page + 1}
+              total={totalPages}
+              totalItems={totalElements}
+              onChange={(nextPage) => setPage(nextPage - 1)}
+            />
+          )}
         </section>
       </main>
       <Footer />

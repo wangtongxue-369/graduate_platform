@@ -51,10 +51,12 @@ export default function MessagesPage() {
       const data = await mentorApi.sessionMessages(sessionId, token)
       setMessages(data || [])
       await mentorApi.markAsRead(sessionId, token)
+      setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, unreadCount: 0 } : s))
+      fetchSessions(tab, page)
     } catch (err) {
       console.error(err)
     }
-  }, [token])
+  }, [token, fetchSessions, tab, page])
 
   useEffect(() => {
     if (token && token !== 'dev-token') {
@@ -93,6 +95,12 @@ export default function MessagesPage() {
       setSending(false)
     }
   }
+
+  useEffect(() => {
+    if (!token || token === 'dev-token') return
+    const t = setInterval(() => { fetchSessions(tab, page) }, 15000)
+    return () => clearInterval(t)
+  }, [token, tab, page, fetchSessions])
 
   const otherParty = (session) => {
     if (!user) return { name: '未知', avatar: null }
@@ -158,9 +166,18 @@ export default function MessagesPage() {
                         onClick={() => handleSelectSession(session)}
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: 14 }}>{other.name}</div>
-                            <div className="muted small" style={{ marginTop: 2 }}>{session.subject || '无主题'}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ fontWeight: 600, fontSize: 14 }}>{other.name}</div>
+                              {session.unreadCount > 0 && (
+                                <span className="badge" style={{ background: '#e74c3c', color: '#fff', fontSize: 11, padding: '1px 7px', borderRadius: 999 }}>
+                                  {session.unreadCount}
+                                </span>
+                              )}
+                            </div>
+                            {session.subject && (
+                              <div className="muted small" style={{ marginTop: 2 }}>{session.subject}</div>
+                            )}
                             <div className="muted small">{formatTime(session.createdAt)}</div>
                           </div>
                         </div>
@@ -187,8 +204,10 @@ export default function MessagesPage() {
               ) : (
                 <>
                   <div className="card-title" style={{ marginBottom: 12 }}>
-                    与 {otherParty(activeSession).name} 的对话
-                    <span className="muted small" style={{ marginLeft: 8 }}>{activeSession.subject || '无主题'}</span>
+                    与 {otherParty(activeSession).name} 的咨询
+                    {activeSession.subject && (
+                      <span className="muted small" style={{ marginLeft: 8 }}>{activeSession.subject}</span>
+                    )}
                   </div>
                   <div className="chat-message-list" style={{ flex: 1 }}>
                     {messages.length === 0 ? (

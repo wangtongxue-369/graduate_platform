@@ -9,4 +9,6 @@ import java.util.Optional;
 public interface EmploymentNotificationRepository extends JpaRepository<EmploymentNotification, Long> {
     List<EmploymentNotification> findByUserIdOrderByCreatedAtDesc(Long userId);
     Optional<EmploymentNotification> findByIdAndUserId(Long id, Long userId);
+    boolean existsByUserIdAndRelatedTypeAndRelatedId(Long userId, String relatedType, Long relatedId);
+    long countByUserIdAndReadFlagFalse(Long userId);
 }

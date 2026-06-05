@@ -5,10 +5,22 @@ import Footer from '../../components/Footer.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { studyAbroadApi } from '../../lib/api.js'
 import {
+  defaultApplicationItems,
+  defaultTimelineItems,
   getApplicationItems,
   getTimelineItems,
   saveTimelineItems,
 } from './studyAbroadStorage.js'
+import {
+  addMonthsDate,
+  appLabel,
+  createLocalId,
+  daysLeft,
+  deadlineText,
+  findApplication,
+  normalizeApplicationId,
+  urgencyClass,
+} from './studyAbroadUtils.js'
 import '../../App.css'
 
 const statusLabels = {
@@ -35,45 +47,8 @@ const emptyForm = {
   country: 'UK',
   school: '',
   phase: 'Documents',
-  dueDate: '2026-09-01',
+  dueDate: addMonthsDate(3),
   note: '',
-}
-
-function daysLeft(dateText) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const target = new Date(`${dateText}T00:00:00`)
-  return Math.ceil((target - today) / 86400000)
-}
-
-function deadlineText(left) {
-  if (left < 0) return `已逾期 ${Math.abs(left)} 天`
-  if (left === 0) return '今天截止'
-  if (left <= 7) return `${left} 天内截止`
-  return `${left} 天后截止`
-}
-
-function urgencyClass(left) {
-  if (left < 0) return 'danger'
-  if (left <= 7) return 'warning'
-  return 'subtle'
-}
-
-function createId() {
-  return `timeline-${Date.now()}`
-}
-
-function appLabel(app) {
-  return `${app.school} · ${app.program}`
-}
-
-function findApplication(applications, id) {
-  return applications.find((item) => String(item.id) === String(id))
-}
-
-function normalizeApplicationId(value, canUseRemote) {
-  if (!value) return null
-  return canUseRemote ? Number(value) : value
 }
 
 function toTimelinePayload(item, canUseRemote) {
@@ -96,29 +71,36 @@ function formFromItem(item) {
     country: item.country || 'UK',
     school: item.school || '',
     phase: item.phase || 'Documents',
-    dueDate: item.dueDate || '2026-09-01',
+    dueDate: item.dueDate || addMonthsDate(3),
     note: item.note || '',
   }
 }
 
 export default function TimelinePage() {
   const { token } = useAuth()
-  const [items, setItems] = useState(() => getTimelineItems())
-  const [applications, setApplications] = useState(() => getApplicationItems())
+  const isDevMode = token === 'dev-token'
+  const canUseRemote = Boolean(token && token !== 'dev-token')
+  const [items, setItems] = useState(() => (canUseRemote ? [] : isDevMode ? getTimelineItems() : defaultTimelineItems))
+  const [applications, setApplications] = useState(() => (canUseRemote ? [] : isDevMode ? getApplicationItems() : defaultApplicationItems))
   const [phase, setPhase] = useState('all')
   const [syncNote, setSyncNote] = useState('')
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
-
-  const canUseRemote = Boolean(token && token !== 'dev-token')
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!canUseRemote) {
+      setItems(isDevMode ? getTimelineItems() : defaultTimelineItems)
+      setApplications(isDevMode ? getApplicationItems() : defaultApplicationItems)
+      setSyncNote(isDevMode
+        ? '当前是开发演示账号，时间线只保存到本机 localStorage。'
+        : '请登录后管理真实时间线。未登录时仅展示示例数据。')
       return undefined
     }
     let active = true
 
     async function loadRemoteData() {
+      setLoading(true)
       try {
         const [remoteApplications, remoteItems] = await Promise.all([
           studyAbroadApi.applications(token),
@@ -131,8 +113,12 @@ export default function TimelinePage() {
         }
       } catch (error) {
         if (active) {
-          setSyncNote(error.message || '后端暂不可用，当前展示本地演示时间线。')
+          setApplications([])
+          setItems([])
+          setSyncNote(error.message || '后端数据加载失败，请稍后重试。')
         }
+      } finally {
+        if (active) setLoading(false)
       }
     }
 
@@ -140,7 +126,7 @@ export default function TimelinePage() {
     return () => {
       active = false
     }
-  }, [canUseRemote, token])
+  }, [canUseRemote, isDevMode, token])
 
   function updateLocalItems(nextItems) {
     setItems(nextItems)
@@ -176,7 +162,10 @@ export default function TimelinePage() {
   const stats = useMemo(() => {
     const done = items.filter((item) => item.status === 'done').length
     const doing = items.filter((item) => item.status === 'doing').length
-    const overdue = items.filter((item) => item.status !== 'done' && daysLeft(item.dueDate) < 0).length
+    const overdue = items.filter((item) => {
+      const left = daysLeft(item.dueDate)
+      return item.status !== 'done' && left !== null && left < 0
+    }).length
     const rate = items.length ? Math.round((done / items.length) * 100) : 0
     return { done, doing, overdue, rate }
   }, [items])
@@ -226,16 +215,19 @@ export default function TimelinePage() {
         setSyncNote(error.message || '保存失败。')
         return
       }
-    } else {
+    } else if (isDevMode) {
       const saved = {
-        id: editingId || createId(),
+        id: editingId || createLocalId('timeline'),
         ...enrichWithApplication(payload),
       }
       const next = editingId
         ? items.map((item) => (item.id === editingId ? saved : item))
         : [...items, saved]
       updateLocalItems(next.sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate))))
-      setSyncNote(editingId ? '本地时间线事项已更新。' : '本地时间线事项已创建。')
+      setSyncNote(editingId ? '本地演示时间线已更新。' : '本地演示时间线已创建。')
+    } else {
+      setSyncNote('请先登录真实账号，再保存时间线事项。')
+      return
     }
     resetForm()
   }
@@ -263,7 +255,11 @@ export default function TimelinePage() {
       return
     }
 
-    updateLocalItems(items.map((item) => (item.id === targetId ? nextItem : item)))
+    if (isDevMode) {
+      updateLocalItems(items.map((item) => (item.id === targetId ? nextItem : item)))
+      return
+    }
+    setSyncNote('请先登录真实账号，再更新时间线状态。')
   }
 
   async function removeItem(targetId) {
@@ -278,8 +274,12 @@ export default function TimelinePage() {
       }
       return
     }
-    updateLocalItems(items.filter((item) => item.id !== targetId))
-    setSyncNote('本地时间线事项已删除。')
+    if (isDevMode) {
+      updateLocalItems(items.filter((item) => item.id !== targetId))
+      setSyncNote('本地演示时间线已删除。')
+      return
+    }
+    setSyncNote('请先登录真实账号，再删除时间线事项。')
   }
 
   return (
@@ -289,7 +289,7 @@ export default function TimelinePage() {
         <section className="section">
           <div className="detail-header">
             <div>
-              <p className="eyebrow">留学 · 时间线</p>
+              <p className="eyebrow">留学 / 时间线</p>
               <h2>申请时间线</h2>
               <p className="muted">创建、编辑并推进语言考试、文书、网申、面试和签证节点。</p>
             </div>
@@ -397,7 +397,7 @@ export default function TimelinePage() {
             {filteredItems.map((item) => {
               const left = daysLeft(item.dueDate)
               return (
-                <article className={`study-row ${item.status !== 'done' && left < 0 ? 'is-overdue' : item.status !== 'done' && left <= 7 ? 'is-due-soon' : ''}`} key={item.id}>
+                <article className={`study-row ${item.status !== 'done' && left !== null && left < 0 ? 'is-overdue' : item.status !== 'done' && left !== null && left <= 7 ? 'is-due-soon' : ''}`} key={item.id}>
                   <div className={`study-status ${item.status}`}>{statusLabels[item.status]}</div>
                   <div className="study-row-main">
                     <div className="study-row-title">{item.title}</div>
@@ -424,6 +424,15 @@ export default function TimelinePage() {
                 </article>
               )
             })}
+            {loading ? (
+              <div className="notice-box"><p className="muted">正在加载时间线...</p></div>
+            ) : null}
+            {!loading && !filteredItems.length ? (
+              <div className="notice-box">
+                <strong>没有匹配的时间线事项</strong>
+                <p className="muted">可以调整阶段筛选，或新增一个申请节点。</p>
+              </div>
+            ) : null}
           </div>
         </section>
       </main>

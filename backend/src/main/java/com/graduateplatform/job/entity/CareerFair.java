@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Entity
 @Table(name = "career_fairs")
@@ -43,6 +44,9 @@ public class CareerFair {
     @Column(length = 500)
     private String applyUrl;
 
+    @Column(name = "business_key", length = 500, unique = true)
+    private String businessKey;
+
     @Lob
     @Column(columnDefinition = "LONGTEXT")
     private String description;
@@ -60,10 +64,20 @@ public class CareerFair {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        businessKey = buildBusinessKey();
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+        businessKey = buildBusinessKey();
+    }
+
+    private String buildBusinessKey() {
+        return normalizeKey(title) + "|" + normalizeKey(companyName) + "|" + (startTime == null ? "" : startTime.toString());
+    }
+
+    private String normalizeKey(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graduateplatform.common.entity.User;
 import com.graduateplatform.common.repository.UserRepository;
 import com.graduateplatform.common.security.JwtTokenProvider;
+import com.graduateplatform.job.entity.ApplicationRecord;
 import com.graduateplatform.job.entity.CareerFair;
 import com.graduateplatform.job.entity.JobPosting;
 import com.graduateplatform.job.repository.*;
@@ -107,6 +108,40 @@ class EmploymentModuleIntegrationTest {
     }
 
     @Test
+    void jobPostingsCanReturnPagedResult() throws Exception {
+        jobRepository.save(JobPosting.builder()
+            .title("分页岗位 A").companyName("分页企业 A").city("上海").industry("互联网")
+            .roleType("后端").active(true).build());
+        jobRepository.save(JobPosting.builder()
+            .title("分页岗位 B").companyName("分页企业 B").city("北京").industry("金融")
+            .roleType("产品").active(true).build());
+
+        mockMvc.perform(get("/api/job/postings?page=1&size=1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.page").value(1))
+            .andExpect(jsonPath("$.data.size").value(1))
+            .andExpect(jsonPath("$.data.totalItems").value(2))
+            .andExpect(jsonPath("$.data.totalPages").value(2))
+            .andExpect(jsonPath("$.data.items.length()").value(1));
+    }
+
+    @Test
+    void adminJobPageCanFilterByKeywordAndActiveStatus() throws Exception {
+        jobRepository.save(JobPosting.builder()
+            .title("后台筛选岗位").companyName("筛选企业").city("上海").industry("互联网")
+            .companyType("国企").roleType("后端").active(true).build());
+        jobRepository.save(JobPosting.builder()
+            .title("停用筛选岗位").companyName("筛选企业").city("上海").industry("互联网")
+            .companyType("国企").roleType("后端").active(false).build());
+
+        mockMvc.perform(get("/api/admin/employment/jobs?keyword=筛选&page=1&size=1&active=true")
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.totalItems").value(1))
+            .andExpect(jsonPath("$.data.items[0].title").value("后台筛选岗位"));
+    }
+
+    @Test
     void fairPageFiltersExpiredByDefaultAndCanIncludeExpiredWithStatus() throws Exception {
         fairRepository.save(CareerFair.builder()
             .title("已过期招聘会").companyName("过期企业").city("上海").industry("互联网")
@@ -166,6 +201,24 @@ class EmploymentModuleIntegrationTest {
     }
 
     @Test
+    void fairDetailReturnsEventAndApplicationStatus() throws Exception {
+        CareerFair fair = fairRepository.save(CareerFair.builder()
+            .title("详情状态招聘会").companyName("详情企业").city("上海").industry("互联网")
+            .applyUrl("https://jobs.example.com/detail")
+            .startTime(LocalDateTime.now().minusDays(2))
+            .endTime(LocalDateTime.now().minusDays(2).plusHours(2))
+            .applyDeadline(LocalDateTime.now().minusDays(1))
+            .active(true).build());
+
+        mockMvc.perform(get("/api/job/fairs/" + fair.getId()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.statusLabel").value("已结束"))
+            .andExpect(jsonPath("$.data.expired").value(true))
+            .andExpect(jsonPath("$.data.applicationClosed").value(true))
+            .andExpect(jsonPath("$.data.applyStatusLabel").value("网申已截止"));
+    }
+
+    @Test
     void duplicateCareerFairCreateIsRejected() throws Exception {
         LocalDateTime startTime = LocalDateTime.now().plusDays(3).withNano(0);
         fairRepository.save(CareerFair.builder()
@@ -186,6 +239,103 @@ class EmploymentModuleIntegrationTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.message").value("相同标题、公司和开始时间的招聘会已存在"));
+    }
+
+    @Test
+    void duplicateCareerFairDisplayKeyCreateIsRejected() throws Exception {
+        LocalDateTime startTime = LocalDateTime.now().plusDays(3).withNano(0);
+        fairRepository.save(CareerFair.builder()
+            .title("展示重复招聘会").companyName("展示企业").city("上海").industry("互联网")
+            .location("学生中心").applyUrl("https://jobs.example.com/display")
+            .startTime(startTime).active(true).build());
+
+        mockMvc.perform(post("/api/admin/employment/fairs")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "title", "展示重复招聘会",
+                    "companyName", "展示企业",
+                    "city", "上海",
+                    "industry", "互联网",
+                    "location", "学生中心",
+                    "applyUrl", "https://jobs.example.com/display",
+                    "startTime", startTime.plusDays(2).toString(),
+                    "active", true
+                ))))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("相同标题、公司、地点和申请链接的招聘会已存在"));
+    }
+
+    @Test
+    void invalidCareerFairTimeRangeIsRejected() throws Exception {
+        LocalDateTime startTime = LocalDateTime.now().plusDays(3).withNano(0);
+
+        mockMvc.perform(post("/api/admin/employment/fairs")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "title", "时间异常招聘会",
+                    "companyName", "时间企业",
+                    "startTime", startTime.toString(),
+                    "endTime", startTime.minusHours(1).toString(),
+                    "active", true
+                ))))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("招聘会结束时间不能早于开始时间"));
+    }
+
+    @Test
+    void invalidApplyUrlsAreRejectedForFairAndJob() throws Exception {
+        mockMvc.perform(post("/api/admin/employment/fairs")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "title", "链接异常招聘会",
+                    "companyName", "链接企业",
+                    "applyUrl", "ftp://jobs.example.com/fair",
+                    "active", true
+                ))))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("招聘会申请链接必须是 http 或 https 地址"));
+
+        mockMvc.perform(post("/api/admin/employment/jobs")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "title", "链接异常岗位",
+                    "companyName", "链接企业",
+                    "applyUrl", "mailto:hr@example.com",
+                    "active", true
+                ))))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("岗位申请链接必须是 http 或 https 地址"));
+    }
+
+    @Test
+    void adminFairsCleansHistoricalDisplayDuplicates() throws Exception {
+        fairRepository.save(CareerFair.builder()
+            .title("历史重复招聘会").companyName("历史企业").city("上海").industry("互联网")
+            .location("学生中心").applyUrl("https://jobs.example.com/history")
+            .startTime(LocalDateTime.now().plusDays(5))
+            .endTime(LocalDateTime.now().plusDays(5).plusHours(2))
+            .active(true).build());
+        fairRepository.save(CareerFair.builder()
+            .title("历史重复招聘会").companyName("历史企业").city("上海").industry("互联网")
+            .location("学生中心").applyUrl("https://jobs.example.com/history")
+            .startTime(LocalDateTime.now().plusDays(2))
+            .endTime(LocalDateTime.now().plusDays(2).plusHours(2))
+            .active(true).build());
+
+        mockMvc.perform(get("/api/admin/employment/fairs").header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.length()").value(1))
+            .andExpect(jsonPath("$.data[0].title").value("历史重复招聘会"));
+
+        assertThat(fairRepository.findAll()).hasSize(1);
     }
 
     @Test
@@ -264,6 +414,28 @@ class EmploymentModuleIntegrationTest {
     }
 
     @Test
+    void companyTypeParticipatesInRecommendations() throws Exception {
+        jobRepository.save(JobPosting.builder()
+            .title("国企管培生").companyName("城市建设集团").companyType("国企")
+            .majorKeywords("土木工程").skillTags("项目管理").active(true).build());
+        jobRepository.save(JobPosting.builder()
+            .title("民企运营").companyName("成长科技").companyType("民企")
+            .majorKeywords("市场营销").skillTags("运营").active(true).build());
+
+        mockMvc.perform(put("/api/job/preferences")
+                .header("Authorization", "Bearer " + userToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("companyTypes", "国企", "active", true))))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/job/recommendations").header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[0].title").value("国企管培生"))
+            .andExpect(jsonPath("$.data[0].matchScore").value(10))
+            .andExpect(jsonPath("$.data[0].matchReasons[0]").value("企业类型匹配"));
+    }
+
+    @Test
     void adminCrudAndMatchedStationNotificationFlow() throws Exception {
         mockMvc.perform(put("/api/job/preferences")
                 .header("Authorization", "Bearer " + userToken)
@@ -288,19 +460,53 @@ class EmploymentModuleIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json(Map.of("relatedType", "JOB", "relatedId", jobNode.path("id").asLong()))))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.createdCount").value(1));
+            .andExpect(jsonPath("$.data.createdCount").value(1))
+            .andExpect(jsonPath("$.data.skippedDuplicateCount").value(0));
+
+        mockMvc.perform(post("/api/admin/employment/notifications/trigger")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("relatedType", "JOB", "relatedId", jobNode.path("id").asLong()))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.createdCount").value(0))
+            .andExpect(jsonPath("$.data.skippedDuplicateCount").value(1));
 
         String notifications = mockMvc.perform(get("/api/job/notifications").header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data[0].readFlag").value(false))
+            .andExpect(jsonPath("$.data.unreadCount").value(1))
+            .andExpect(jsonPath("$.data.items[0].readFlag").value(false))
+            .andExpect(jsonPath("$.data.items[0].targetUrl").value("/job/postings/" + jobNode.path("id").asLong()))
             .andReturn().getResponse().getContentAsString();
-        long notificationId = objectMapper.readTree(notifications).path("data").get(0).path("id").asLong();
+        long notificationId = objectMapper.readTree(notifications).path("data").path("items").get(0).path("id").asLong();
 
         mockMvc.perform(put("/api/job/notifications/" + notificationId + "/read").header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.readFlag").value(true));
 
         assertThat(notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId())).hasSize(1);
+    }
+
+    @Test
+    void deletingReferencedJobDeactivatesInsteadOfHardDeleting() throws Exception {
+        JobPosting job = jobRepository.save(JobPosting.builder()
+            .title("被引用岗位").companyName("引用企业").city("上海").industry("互联网")
+            .roleType("后端").active(true).build());
+        applicationRepository.save(ApplicationRecord.builder()
+            .user(user)
+            .companyName("引用企业")
+            .jobTitle("被引用岗位")
+            .jobPosting(job)
+            .status("APPLIED")
+            .build());
+
+        mockMvc.perform(delete("/api/admin/employment/jobs/" + job.getId()).header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.deleted").value(false))
+            .andExpect(jsonPath("$.data.deactivated").value(true));
+
+        assertThat(jobRepository.findById(job.getId())).isPresent();
+        assertThat(jobRepository.findById(job.getId()).orElseThrow().getActive()).isFalse();
+        assertThat(applicationRepository.existsByJobPostingId(job.getId())).isTrue();
     }
 
     private String json(Object value) throws Exception {
