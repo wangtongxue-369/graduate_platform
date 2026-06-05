@@ -776,7 +776,7 @@ export default function EmploymentManagementPage() {
             const resumeFile = item.resumeFile || resumeFileDefaults
             const displayName = item.name || item.username || item.email || `用户 ${item.userId}`
             return (
-              <article className="admin-record-card" key={item.userId || item.email || item.name || item.username}>
+              <article className="admin-record-card" key={item.userId || item.name || item.username || item.email}>
                 <div className="admin-record-main">
                   <div className="track-head">
                     <strong>{displayName}</strong>

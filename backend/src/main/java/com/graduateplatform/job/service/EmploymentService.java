@@ -373,15 +373,15 @@ public class EmploymentService {
             .filter(user -> "user".equalsIgnoreCase(defaultString(user.getRole(), "")))
             .sorted(Comparator.comparing(User::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
             .toList();
-        Map<Long, ResumeProfile> resumeByUserId = new HashMap<>();
+        Map<Long, ResumeProfile> resumesByUserId = new HashMap<>();
         List<Long> userIds = users.stream().map(User::getId).filter(Objects::nonNull).toList();
         for (ResumeProfile resume : resumeRepository.findByUserIdIn(userIds)) {
             if (resume.getUser() != null && resume.getUser().getId() != null) {
-                resumeByUserId.put(resume.getUser().getId(), resume);
+                resumesByUserId.put(resume.getUser().getId(), resume);
             }
         }
         return users.stream()
-            .map(user -> toAdminResumeSummary(user, resumeByUserId.get(user.getId())))
+            .map(user -> toAdminResumeSummary(user, resumesByUserId.get(user.getId())))
             .toList();
     }
 
