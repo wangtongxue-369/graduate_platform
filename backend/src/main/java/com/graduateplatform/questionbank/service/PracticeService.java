@@ -16,9 +16,10 @@ import com.graduateplatform.questionbank.repository.QuestionBankRepository;
 import com.graduateplatform.questionbank.repository.QuestionRepository;
 import com.graduateplatform.questionbank.repository.WrongQuestionRepository;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.time.temporal.WeekFields;
@@ -45,19 +46,22 @@ public class PracticeService {
     private final PracticeSessionRepository sessionRepository;
     private final PracticeAnswerRepository answerRepository;
     private final WrongQuestionRepository wrongQuestionRepository;
+    private final TransactionTemplate transactionTemplate;
 
     public PracticeService(UserRepository userRepository,
                            QuestionBankRepository bankRepository,
                            QuestionRepository questionRepository,
                            PracticeSessionRepository sessionRepository,
                            PracticeAnswerRepository answerRepository,
-                           WrongQuestionRepository wrongQuestionRepository) {
+                           WrongQuestionRepository wrongQuestionRepository,
+                           PlatformTransactionManager transactionManager) {
         this.userRepository = userRepository;
         this.bankRepository = bankRepository;
         this.questionRepository = questionRepository;
         this.sessionRepository = sessionRepository;
         this.answerRepository = answerRepository;
         this.wrongQuestionRepository = wrongQuestionRepository;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     @Transactional
@@ -187,16 +191,14 @@ public class PracticeService {
         return result;
     }
 
-    @Transactional
     public Map<String, Object> submitSession(Long userId, Long sessionId) {
+        // 用编程式事务包裹每次尝试：本方法本身不开事务，因此每次 execute 都是独立的新事务。
+        // 乐观锁冲突时上一事务已回滚，重试在全新事务中读取最新状态；
+        // 若竞争方已交卷，doSubmitSession 的幂等判断会直接返回结果而不重复判分。
         try {
-            return doSubmitSession(userId, sessionId);
-        } catch (ObjectOptimisticLockingFailureException e) {
-            // 乐观锁冲突（子类）：重试一次
-            return doSubmitSession(userId, sessionId);
+            return transactionTemplate.execute(status -> doSubmitSession(userId, sessionId));
         } catch (OptimisticLockingFailureException e) {
-            // 乐观锁冲突（父类）：重试一次
-            return doSubmitSession(userId, sessionId);
+            return transactionTemplate.execute(status -> doSubmitSession(userId, sessionId));
         }
     }
 
