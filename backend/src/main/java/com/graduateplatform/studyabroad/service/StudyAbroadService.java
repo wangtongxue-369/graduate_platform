@@ -117,7 +117,7 @@ public class StudyAbroadService {
     public void deleteExperience(Long userId, Long id) {
         ensureUser(userId);
         StudyAbroadExperience item = experienceRepository.findByIdAndAuthorId(id, userId)
-            .orElseThrow(() -> new BusinessException("Experience not found or access denied"));
+            .orElseThrow(() -> new BusinessException("经验不存在或无权限操作"));
         experienceRepository.delete(item);
     }
 
@@ -125,7 +125,7 @@ public class StudyAbroadService {
     public Map<String, Object> updateExperience(Long userId, Long id, ExperienceRequest req) {
         ensureUser(userId);
         StudyAbroadExperience item = experienceRepository.findByIdAndAuthorId(id, userId)
-            .orElseThrow(() -> new BusinessException("Experience not found or access denied"));
+            .orElseThrow(() -> new BusinessException("经验不存在或无权限操作"));
         item.setTitle(req.getTitle().trim());
         item.setCountry(req.getCountry().trim());
         item.setTopic(req.getTopic().trim());
@@ -160,7 +160,7 @@ public class StudyAbroadService {
             .deadline(req.getDeadline())
             .status(normalizeApplicationStatus(req.getStatus()))
             .priority(normalizePriority(req.getPriority()))
-            .note(normalize(req.getNote(), "No note"))
+            .note(normalize(req.getNote(), "暂无备注"))
             .build();
         return toApplicationMap(applicationRepository.save(item));
     }
@@ -169,7 +169,7 @@ public class StudyAbroadService {
     public Map<String, Object> updateApplication(Long userId, Long id, ApplicationRequest req) {
         ensureUser(userId);
         StudyAbroadApplication item = applicationRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new BusinessException("Application not found or access denied"));
+            .orElseThrow(() -> new BusinessException("申请项目不存在或无权限操作"));
 
         item.setCountry(req.getCountry().trim());
         item.setSchool(req.getSchool().trim());
@@ -180,7 +180,7 @@ public class StudyAbroadService {
         item.setDeadline(req.getDeadline());
         item.setStatus(normalizeApplicationStatus(req.getStatus()));
         item.setPriority(normalizePriority(req.getPriority()));
-        item.setNote(normalize(req.getNote(), "No note"));
+        item.setNote(normalize(req.getNote(), "暂无备注"));
         return toApplicationMap(applicationRepository.save(item));
     }
 
@@ -188,7 +188,7 @@ public class StudyAbroadService {
     public void deleteApplication(Long userId, Long id) {
         ensureUser(userId);
         StudyAbroadApplication item = applicationRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new BusinessException("Application not found or access denied"));
+            .orElseThrow(() -> new BusinessException("申请项目不存在或无权限操作"));
         materialRepository.deleteByUserIdAndApplicationId(userId, id);
         timelineRepository.deleteByUserIdAndApplicationId(userId, id);
         applicationRepository.delete(item);
@@ -211,11 +211,11 @@ public class StudyAbroadService {
             .application(findOwnedApplication(userId, req.getApplicationId()))
             .title(req.getTitle().trim())
             .country(req.getCountry().trim())
-            .school(normalize(req.getSchool(), "School TBD"))
+            .school(normalize(req.getSchool(), "待定院校"))
             .phase(req.getPhase().trim())
             .dueDate(req.getDueDate())
             .status(normalizeTimelineStatus(req.getStatus()))
-            .note(normalize(req.getNote(), "No note"))
+            .note(normalize(req.getNote(), "暂无备注"))
             .build();
         return toTimelineMap(timelineRepository.save(item));
     }
@@ -224,16 +224,16 @@ public class StudyAbroadService {
     public Map<String, Object> updateTimeline(Long userId, Long id, TimelineRequest req) {
         ensureUser(userId);
         StudyAbroadTimeline item = timelineRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new BusinessException("Timeline item not found or access denied"));
+            .orElseThrow(() -> new BusinessException("时间线事项不存在或无权限操作"));
 
         item.setTitle(req.getTitle().trim());
         item.setApplication(findOwnedApplication(userId, req.getApplicationId()));
         item.setCountry(req.getCountry().trim());
-        item.setSchool(normalize(req.getSchool(), "School TBD"));
+        item.setSchool(normalize(req.getSchool(), "待定院校"));
         item.setPhase(req.getPhase().trim());
         item.setDueDate(req.getDueDate());
         item.setStatus(normalizeTimelineStatus(req.getStatus()));
-        item.setNote(normalize(req.getNote(), "No note"));
+        item.setNote(normalize(req.getNote(), "暂无备注"));
         return toTimelineMap(timelineRepository.save(item));
     }
 
@@ -241,7 +241,7 @@ public class StudyAbroadService {
     public void deleteTimeline(Long userId, Long id) {
         ensureUser(userId);
         StudyAbroadTimeline item = timelineRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new BusinessException("Timeline item not found or access denied"));
+            .orElseThrow(() -> new BusinessException("时间线事项不存在或无权限操作"));
         timelineRepository.delete(item);
     }
 
@@ -266,7 +266,7 @@ public class StudyAbroadService {
             .category(req.getCategory().trim())
             .deadline(req.getDeadline())
             .completed(Boolean.TRUE.equals(req.getCompleted()))
-            .note(normalize(req.getNote(), "No note"))
+            .note(normalize(req.getNote(), "暂无备注"))
             .build();
         return toMaterialMap(materialRepository.save(item));
     }
@@ -275,7 +275,7 @@ public class StudyAbroadService {
     public Map<String, Object> updateMaterial(Long userId, Long id, MaterialRequest req) {
         ensureUser(userId);
         StudyAbroadMaterial item = materialRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new BusinessException("Material item not found or access denied"));
+            .orElseThrow(() -> new BusinessException("材料条目不存在或无权限操作"));
 
         item.setTitle(req.getTitle().trim());
         item.setApplication(findOwnedApplication(userId, req.getApplicationId()));
@@ -284,7 +284,7 @@ public class StudyAbroadService {
         item.setCategory(req.getCategory().trim());
         item.setDeadline(req.getDeadline());
         item.setCompleted(Boolean.TRUE.equals(req.getCompleted()));
-        item.setNote(normalize(req.getNote(), "No note"));
+        item.setNote(normalize(req.getNote(), "暂无备注"));
         return toMaterialMap(materialRepository.save(item));
     }
 
@@ -292,7 +292,7 @@ public class StudyAbroadService {
     public void deleteMaterial(Long userId, Long id) {
         ensureUser(userId);
         StudyAbroadMaterial item = materialRepository.findByIdAndUserId(id, userId)
-            .orElseThrow(() -> new BusinessException("Material item not found or access denied"));
+            .orElseThrow(() -> new BusinessException("材料条目不存在或无权限操作"));
         materialRepository.delete(item);
     }
 
@@ -300,22 +300,22 @@ public class StudyAbroadService {
     public Map<String, Object> uploadMaterialAttachments(Long userId, Long materialId, List<MultipartFile> files) {
         ensureUser(userId);
         StudyAbroadMaterial material = materialRepository.findByIdAndUserId(materialId, userId)
-            .orElseThrow(() -> new BusinessException("Material item not found or access denied"));
+            .orElseThrow(() -> new BusinessException("材料条目不存在或无权限操作"));
         List<MultipartFile> normalizedFiles = normalizeFiles(files);
         int currentCount = material.getAttachments() == null ? 0 : material.getAttachments().size();
         if (currentCount + normalizedFiles.size() > MAX_ATTACHMENT_COUNT) {
-            throw new BusinessException("Each material can upload at most " + MAX_ATTACHMENT_COUNT + " files");
+            throw new BusinessException("每个材料最多上传 " + MAX_ATTACHMENT_COUNT + " 个附件");
         }
 
         for (MultipartFile file : normalizedFiles) {
             validateAttachmentFile(file);
-            String originalName = normalize(file.getOriginalFilename(), "attachment");
+            String originalName = normalize(file.getOriginalFilename(), "附件");
             String contentType = normalize(file.getContentType(), "application/octet-stream");
             String cosKey = "studyabroad/materials/" + materialId + "/" + UUID.randomUUID();
             try {
                 cosService.uploadFile(file.getInputStream(), file.getSize(), cosKey, contentType);
             } catch (IOException e) {
-                throw new BusinessException("Failed to read file: " + originalName);
+                throw new BusinessException("读取文件失败：" + originalName);
             }
             material.addAttachment(StudyAbroadMaterialAttachment.builder()
                 .originalName(originalName)
@@ -333,7 +333,7 @@ public class StudyAbroadService {
         ensureUser(userId);
         StudyAbroadMaterialAttachment attachment = materialAttachmentRepository
             .findByIdAndMaterialIdAndMaterialUserId(attachmentId, materialId, userId)
-            .orElseThrow(() -> new BusinessException("Attachment not found or access denied"));
+            .orElseThrow(() -> new BusinessException("附件不存在或无权限操作"));
         attachment.setDownloadCount(attachment.getDownloadCount() + 1);
         materialAttachmentRepository.save(attachment);
         COSObject cosObject = cosService.getObject(attachment.getCosKey());
@@ -344,26 +344,26 @@ public class StudyAbroadService {
     public void deleteMaterialAttachment(Long userId, Long materialId, Long attachmentId) {
         ensureUser(userId);
         StudyAbroadMaterial material = materialRepository.findByIdAndUserId(materialId, userId)
-            .orElseThrow(() -> new BusinessException("Material item not found or access denied"));
+            .orElseThrow(() -> new BusinessException("材料条目不存在或无权限操作"));
         StudyAbroadMaterialAttachment attachment = materialAttachmentRepository
             .findByIdAndMaterialIdAndMaterialUserId(attachmentId, materialId, userId)
-            .orElseThrow(() -> new BusinessException("Attachment not found or access denied"));
+            .orElseThrow(() -> new BusinessException("附件不存在或无权限操作"));
         material.removeAttachment(attachment);
         materialRepository.save(material);
     }
 
     private User ensureUser(Long userId) {
         if (userId == null) {
-            throw new BusinessException("Please sign in before using study abroad management");
+            throw new BusinessException("请先登录后使用留学管理功能");
         }
         return userRepository.findById(userId)
-            .orElseThrow(() -> new BusinessException("User not found"));
+            .orElseThrow(() -> new BusinessException("用户不存在"));
     }
 
     private String normalizeTimelineStatus(String status) {
         String normalized = status == null || status.isBlank() ? "todo" : status.trim();
         if (!VALID_TIMELINE_STATUSES.contains(normalized)) {
-            throw new BusinessException("Timeline status is invalid");
+            throw new BusinessException("时间线状态无效");
         }
         return normalized;
     }
@@ -373,13 +373,13 @@ public class StudyAbroadService {
             return null;
         }
         return applicationRepository.findByIdAndUserId(applicationId, userId)
-            .orElseThrow(() -> new BusinessException("Application not found or access denied"));
+            .orElseThrow(() -> new BusinessException("申请项目不存在或无权限操作"));
     }
 
     private String normalizeApplicationStatus(String status) {
         String normalized = status == null || status.isBlank() ? "planning" : status.trim();
         if (!VALID_APPLICATION_STATUSES.contains(normalized)) {
-            throw new BusinessException("Application status is invalid");
+            throw new BusinessException("申请状态无效");
         }
         return normalized;
     }
@@ -387,7 +387,7 @@ public class StudyAbroadService {
     private String normalizePriority(String priority) {
         String normalized = priority == null || priority.isBlank() ? "match" : priority.trim();
         if (!VALID_PRIORITIES.contains(normalized)) {
-            throw new BusinessException("Application priority is invalid");
+            throw new BusinessException("申请梯度无效");
         }
         return normalized;
     }
@@ -405,6 +405,7 @@ public class StudyAbroadService {
     private Map<String, Object> toExperienceMap(StudyAbroadExperience item) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", item.getId());
+        map.put("authorId", item.getAuthor() != null ? item.getAuthor().getId() : null);
         map.put("title", item.getTitle());
         map.put("country", item.getCountry());
         map.put("topic", item.getTopic());
@@ -503,20 +504,20 @@ public class StudyAbroadService {
 
     private List<MultipartFile> normalizeFiles(List<MultipartFile> files) {
         if (files == null || files.isEmpty()) {
-            throw new BusinessException("Please upload at least one file");
+            throw new BusinessException("请至少上传一个文件");
         }
         List<MultipartFile> normalized = files.stream()
             .filter(file -> file != null && !file.isEmpty())
             .toList();
         if (normalized.isEmpty()) {
-            throw new BusinessException("Please upload at least one file");
+            throw new BusinessException("请至少上传一个文件");
         }
         return normalized;
     }
 
     private void validateAttachmentFile(MultipartFile file) {
         if (file.getSize() > MAX_ATTACHMENT_SIZE) {
-            throw new BusinessException("File " + file.getOriginalFilename() + " exceeds 10MB");
+            throw new BusinessException("文件 " + file.getOriginalFilename() + " 超过 10MB");
         }
     }
 }

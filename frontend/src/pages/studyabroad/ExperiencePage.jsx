@@ -138,6 +138,10 @@ export default function ExperiencePage() {
     setEditingId(null)
   }
 
+  function canManageExperience(item) {
+    return isDevMode || (canUseRemote && user?.id != null && String(item.authorId) === String(user.id))
+  }
+
   function startEdit(item) {
     setEditingId(item.id)
     setForm({
@@ -358,13 +362,12 @@ export default function ExperiencePage() {
                   <span>{item.readTime}</span>
                 </div>
                 <p className="muted">{item.summary}</p>
-                {item.content ? <p className="muted">{item.content}</p> : null}
                 <div className="tag-row">
                   {normalizeTags(item.tags).map((tag) => (
                     <span className="tag subtle" key={tag}>{tag}</span>
                   ))}
                 </div>
-                {(canUseRemote || isDevMode) ? (
+                {canManageExperience(item) ? (
                   <div className="hero-actions">
                     <button className="btn outline small" type="button" onClick={() => startEdit(item)}>编辑</button>
                     <button className="btn outline small" type="button" onClick={() => handleDelete(item.id)}>删除</button>
