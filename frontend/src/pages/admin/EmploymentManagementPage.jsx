@@ -98,7 +98,7 @@ function filterResumeSummaries(items, query) {
     if (expectedHasFile !== null && Boolean(resumeFile.hasFile) !== expectedHasFile) return false
     if (!keyword) return true
     return [
-      item.username, item.email, item.studentId, item.school, item.major, resumeFile.fileName,
+      item.name, item.username, item.email, item.studentId, item.school, item.major, item.grade, resumeFile.fileName,
     ].some((value) => String(value || '').toLowerCase().includes(keyword))
   })
 }
@@ -774,11 +774,12 @@ export default function EmploymentManagementPage() {
         <div className="admin-employment-list-grid resume-summary-grid">
           {pagedResumeSummaries.map((item) => {
             const resumeFile = item.resumeFile || resumeFileDefaults
+            const displayName = item.name || item.username || item.email || `用户 ${item.userId}`
             return (
-              <article className="admin-record-card" key={item.userId || item.email || item.username}>
+              <article className="admin-record-card" key={item.userId || item.email || item.name || item.username}>
                 <div className="admin-record-main">
                   <div className="track-head">
-                    <strong>{item.username || item.email || `用户 ${item.userId}`}</strong>
+                    <strong>{displayName}</strong>
                     <span className={`admin-status-chip ${resumeFile.hasFile ? 'is-success' : 'is-neutral'}`}>
                       {resumeFile.hasFile ? '已上传' : '未上传'}
                     </span>
