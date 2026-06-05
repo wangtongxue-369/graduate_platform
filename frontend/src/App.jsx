@@ -124,6 +124,7 @@ export default function App() {
       <Route path="/studyabroad/timeline" element={<TimelinePage />} />
       <Route path="/studyabroad/materials" element={<SAMaterialsPage />} />
       <Route path="/studyabroad/experience" element={<ExperiencePage />} />
+      <Route path="/studyabroad/experiences" element={<ExperiencePage />} />
 
       {/* 管理员后台 */}
       <Route path="/admin" element={<AdminPage />} />
