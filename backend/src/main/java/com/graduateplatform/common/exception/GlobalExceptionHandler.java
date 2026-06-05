@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiResponse<Void>> handleMaxUploadSize(MaxUploadSizeExceededException e) {
-        return ResponseEntity.badRequest().body(ApiResponse.fail("上传文件不能超过10MB"));
+        return ResponseEntity.badRequest().body(ApiResponse.fail("简历附件不能超过10MB"));
     }
 
     @ExceptionHandler(Exception.class)

@@ -369,10 +369,19 @@ public class EmploymentService {
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> adminResumeSummaries() {
-        return userRepository.findAll().stream()
+        List<User> users = userRepository.findAll().stream()
             .filter(user -> "user".equalsIgnoreCase(defaultString(user.getRole(), "")))
             .sorted(Comparator.comparing(User::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-            .map(user -> toAdminResumeSummary(user, resumeRepository.findByUserId(user.getId()).orElse(null)))
+            .toList();
+        Map<Long, ResumeProfile> resumesByUserId = new HashMap<>();
+        List<Long> userIds = users.stream().map(User::getId).filter(Objects::nonNull).toList();
+        for (ResumeProfile resume : resumeRepository.findByUserIdIn(userIds)) {
+            if (resume.getUser() != null && resume.getUser().getId() != null) {
+                resumesByUserId.put(resume.getUser().getId(), resume);
+            }
+        }
+        return users.stream()
+            .map(user -> toAdminResumeSummary(user, resumesByUserId.get(user.getId())))
             .toList();
     }
 
