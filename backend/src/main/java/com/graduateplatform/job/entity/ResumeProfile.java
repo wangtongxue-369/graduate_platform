@@ -48,6 +48,19 @@ public class ResumeProfile {
     @Column(columnDefinition = "LONGTEXT")
     private String selfEvaluation;
 
+    @Column(length = 255)
+    private String resumeFileName;
+
+    private Long resumeFileSize;
+
+    @Column(length = 100)
+    private String resumeFileType;
+
+    @Column(length = 500)
+    private String resumeCosKey;
+
+    private LocalDateTime resumeUploadedAt;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

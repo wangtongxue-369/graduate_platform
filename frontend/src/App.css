@@ -2017,7 +2017,7 @@
   height: 34px;
   flex: 0 0 34px;
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--surface-strong);
   color: #0f766e;
   font-size: 14px;
   font-weight: 800;
@@ -2026,7 +2026,7 @@
 
 .mine-avatar {
   background: #0f766e;
-  color: #ffffff;
+  color: var(--primary-ink);
 }
 
 .chat-bubble-wrap {
@@ -2046,7 +2046,7 @@
   padding: 9px 12px;
   border: 1px solid #d9e7e4;
   border-radius: 6px;
-  background: #ffffff;
+  background: var(--surface-strong);
   color: var(--text);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
@@ -2129,7 +2129,7 @@
   border: 1px solid #d8e5e2;
   border-radius: 6px;
   padding: 9px 12px;
-  background: #ffffff;
+  background: var(--surface-strong);
   color: var(--text);
   font-family: inherit;
   font-size: 15px;
@@ -2139,7 +2139,7 @@
 
 .chat-composer textarea:focus {
   border-color: #95d6cc;
-  background: #ffffff;
+  background: var(--surface-strong);
   box-shadow: 0 0 0 3px rgba(149, 214, 204, 0.22);
 }
 
@@ -2158,7 +2158,7 @@
   height: 38px;
   border: 1px solid #b8d5d0;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--surface-strong);
   color: #5f7772;
   display: inline-flex;
   align-items: center;
@@ -2450,7 +2450,7 @@
 
 .admin-control-tabs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -4566,4 +4566,43 @@
 
 .modal-header h3 {
   margin: 0;
+}
+
+.resume-file-card,
+.resume-status-panel,
+.resume-file-current {
+  display: grid;
+  gap: 12px;
+}
+
+.resume-file-current,
+.resume-status-panel {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-strong) 86%, transparent);
+}
+
+.resume-file-current strong,
+.resume-status-panel strong {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.resume-file-current span,
+.resume-status-panel span {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.resume-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.resume-summary-grid .resume-status-panel {
+  margin-top: 4px;
 }

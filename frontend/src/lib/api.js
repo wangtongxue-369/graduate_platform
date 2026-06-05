@@ -245,6 +245,64 @@ export const employmentApi = {
   saveResume(payload, token) {
     return request('/api/job/resume', { method: 'PUT', body: payload, token })
   },
+  uploadResumeFile(file, token, onProgress) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('POST', `${API_BASE}/api/job/resume/file`)
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && typeof onProgress === 'function') {
+          onProgress(Math.round((event.loaded / event.total) * 100))
+        }
+      }
+      xhr.onload = () => {
+        const data = (() => {
+          try {
+            return JSON.parse(xhr.responseText)
+          } catch {
+            return null
+          }
+        })()
+        if (xhr.status < 200 || xhr.status >= 300 || !data?.success) {
+          reject(new Error(data?.message || `Request failed: ${xhr.status}`))
+          return
+        }
+        resolve(data.data)
+      }
+      xhr.onerror = () => reject(new Error('Upload failed. Please check the network and try again.'))
+      xhr.onabort = () => reject(new Error('Upload canceled.'))
+      xhr.send(formData)
+    })
+  },
+  async downloadResumeFile(token) {
+    const response = await fetch(`${API_BASE}/api/job/resume/file/download`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      throw new Error(data?.message || `Request failed: ${response.status}`)
+    }
+    const blob = await response.blob()
+    const disposition = response.headers.get('content-disposition') || ''
+    const starMatch = disposition.match(/filename\*=UTF-8''([^;]+)/)
+    const plainMatch = disposition.match(/filename="?([^";]+)"?/)
+    const fileName = starMatch
+      ? decodeURIComponent(starMatch[1])
+      : (plainMatch ? plainMatch[1] : 'resume-file')
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  },
+  deleteResumeFile(token) {
+    return request('/api/job/resume/file', { method: 'DELETE', token })
+  },
   recommendations(params = {}, token) {
     return request(appendParams('/api/job/recommendations', params), { token })
   },
@@ -296,6 +354,9 @@ export const adminEmploymentApi = {
   },
   deleteJob(id, token) {
     return request(`/api/admin/employment/jobs/${id}`, { method: 'DELETE', token })
+  },
+  resumes(token) {
+    return request('/api/admin/employment/resumes', { token })
   },
   triggerNotification(payload, token) {
     return request('/api/admin/employment/notifications/trigger', { method: 'POST', body: payload, token })

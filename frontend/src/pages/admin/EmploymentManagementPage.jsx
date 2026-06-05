@@ -44,6 +44,8 @@ const activeStatusClassMap = {
 
 const ADMIN_PAGE_SIZE = 5
 const emptyListQuery = { keyword: '', active: 'all', page: 1 }
+const emptyResumeListQuery = { keyword: '', fileStatus: 'all', page: 1 }
+const resumeFileDefaults = { hasFile: false, fileName: '', fileSize: null, fileType: '', uploadedAt: '' }
 
 function normalizeDateFields(payload, keys) {
   const next = { ...payload }
@@ -56,6 +58,14 @@ function normalizeDateFields(payload, keys) {
 function formatDateTime(value) {
   if (!value) return '未设置'
   return value.replace('T', ' ').slice(0, 16)
+}
+
+function formatFileSize(size) {
+  if (!size || Number.isNaN(Number(size))) return '0 B'
+  const bytes = Number(size)
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
 function filterManagedItems(items, query, fields) {
@@ -73,10 +83,31 @@ function pageItems(items, page) {
   return items.slice(start, start + ADMIN_PAGE_SIZE)
 }
 
+function normalizeResumeSummary(item) {
+  return {
+    ...(item || {}),
+    resumeFile: { ...resumeFileDefaults, ...(item?.resumeFile || {}) },
+  }
+}
+
+function filterResumeSummaries(items, query) {
+  const keyword = query.keyword.trim().toLowerCase()
+  const expectedHasFile = query.fileStatus === 'all' ? null : query.fileStatus === 'uploaded'
+  return items.filter((item) => {
+    const resumeFile = item.resumeFile || resumeFileDefaults
+    if (expectedHasFile !== null && Boolean(resumeFile.hasFile) !== expectedHasFile) return false
+    if (!keyword) return true
+    return [
+      item.username, item.email, item.studentId, item.school, item.major, resumeFile.fileName,
+    ].some((value) => String(value || '').toLowerCase().includes(keyword))
+  })
+}
+
 export default function EmploymentManagementPage() {
   const { user, token, isAuthed, loading: authLoading } = useAuth()
   const [fairs, setFairs] = useState([])
   const [jobs, setJobs] = useState([])
+  const [resumeSummaries, setResumeSummaries] = useState([])
   const [fairForm, setFairForm] = useState(emptyFair)
   const [jobForm, setJobForm] = useState(emptyJob)
   const [editingFairId, setEditingFairId] = useState(null)
@@ -88,21 +119,27 @@ export default function EmploymentManagementPage() {
   const [activePanel, setActivePanel] = useState('fairs')
   const [fairListQuery, setFairListQuery] = useState(emptyListQuery)
   const [jobListQuery, setJobListQuery] = useState(emptyListQuery)
+  const [resumeListQuery, setResumeListQuery] = useState(emptyResumeListQuery)
 
   const activeFairCount = fairs.filter((item) => item.active !== false).length
   const activeJobCount = jobs.filter((item) => item.active !== false).length
+  const uploadedResumeCount = resumeSummaries.filter((item) => item.resumeFile?.hasFile).length
   const filteredFairs = filterManagedItems(fairs, fairListQuery, [
     'title', 'companyName', 'city', 'industry', 'targetRoles', 'location', 'applyUrl',
   ])
   const filteredJobs = filterManagedItems(jobs, jobListQuery, [
     'title', 'companyName', 'city', 'industry', 'companyType', 'roleType', 'salaryRange', 'applyUrl',
   ])
+  const filteredResumeSummaries = filterResumeSummaries(resumeSummaries, resumeListQuery)
   const fairTotalPages = Math.max(1, Math.ceil(filteredFairs.length / ADMIN_PAGE_SIZE))
   const jobTotalPages = Math.max(1, Math.ceil(filteredJobs.length / ADMIN_PAGE_SIZE))
+  const resumeTotalPages = Math.max(1, Math.ceil(filteredResumeSummaries.length / ADMIN_PAGE_SIZE))
   const currentFairPage = Math.min(fairListQuery.page, fairTotalPages)
   const currentJobPage = Math.min(jobListQuery.page, jobTotalPages)
+  const currentResumePage = Math.min(resumeListQuery.page, resumeTotalPages)
   const pagedFairs = pageItems(filteredFairs, currentFairPage)
   const pagedJobs = pageItems(filteredJobs, currentJobPage)
+  const pagedResumeSummaries = pageItems(filteredResumeSummaries, currentResumePage)
 
   const panelMeta = {
     fairs: {
@@ -123,6 +160,15 @@ export default function EmploymentManagementPage() {
       activeCount: activeJobCount,
       summary: editingJobId ? '当前正在编辑岗位条目。' : '可直接新增、编辑或停用岗位。',
     },
+    resumes: {
+      key: 'resumes',
+      label: '简历附件状态',
+      shortLabel: '简历',
+      description: '只读查看用户当前简历附件上传状态，不提供下载、上传或删除管理动作。',
+      count: resumeSummaries.length,
+      activeCount: uploadedResumeCount,
+      summary: `已上传 ${uploadedResumeCount} 份附件，仅展示安全元数据。`,
+    },
   }
 
   const currentPanel = panelMeta[activePanel]
@@ -131,12 +177,14 @@ export default function EmploymentManagementPage() {
     setLoading(true)
     setError('')
     try {
-      const [fairData, jobData] = await Promise.all([
+      const [fairData, jobData, resumeData] = await Promise.all([
         adminEmploymentApi.fairs(token),
         adminEmploymentApi.jobs(token),
+        adminEmploymentApi.resumes(token),
       ])
       setFairs(Array.isArray(fairData) ? fairData : [])
       setJobs(Array.isArray(jobData) ? jobData : [])
+      setResumeSummaries(Array.isArray(resumeData) ? resumeData.map(normalizeResumeSummary) : [])
     } catch (e) {
       setError(e.message || '加载就业管理数据失败')
     } finally {
@@ -146,6 +194,7 @@ export default function EmploymentManagementPage() {
 
   useEffect(() => {
     if (isAuthed && user?.role === 'admin') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadAll()
     }
   }, [isAuthed, user?.role, loadAll])
@@ -170,6 +219,10 @@ export default function EmploymentManagementPage() {
 
   const updateJobListQuery = (field, value) => {
     setJobListQuery((current) => ({ ...current, [field]: value, page: field === 'page' ? value : 1 }))
+  }
+
+  const updateResumeListQuery = (field, value) => {
+    setResumeListQuery((current) => ({ ...current, [field]: value, page: field === 'page' ? value : 1 }))
   }
 
   function startEditFair(fair) {
@@ -456,6 +509,32 @@ export default function EmploymentManagementPage() {
     </>
   )
 
+
+  const renderResumeReadonlyBlock = () => (
+    <>
+      <div className="track-head">
+        <div>
+          <h3>简历附件状态</h3>
+          <p className="muted">管理员仅查看当前附件是否存在及安全元数据，不接触对象存储地址。</p>
+        </div>
+        <span className="admin-status-chip is-neutral">只读</span>
+      </div>
+      <div className="admin-note-panel">
+        <p>该面板不提供上传、下载、替换或删除入口；学生需在前台简历页自行管理附件。</p>
+      </div>
+      <div className="admin-capability-grid">
+        <article className="admin-record-card">
+          <strong>隐私边界</strong>
+          <p className="muted">仅显示文件名、大小、类型和上传时间，不展示 COS Key、签名 URL 或公开访问地址。</p>
+        </article>
+        <article className="admin-record-card">
+          <strong>当前状态</strong>
+          <p className="muted">共 {resumeSummaries.length} 名用户，{uploadedResumeCount} 名已上传当前简历附件。</p>
+        </article>
+      </div>
+    </>
+  )
+
   const renderListControls = (query, updateQuery, totalItems, totalPages, currentPage) => (
     <div className="admin-form-grid two-columns">
       <label className="field">
@@ -631,6 +710,102 @@ export default function EmploymentManagementPage() {
     </>
   )
 
+
+  const renderResumeListControls = () => (
+    <div className="admin-form-grid two-columns">
+      <label className="field">
+        <span>关键词</span>
+        <input
+          value={resumeListQuery.keyword}
+          onChange={(event) => updateResumeListQuery('keyword', event.target.value)}
+          placeholder="按姓名、邮箱、学号、学校、专业或文件名筛选"
+        />
+      </label>
+      <label className="field">
+        <span>附件状态</span>
+        <select value={resumeListQuery.fileStatus} onChange={(event) => updateResumeListQuery('fileStatus', event.target.value)}>
+          <option value="all">全部状态</option>
+          <option value="uploaded">已上传</option>
+          <option value="missing">未上传</option>
+        </select>
+      </label>
+      <div className="admin-inline-actions admin-field-wide">
+        <span className="admin-status-chip is-neutral">匹配 {filteredResumeSummaries.length} 条</span>
+        <button
+          className="btn outline small"
+          type="button"
+          disabled={currentResumePage <= 1}
+          onClick={() => updateResumeListQuery('page', Math.max(1, currentResumePage - 1))}
+        >
+          上一页
+        </button>
+        <span className="admin-status-chip is-neutral">{currentResumePage} / {resumeTotalPages}</span>
+        <button
+          className="btn outline small"
+          type="button"
+          disabled={currentResumePage >= resumeTotalPages}
+          onClick={() => updateResumeListQuery('page', Math.min(resumeTotalPages, currentResumePage + 1))}
+        >
+          下一页
+        </button>
+      </div>
+    </div>
+  )
+
+  const renderResumeListBlock = () => (
+    <>
+      <div className="track-head">
+        <div>
+          <h3>用户简历附件状态</h3>
+          <p className="muted">只读展示上传状态与文件元数据，不提供管理员文件操作。</p>
+        </div>
+        <span className="admin-status-chip is-warning">{uploadedResumeCount} 份已上传</span>
+      </div>
+
+      {!loading && resumeSummaries.length > 0 ? renderResumeListControls() : null}
+
+      {loading ? (
+        <p className="muted">正在加载简历附件状态...</p>
+      ) : resumeSummaries.length === 0 ? (
+        <p className="muted">暂无可查看的用户简历状态。</p>
+      ) : filteredResumeSummaries.length === 0 ? (
+        <p className="muted">当前筛选条件下没有简历附件状态。</p>
+      ) : (
+        <div className="admin-employment-list-grid resume-summary-grid">
+          {pagedResumeSummaries.map((item) => {
+            const resumeFile = item.resumeFile || resumeFileDefaults
+            return (
+              <article className="admin-record-card" key={item.userId || item.email || item.username}>
+                <div className="admin-record-main">
+                  <div className="track-head">
+                    <strong>{item.username || item.email || `用户 ${item.userId}`}</strong>
+                    <span className={`admin-status-chip ${resumeFile.hasFile ? 'is-success' : 'is-neutral'}`}>
+                      {resumeFile.hasFile ? '已上传' : '未上传'}
+                    </span>
+                  </div>
+                  <p className="muted">{item.email || '邮箱未设置'} · {item.studentId || '学号未设置'}</p>
+                  <div className="admin-record-meta">
+                    <span>{item.school || '学校未设置'}</span>
+                    <span>{item.major || '专业未设置'}</span>
+                  </div>
+                  {resumeFile.hasFile ? (
+                    <div className="resume-status-panel">
+                      <strong>{resumeFile.fileName || '未命名附件'}</strong>
+                      <span>{formatFileSize(resumeFile.fileSize)} · {resumeFile.fileType || '类型待定'}</span>
+                      <span>上传：{formatDateTime(resumeFile.uploadedAt)}</span>
+                    </div>
+                  ) : (
+                    <p className="room-sub">该用户尚未上传当前简历附件。</p>
+                  )}
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      )}
+    </>
+  )
+
   return (
     <div className="app">
       <Navbar />
@@ -664,6 +839,11 @@ export default function EmploymentManagementPage() {
                 <span className="admin-summary-label">启用岗位</span>
                 <strong className="admin-summary-value">{activeJobCount}</strong>
                 <p className="muted">面向用户开放投递的岗位条目。</p>
+              </article>
+              <article className="admin-summary-card">
+                <span className="admin-summary-label">已上传简历附件</span>
+                <strong className="admin-summary-value">{uploadedResumeCount}</strong>
+                <p className="muted">仅统计当前附件状态，不开放管理动作。</p>
               </article>
             </div>
 
@@ -706,7 +886,7 @@ export default function EmploymentManagementPage() {
                   <p className="muted">{currentPanel.description}</p>
                 </div>
                 <div className="admin-inline-actions">
-                  <span className="admin-status-chip is-success">启用 {currentPanel.activeCount}</span>
+                  <span className="admin-status-chip is-success">{currentPanel.key === 'resumes' ? '已上传' : '启用'} {currentPanel.activeCount}</span>
                   <span className="admin-status-chip is-neutral">总计 {currentPanel.count}</span>
                   <span className="admin-status-chip is-neutral">{currentPanel.shortLabel}工作台</span>
                 </div>
@@ -719,11 +899,11 @@ export default function EmploymentManagementPage() {
                 aria-labelledby={`employment-tab-${currentPanel.key}`}
               >
                 <div className="admin-form-surface admin-employment-form-panel">
-                  {activePanel === 'fairs' ? renderFairFormBlock() : renderJobFormBlock()}
+                  {activePanel === 'fairs' ? renderFairFormBlock() : activePanel === 'jobs' ? renderJobFormBlock() : renderResumeReadonlyBlock()}
                 </div>
 
                 <div className="admin-surface-card admin-employment-list-panel">
-                  {activePanel === 'fairs' ? renderFairListBlock() : renderJobListBlock()}
+                  {activePanel === 'fairs' ? renderFairListBlock() : activePanel === 'jobs' ? renderJobListBlock() : renderResumeListBlock()}
                 </div>
               </div>
             </section>
