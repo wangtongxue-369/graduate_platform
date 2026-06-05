@@ -54,6 +54,11 @@ public class AdminEmploymentController {
         return ApiResponse.ok(employmentService.adminJobs());
     }
 
+    @GetMapping("/resumes")
+    public ApiResponse<?> resumes() {
+        return ApiResponse.ok(employmentService.adminResumeSummaries());
+    }
+
     @PostMapping("/jobs")
     public ApiResponse<?> createJob(@Valid @RequestBody JobPostingRequest req) {
         return ApiResponse.ok(employmentService.createJob(req), "Job created");

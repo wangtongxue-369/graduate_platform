@@ -4,8 +4,16 @@ import com.graduateplatform.common.dto.ApiResponse;
 import com.graduateplatform.job.dto.*;
 import com.graduateplatform.job.service.EmploymentService;
 import jakarta.validation.Valid;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.web.bind.annotation.*;
+
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/job")
@@ -70,6 +78,34 @@ public class EmploymentController {
     @PutMapping("/resume")
     public ApiResponse<?> upsertResume(@RequestBody ResumeProfileRequest req, Authentication auth) {
         return ApiResponse.ok(employmentService.upsertResume(currentUserId(auth), req), "Resume saved");
+    }
+
+    @PostMapping(value = "/resume/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<?> uploadResumeFile(@RequestPart("file") MultipartFile file, Authentication auth) {
+        return ApiResponse.ok(employmentService.uploadResumeFile(currentUserId(auth), file), "Resume file uploaded");
+    }
+
+    @GetMapping("/resume/file/download")
+    public ResponseEntity<StreamingResponseBody> downloadResumeFile(Authentication auth) {
+        EmploymentService.ResumeFileDownload download = employmentService.downloadResumeFile(currentUserId(auth));
+        StreamingResponseBody body = outputStream -> {
+            try (var inputStream = download.cosObject().getObjectContent()) {
+                inputStream.transferTo(outputStream);
+            }
+        };
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(download.contentType()))
+            .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                .filename(download.fileName(), StandardCharsets.UTF_8)
+                .build()
+                .toString())
+            .contentLength(download.fileSize() == null ? -1 : download.fileSize())
+            .body(body);
+    }
+
+    @DeleteMapping("/resume/file")
+    public ApiResponse<?> deleteResumeFile(Authentication auth) {
+        return ApiResponse.ok(employmentService.deleteResumeFile(currentUserId(auth)), "Resume file deleted");
     }
 
     @GetMapping("/recommendations")
