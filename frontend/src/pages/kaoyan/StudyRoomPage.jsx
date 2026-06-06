@@ -433,6 +433,17 @@ export default function StudyRoomPage() {
     } catch { setLeaderboard([]) }
   }
 
+  // Leaderboard auto-refresh every 60s while in a room
+  useEffect(() => {
+    if (view !== 'room' || !currentRoom) return
+    loadLeaderboard(currentRoom.id, activePeriod)
+    const interval = setInterval(() => {
+      loadLeaderboard(currentRoom.id, activePeriod)
+    }, 60000)
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, currentRoom, activePeriod])
+
   function connectSSE(roomId) {
     disconnectSSE()
     setRealtimeState('连接中')
