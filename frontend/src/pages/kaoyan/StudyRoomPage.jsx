@@ -192,11 +192,12 @@ function RoomView({
   user, token, isOwner,
   onLeaveRoom, onSendMessage, onMessageChange, onPeriodChange, onSend, onCloseRoom,
 }) {
-  const messagesEndRef = useRef(null)
+  const messagesListRef = useRef(null)
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    const el = messagesListRef.current
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
     }
   }, [messages])
 
@@ -277,7 +278,7 @@ function RoomView({
         {/* Right: chat */}
         <div className="feature-card" style={{ display: 'flex', flexDirection: 'column', minHeight: 480 }}>
           <div className="card-title">讨论区</div>
-          <div className="chat-message-list" style={{ flex: 1, overflowY: 'auto', marginTop: 12 }}>
+          <div ref={messagesListRef} className="chat-message-list" style={{ flex: 1, overflowY: 'auto', marginTop: 12 }}>
             {messages.length === 0 ? (
               <div className="chat-empty">
                 <p className="muted">暂无消息，进入房间后开始聊天吧。</p>
@@ -298,7 +299,6 @@ function RoomView({
                 )
               })
             )}
-            <div ref={messagesEndRef} />
           </div>
 
           <form className="chat-composer" onSubmit={onSend} style={{ marginTop: 12 }}>
