@@ -25,7 +25,7 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState([])
   const [inputText, setInputText] = useState('')
   const [sending, setSending] = useState(false)
-  const messagesEndRef = useRef(null)
+  const messagesListRef = useRef(null)
 
   const fetchSessions = useCallback(async (t, p) => {
     setLoading(true)
@@ -65,8 +65,9 @@ export default function MessagesPage() {
   }, [tab, page, fetchSessions])
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    const el = messagesListRef.current
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
     }
   }, [messages])
 
@@ -209,7 +210,7 @@ export default function MessagesPage() {
                       <span className="muted small" style={{ marginLeft: 8 }}>{activeSession.subject}</span>
                     )}
                   </div>
-                  <div className="chat-message-list" style={{ flex: 1 }}>
+                  <div ref={messagesListRef} className="chat-message-list" style={{ flex: 1, overflowY: 'auto' }}>
                     {messages.length === 0 ? (
                       <div className="chat-empty">
                         <p className="muted">暂无消息，开始对话吧</p>
@@ -230,7 +231,6 @@ export default function MessagesPage() {
                         )
                       })
                     )}
-                    <div ref={messagesEndRef} />
                   </div>
                   <form className="chat-composer" onSubmit={handleSend} style={{ marginTop: 12 }}>
                     <textarea
