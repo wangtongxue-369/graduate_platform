@@ -68,6 +68,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/job/fairs/**", "/api/job/postings/**").permitAll()
                 .requestMatchers("/api/job/resume/**", "/api/job/applications/**", "/api/job/notifications/**",
                     "/api/job/preferences/**", "/api/job/recommendations/**").authenticated()
+                // 题库练习与答题记录属于个人数据：所有方法都需登录，
+                // 否则匿名 GET 会命中下方 /api/** 放行规则、在控制器里强转 principal 抛 500
+                .requestMatchers("/api/practice/**").authenticated()
+                .requestMatchers("/api/attempts/**").authenticated()
                 // Generic GET APIs are public for read-only browsing
                 .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
                 // Write operations, question attempts, and user profile APIs require auth

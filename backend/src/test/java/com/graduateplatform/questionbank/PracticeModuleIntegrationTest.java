@@ -220,11 +220,11 @@ class PracticeModuleIntegrationTest {
         mockMvc.perform(post("/api/practice/sessions/" + sessionId + "/submit")
                 .header("Authorization", "Bearer " + userToken));
 
-        // Verify wrong questions
+        // Verify wrong questions（错题本为分页响应：{items,total,...}）
         mockMvc.perform(get("/api/practice/wrong-questions")
                 .header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.length()").value(2));
+            .andExpect(jsonPath("$.data.items.length()").value(2));
     }
 
     @Test
@@ -251,17 +251,17 @@ class PracticeModuleIntegrationTest {
         mockMvc.perform(post("/api/practice/sessions/" + sessionId + "/submit")
                 .header("Authorization", "Bearer " + userToken));
 
-        // Filter by subject
+        // Filter by subject（分页响应断言 items）
         mockMvc.perform(get("/api/practice/wrong-questions?subject=政治")
                 .header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.length()").value(2));
+            .andExpect(jsonPath("$.data.items.length()").value(2));
 
         // Filter by non-existent subject
         mockMvc.perform(get("/api/practice/wrong-questions?subject=英语")
                 .header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.length()").value(0));
+            .andExpect(jsonPath("$.data.items.length()").value(0));
     }
 
     // ==================== Statistics ====================
@@ -419,14 +419,52 @@ class PracticeModuleIntegrationTest {
 
     @Test
     void practiceRequiresAuthOnAllEndpoints() throws Exception {
-        // GET /api/** is public per SecurityConfig, so requests reach controller with anonymous auth
-        // The controller's auth.getPrincipal() throws ClassCastException on anonymous user → 500
-        mockMvc.perform(get("/api/practice/sessions/1")).andExpect(status().is5xxServerError());
+        // 个人练习数据：匿名访问（含 GET）应被安全层干净拒绝为 403，而非进入控制器强转 principal 抛 500
+        mockMvc.perform(get("/api/practice/sessions/1")).andExpect(status().isForbidden());
         mockMvc.perform(put("/api/practice/sessions/1/answers/1")).andExpect(status().isForbidden());
         mockMvc.perform(post("/api/practice/sessions/1/submit")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/practice/wrong-questions")).andExpect(status().is5xxServerError());
-        mockMvc.perform(get("/api/practice/statistics")).andExpect(status().is5xxServerError());
-        mockMvc.perform(get("/api/practice/history")).andExpect(status().is5xxServerError());
+        mockMvc.perform(get("/api/practice/wrong-questions")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/practice/statistics")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/practice/history")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/attempts")).andExpect(status().isForbidden());
+    }
+
+    // Issue 2: 重复交卷（含乐观锁重试落到的幂等分支）不得重复判分 / 重复累加错题次数
+    @Test
+    void resubmittingSessionIsIdempotentAndDoesNotDoubleCountWrongQuestions() throws Exception {
+        String createResp = mockMvc.perform(post("/api/practice/sessions")
+                .header("Authorization", "Bearer " + userToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("bankId", bank.getId(), "mode", "chapter", "chapter", "第1章"))))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString();
+        long sessionId = objectMapper.readTree(createResp).path("data").path("id").asLong();
+        JsonNode questions = objectMapper.readTree(createResp).path("data").path("questions");
+        for (int i = 0; i < questions.size(); i++) {
+            mockMvc.perform(put("/api/practice/sessions/" + sessionId + "/answers/" + questions.get(i).path("id").asLong())
+                    .header("Authorization", "Bearer " + userToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json(Map.of("answer", "wrong"))))
+                .andExpect(status().isOk());
+        }
+
+        // 交卷两次：第二次走幂等分支，应返回与第一次一致的结果
+        mockMvc.perform(post("/api/practice/sessions/" + sessionId + "/submit")
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.wrongCount").value(2));
+        mockMvc.perform(post("/api/practice/sessions/" + sessionId + "/submit")
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.wrongCount").value(2));
+
+        // 错题本中每道题只累加一次（wrongCount=1），未因二次交卷被重复累加（错题本为分页响应）
+        mockMvc.perform(get("/api/practice/wrong-questions")
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.items.length()").value(2))
+            .andExpect(jsonPath("$.data.items[0].wrongCount").value(1))
+            .andExpect(jsonPath("$.data.items[1].wrongCount").value(1));
     }
 
     private String json(Object value) throws Exception {

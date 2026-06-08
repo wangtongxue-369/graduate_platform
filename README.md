@@ -39,7 +39,7 @@
 
 ### 就业方向
 - 招聘会信息汇总与订阅
-- 在线简历编辑器
+- 在线简历编辑器（在线文本 + 单个当前附件，鉴权下载）
 - 基于专业/技能/地区的职位推荐
 - 投递进度追踪看板
 
@@ -182,13 +182,17 @@ npm run dev
 | GET | `/api/job/fairs/**` | Employment career fair browse/detail | Public |
 | GET | `/api/job/postings/**` | Employment job posting browse/detail | Public |
 | GET/PUT | `/api/job/preferences` | Current user's job subscription preferences | Authenticated |
-| GET/PUT | `/api/job/resume` | Current user's persisted online resume | Authenticated |
+| GET/PUT | `/api/job/resume` | Current user's persisted online resume plus safe `resumeFile` summary | Authenticated |
+| POST | `/api/job/resume/file` | Upload/replace current resume attachment (`file`, PDF/DOC/DOCX, default max 10MB) | Authenticated |
+| GET | `/api/job/resume/file/download` | Download current resume attachment through backend ownership check | Authenticated |
+| DELETE | `/api/job/resume/file` | Delete current resume attachment metadata and best-effort remove object storage file | Authenticated |
 | GET | `/api/job/recommendations` | Deterministic rule-based job recommendations | Authenticated |
 | GET/POST/PUT/DELETE | `/api/job/applications/**` | Current user's application tracking records | Authenticated |
 | GET/PUT | `/api/job/notifications/**` | Current user's in-app employment notifications | Authenticated |
 | GET/POST/PUT/DELETE | `/api/admin/employment/fairs/**` | Admin career fair source-data management | Admin |
 | GET/POST/PUT/DELETE | `/api/admin/employment/jobs/**` | Admin job posting source-data management | Admin |
 | POST | `/api/admin/employment/notifications/trigger` | Admin manual matched station-notification trigger for fairs/jobs | Admin |
+| GET | `/api/admin/employment/resumes` | Admin read-only user resume attachment status summary; no download/upload/delete action | Admin |
 
 ## 开发说明
 
@@ -200,12 +204,21 @@ npm run dev
 ### Employment module additions
 
 - Backend: `backend/src/main/java/com/graduateplatform/job/**` contains the employment domain: career fairs, job postings, online resume profiles, application records, subscription preferences, and station notifications.
-- Frontend: `frontend/src/pages/job/**` implements the user employment pages; `frontend/src/pages/admin/EmploymentManagementPage.jsx` implements fair/job source-data management.
-- API client: `frontend/src/lib/api.js` exposes `employmentApi` and `adminEmploymentApi`.
+- Frontend: `frontend/src/pages/job/**` implements the user employment pages; `frontend/src/pages/admin/EmploymentManagementPage.jsx` implements fair/job source-data management and read-only resume attachment status.
+- API client: `frontend/src/lib/api.js` exposes `employmentApi` and `adminEmploymentApi`, including authenticated resume attachment upload/download/delete helpers.
+
+### Employment resume attachment workflow
+
+- The online resume remains editable text, and each user can keep exactly one current attachment. Uploading a new attachment replaces the previous one; the backend updates metadata and then best-effort deletes the old object.
+- Supported attachment defaults are PDF, DOC, and DOCX up to 10MB. The frontend gives the same hints, but backend validation is authoritative.
+- Downloads go through `GET /api/job/resume/file/download` with authentication and current-user ownership checks. The API response summaries include safe metadata only: `hasFile`, `fileName`, `fileSize`, `fileType`, and `uploadedAt`. COS object keys, signed/public URLs, and storage credentials are not returned to student or admin pages.
+- `GET /api/job/applications` keeps the existing array contract. The application tracking page fetches `GET /api/job/resume` separately to show the current attachment status at page level.
+- Admins can open `/admin/employment` to view read-only upload status across users via `/api/admin/employment/resumes`; admins cannot upload, download, replace, or delete student resume files from that view.
+- Object-storage credentials should live in environment variables or private deployment config (for example `COS_SECRET_ID` / `COS_SECRET_KEY`). Any credential value that has been pasted into chat, logs, or source control should be rotated before real deployment.
 
 ### Employment v1 non-goals
 
-Employment v1 intentionally does not include Word/PDF resume export, external recruitment-platform API sync, email/SMS/WeChat push, or AI/model-based recommendations. Notifications are station-internal records matched by saved preferences.
+Employment v1 intentionally does not include Word/PDF resume export, resume parsing, multi-version resume libraries, external recruitment-platform API sync, email/SMS/WeChat push, or AI/model-based recommendations. Notifications are station-internal records matched by saved preferences.
 
 ### Employment demo flow
 
@@ -213,9 +226,10 @@ For course or graduation-project acceptance, the recommended employment demo pat
 
 1. Admin opens `/admin/employment`, creates or edits a job posting/career fair, and uses the active status to show or hide it from user pages.
 2. Admin triggers a matched station notification from a managed job or fair.
-3. A job-track user opens `/job/fairs` to browse fairs and enter a fair detail page.
-4. The same user opens `/job/recommend`, reviews rule-based match reasons, enters a job detail page, and adds the job to application tracking.
-5. The user opens `/job/applications`, verifies that the company/job fields are prefilled, saves the application, and updates the status through the tracking board.
+3. A job-track user opens `/job/resume`, saves online resume text, and uploads or replaces a PDF/DOC/DOCX attachment.
+4. The user opens `/job/fairs` to browse fairs and enter a fair detail page.
+5. The same user opens `/job/recommend`, reviews rule-based match reasons, enters a job detail page, and adds the job to application tracking.
+6. The user opens `/job/applications`, verifies that the company/job fields are prefilled, sees the current resume attachment status, saves the application, and updates the status through the tracking board.
 
 Current matching notes:
 

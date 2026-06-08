@@ -84,14 +84,14 @@ public class QuestionService {
         Question question = Question.builder()
             .bank(bank)
             .stem(stem.trim())
-            .optionsJson(nullable(body.get("optionsJson")))
+            .optionsJson(optionsOrDefault(body.get("optionsJson")))
             .answer(answer.trim())
             .analysis(nullable(body.get("analysis")))
             .chapter(nullable(body.get("chapter")))
             .questionType(nullable(body.get("questionType")))
             .knowledgePoint(nullable(body.get("knowledgePoint")))
             .difficulty(nullable(body.get("difficulty")))
-            .year(body.get("year") != null ? ((Number) body.get("year")).intValue() : null)
+            .year(toInteger(body.get("year")))
             .status("published")
             .active(true)
             .versionNo(1)
@@ -117,7 +117,7 @@ public class QuestionService {
             }
             question.setStem(stem.trim());
         }
-        if (body.containsKey("optionsJson")) question.setOptionsJson(nullable(body.get("optionsJson")));
+        if (body.containsKey("optionsJson")) question.setOptionsJson(optionsOrDefault(body.get("optionsJson")));
         if (body.containsKey("answer")) {
             String answer = (String) body.get("answer");
             if (answer == null || answer.isBlank()) {
@@ -130,7 +130,7 @@ public class QuestionService {
         if (body.containsKey("questionType")) question.setQuestionType(nullable(body.get("questionType")));
         if (body.containsKey("knowledgePoint")) question.setKnowledgePoint(nullable(body.get("knowledgePoint")));
         if (body.containsKey("difficulty")) question.setDifficulty(nullable(body.get("difficulty")));
-        if (body.containsKey("year")) question.setYear(((Number) body.get("year")).intValue());
+        if (body.containsKey("year")) question.setYear(toInteger(body.get("year")));
         if (body.containsKey("status")) question.setStatus(nullable(body.get("status")));
 
         // Bump version number
@@ -187,14 +187,14 @@ public class QuestionService {
                 Question question = Question.builder()
                     .bank(bank)
                     .stem(stem.trim())
-                    .optionsJson(nullable(body.get("optionsJson")))
+                    .optionsJson(optionsOrDefault(body.get("optionsJson")))
                     .answer(answer.trim())
                     .analysis(nullable(body.get("analysis")))
                     .chapter(nullable(body.get("chapter")))
                     .questionType(nullable(body.get("questionType")))
                     .knowledgePoint(nullable(body.get("knowledgePoint")))
                     .difficulty(nullable(body.get("difficulty")))
-                    .year(body.get("year") != null ? ((Number) body.get("year")).intValue() : null)
+                    .year(toInteger(body.get("year")))
                     .status("published")
                     .active(true)
                     .versionNo(1)
@@ -308,6 +308,17 @@ public class QuestionService {
             return null;
         }
         return value.toString().trim();
+    }
+
+    /** 选项为空时回退为空 JSON 数组，避免主观题等无选项题目违反 NOT NULL 约束。 */
+    private String optionsOrDefault(Object value) {
+        String options = nullable(value);
+        return options == null ? "[]" : options;
+    }
+
+    /** 年份可空：缺省或显式 null 都返回 null，避免对 null 调用 intValue() 抛 NPE。 */
+    private Integer toInteger(Object value) {
+        return value instanceof Number n ? n.intValue() : null;
     }
 
     private String truncate(String s, int max) {

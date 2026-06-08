@@ -3,20 +3,32 @@ package com.graduateplatform.job.service;
 import com.graduateplatform.common.entity.User;
 import com.graduateplatform.common.exception.BusinessException;
 import com.graduateplatform.common.repository.UserRepository;
+import com.graduateplatform.common.service.CosService;
 import com.graduateplatform.job.dto.*;
 import com.graduateplatform.job.entity.*;
 import com.graduateplatform.job.repository.*;
+import com.qcloud.cos.model.COSObject;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.*;
 
+@Slf4j
 @Service
 public class EmploymentService {
     private static final Set<String> VALID_STATUSES = Set.of(
         "TODO", "APPLIED", "VIEWED", "WRITTEN_TEST", "INTERVIEW", "OFFER", "REJECTED", "CLOSED"
+    );
+    private static final long MAX_RESUME_FILE_SIZE = 10 * 1024 * 1024;
+    private static final Map<String, String> RESUME_FILE_TYPES = Map.of(
+        "pdf", "application/pdf",
+        "doc", "application/msword",
+        "docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     );
 
     private final CareerFairRepository fairRepository;
@@ -26,6 +38,7 @@ public class EmploymentService {
     private final JobSubscriptionPreferenceRepository preferenceRepository;
     private final EmploymentNotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final CosService cosService;
 
     public EmploymentService(CareerFairRepository fairRepository,
                              JobPostingRepository jobRepository,
@@ -33,7 +46,8 @@ public class EmploymentService {
                              ApplicationRecordRepository applicationRepository,
                              JobSubscriptionPreferenceRepository preferenceRepository,
                              EmploymentNotificationRepository notificationRepository,
-                             UserRepository userRepository) {
+                             UserRepository userRepository,
+                             CosService cosService) {
         this.fairRepository = fairRepository;
         this.jobRepository = jobRepository;
         this.resumeRepository = resumeRepository;
@@ -41,6 +55,7 @@ public class EmploymentService {
         this.preferenceRepository = preferenceRepository;
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
+        this.cosService = cosService;
     }
 
     @Transactional(readOnly = true)
@@ -148,6 +163,64 @@ public class EmploymentService {
         resume.setSkills(trim(req.getSkills()));
         resume.setSelfEvaluation(trim(req.getSelfEvaluation()));
         return toResumeMap(resumeRepository.save(resume));
+    }
+
+    @Transactional
+    public Map<String, Object> uploadResumeFile(Long userId, MultipartFile file) {
+        User user = ensureUser(userId);
+        validateResumeFile(file);
+        ResumeProfile resume = resumeRepository.findByUserId(userId)
+            .orElseGet(() -> ResumeProfile.builder().user(user).build());
+        String oldCosKey = resume.getResumeCosKey();
+        String originalFileName = safeOriginalFilename(file.getOriginalFilename());
+        String contentType = normalizedResumeContentType(originalFileName, file.getContentType());
+        String cosKey = buildResumeCosKey(userId, originalFileName);
+
+        try {
+            cosService.uploadFile(file.getInputStream(), file.getSize(), cosKey, contentType);
+        } catch (IOException e) {
+            throw new BusinessException("简历文件读取失败，请重新选择文件");
+        }
+
+        resume.setResumeFileName(originalFileName);
+        resume.setResumeFileSize(file.getSize());
+        resume.setResumeFileType(contentType);
+        resume.setResumeCosKey(cosKey);
+        resume.setResumeUploadedAt(LocalDateTime.now());
+        Map<String, Object> result = toResumeMap(resumeRepository.saveAndFlush(resume));
+        deleteCosObjectBestEffort(oldCosKey, "replace");
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public ResumeFileDownload downloadResumeFile(Long userId) {
+        ensureUser(userId);
+        ResumeProfile resume = resumeRepository.findByUserId(userId)
+            .orElseThrow(() -> new BusinessException("请先上传简历附件"));
+        if (!hasText(resume.getResumeCosKey())) {
+            throw new BusinessException("请先上传简历附件");
+        }
+        COSObject object = cosService.getObject(resume.getResumeCosKey());
+        return new ResumeFileDownload(object, resume.getResumeFileName(), resume.getResumeFileSize(), resume.getResumeFileType());
+    }
+
+    @Transactional
+    public Map<String, Object> deleteResumeFile(Long userId) {
+        ensureUser(userId);
+        ResumeProfile resume = resumeRepository.findByUserId(userId)
+            .orElseThrow(() -> new BusinessException("请先上传简历附件"));
+        String oldCosKey = resume.getResumeCosKey();
+        if (!hasText(oldCosKey)) {
+            return toResumeMap(resume);
+        }
+        resume.setResumeFileName(null);
+        resume.setResumeFileSize(null);
+        resume.setResumeFileType(null);
+        resume.setResumeCosKey(null);
+        resume.setResumeUploadedAt(null);
+        Map<String, Object> result = toResumeMap(resumeRepository.saveAndFlush(resume));
+        deleteCosObjectBestEffort(oldCosKey, "delete");
+        return result;
     }
 
     @Transactional(readOnly = true)
@@ -292,6 +365,24 @@ public class EmploymentService {
             .sorted(Comparator.comparing(JobPosting::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
             .toList();
         return pageResult(jobs, page, size, this::toJobMap);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> adminResumeSummaries() {
+        List<User> users = userRepository.findAll().stream()
+            .filter(user -> "user".equalsIgnoreCase(defaultString(user.getRole(), "")))
+            .sorted(Comparator.comparing(User::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+            .toList();
+        Map<Long, ResumeProfile> resumesByUserId = new HashMap<>();
+        List<Long> userIds = users.stream().map(User::getId).filter(Objects::nonNull).toList();
+        for (ResumeProfile resume : resumeRepository.findByUserIdIn(userIds)) {
+            if (resume.getUser() != null && resume.getUser().getId() != null) {
+                resumesByUserId.put(resume.getUser().getId(), resume);
+            }
+        }
+        return users.stream()
+            .map(user -> toAdminResumeSummary(user, resumesByUserId.get(user.getId())))
+            .toList();
     }
 
     @Transactional
@@ -706,8 +797,111 @@ public class EmploymentService {
         map.put("internships", resume.getInternships());
         map.put("skills", resume.getSkills());
         map.put("selfEvaluation", resume.getSelfEvaluation());
+        map.put("resumeFile", resumeFileSummary(resume));
         map.put("updatedAt", toString(resume.getUpdatedAt()));
         return map;
+    }
+
+    private Map<String, Object> resumeFileSummary(ResumeProfile resume) {
+        Map<String, Object> file = new LinkedHashMap<>();
+        boolean hasFile = resume != null && hasText(resume.getResumeCosKey());
+        file.put("hasFile", hasFile);
+        file.put("fileName", hasFile ? resume.getResumeFileName() : null);
+        file.put("fileSize", hasFile ? resume.getResumeFileSize() : null);
+        file.put("fileType", hasFile ? resume.getResumeFileType() : null);
+        file.put("uploadedAt", hasFile ? toString(resume.getResumeUploadedAt()) : null);
+        return file;
+    }
+
+    private Map<String, Object> toAdminResumeSummary(User user, ResumeProfile resume) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("userId", user.getId());
+        map.put("name", user.getName());
+        map.put("email", user.getEmail());
+        map.put("studentId", user.getStudentId());
+        map.put("school", user.getSchool());
+        map.put("major", user.getMajor());
+        map.put("grade", user.getGrade());
+        map.put("resumeUpdatedAt", resume == null ? null : toString(resume.getUpdatedAt()));
+        map.put("resumeFile", resumeFileSummary(resume));
+        return map;
+    }
+
+    private void validateResumeFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException("请选择要上传的简历文件");
+        }
+        if (file.getSize() > MAX_RESUME_FILE_SIZE) {
+            throw new BusinessException("简历附件不能超过10MB");
+        }
+        String fileName = safeOriginalFilename(file.getOriginalFilename());
+        String extension = fileExtension(fileName);
+        if (!RESUME_FILE_TYPES.containsKey(extension)) {
+            throw new BusinessException("简历附件仅支持 PDF、DOC、DOCX 格式");
+        }
+        String contentType = trim(file.getContentType());
+        String expected = RESUME_FILE_TYPES.get(extension);
+        if (hasText(contentType)
+            && !"application/octet-stream".equalsIgnoreCase(contentType)
+            && !expected.equalsIgnoreCase(contentType)) {
+            throw new BusinessException("简历附件类型与文件后缀不匹配");
+        }
+    }
+
+    private String normalizedResumeContentType(String fileName, String contentType) {
+        String trimmed = trim(contentType);
+        if (hasText(trimmed) && !"application/octet-stream".equalsIgnoreCase(trimmed)) {
+            return trimmed;
+        }
+        return RESUME_FILE_TYPES.get(fileExtension(fileName));
+    }
+
+    private String buildResumeCosKey(Long userId, String fileName) {
+        String extension = fileExtension(fileName);
+        String baseName = fileName.substring(0, fileName.length() - extension.length() - 1)
+            .replaceAll("[^A-Za-z0-9._-]", "_");
+        if (!hasText(baseName)) {
+            baseName = "resume";
+        }
+        if (baseName.length() > 80) {
+            baseName = baseName.substring(0, 80);
+        }
+        return "employment/resumes/" + userId + "/" + UUID.randomUUID() + "-" + baseName + "." + extension;
+    }
+
+    private String safeOriginalFilename(String originalFilename) {
+        String normalized = trim(originalFilename);
+        if (!hasText(normalized)) {
+            throw new BusinessException("简历文件名不能为空");
+        }
+        normalized = normalized.replace("\\", "/");
+        int slashIndex = normalized.lastIndexOf('/');
+        if (slashIndex >= 0) {
+            normalized = normalized.substring(slashIndex + 1);
+        }
+        if (!hasText(normalized) || ".".equals(normalized) || "..".equals(normalized)) {
+            throw new BusinessException("简历文件名不能为空");
+        }
+        return normalized.length() > 255 ? normalized.substring(normalized.length() - 255) : normalized;
+    }
+
+    private String fileExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex < 0 || dotIndex == fileName.length() - 1) {
+            return "";
+        }
+        return fileName.substring(dotIndex + 1).toLowerCase(Locale.ROOT);
+    }
+
+    private void deleteCosObjectBestEffort(String cosKey, String action) {
+        if (!hasText(cosKey)) {
+            return;
+        }
+        try {
+            cosService.deleteFile(cosKey);
+        } catch (RuntimeException ex) {
+            log.warn("Resume COS {} cleanup failed for key: {}", action, cosKey, ex);
+        }
     }
 
     private Map<String, Object> toPreferenceMap(JobSubscriptionPreference pref) {
@@ -838,6 +1032,8 @@ public class EmploymentService {
         }
         return false;
     }
+
+    public record ResumeFileDownload(COSObject cosObject, String fileName, Long fileSize, String contentType) {}
 
     private record NotificationSource(String title, String content, String city, String industry, String roleType, String companyType) {}
 }

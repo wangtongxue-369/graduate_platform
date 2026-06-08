@@ -16,6 +16,7 @@ import com.graduateplatform.questionbank.repository.QuestionBankRepository;
 import com.graduateplatform.questionbank.repository.QuestionRepository;
 import com.graduateplatform.questionbank.repository.WrongQuestionRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -40,13 +41,15 @@ class PracticeServiceTest {
     private final PracticeSessionRepository sessionRepository = mock(PracticeSessionRepository.class);
     private final PracticeAnswerRepository answerRepository = mock(PracticeAnswerRepository.class);
     private final WrongQuestionRepository wrongQuestionRepository = mock(WrongQuestionRepository.class);
+    private final PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
     private final PracticeService practiceService = new PracticeService(
         userRepository,
         bankRepository,
         questionRepository,
         sessionRepository,
         answerRepository,
-        wrongQuestionRepository
+        wrongQuestionRepository,
+        transactionManager
     );
 
     @Test

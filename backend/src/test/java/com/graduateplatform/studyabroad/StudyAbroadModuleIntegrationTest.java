@@ -183,6 +183,7 @@ class StudyAbroadModuleIntegrationTest {
                     "tags", "PS,course fit,documents"
                 ))))
             .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.authorId").isNumber())
             .andExpect(jsonPath("$.data.tags[0]").value("PS"))
             .andReturn().getResponse().getContentAsString();
         long experienceId = objectMapper.readTree(createResponse).path("data").path("id").asLong();
@@ -192,7 +193,8 @@ class StudyAbroadModuleIntegrationTest {
                 .param("topic", "Writing")
                 .param("keyword", "PS"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data[0].title").value("UK PS writing notes"));
+            .andExpect(jsonPath("$.data[0].title").value("UK PS writing notes"))
+            .andExpect(jsonPath("$.data[0].authorId").isNumber());
 
         mockMvc.perform(get("/api/studyabroad/experiences/page")
                 .param("country", "UK")
@@ -202,6 +204,7 @@ class StudyAbroadModuleIntegrationTest {
                 .param("size", "6"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.content[0].title").value("UK PS writing notes"))
+            .andExpect(jsonPath("$.data.content[0].authorId").isNumber())
             .andExpect(jsonPath("$.data.totalElements").value(1));
 
         mockMvc.perform(put("/api/studyabroad/experiences/" + experienceId)
@@ -218,7 +221,8 @@ class StudyAbroadModuleIntegrationTest {
                     "tags", "blocked"
                 ))))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.success").value(false));
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("经验不存在或无权限操作"));
 
         mockMvc.perform(put("/api/studyabroad/experiences/" + experienceId)
                 .header("Authorization", "Bearer " + userToken)
@@ -240,7 +244,8 @@ class StudyAbroadModuleIntegrationTest {
         mockMvc.perform(delete("/api/studyabroad/experiences/" + experienceId)
                 .header("Authorization", "Bearer " + otherToken))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.success").value(false));
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("经验不存在或无权限操作"));
 
         mockMvc.perform(delete("/api/studyabroad/experiences/" + experienceId)
                 .header("Authorization", "Bearer " + userToken))

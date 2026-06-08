@@ -5,25 +5,38 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graduateplatform.common.entity.User;
 import com.graduateplatform.common.repository.UserRepository;
 import com.graduateplatform.common.security.JwtTokenProvider;
+import com.graduateplatform.common.service.CosService;
 import com.graduateplatform.job.entity.ApplicationRecord;
 import com.graduateplatform.job.entity.CareerFair;
 import com.graduateplatform.job.entity.JobPosting;
+import com.graduateplatform.job.entity.ResumeProfile;
 import com.graduateplatform.job.repository.*;
+import com.qcloud.cos.model.COSObject;
+import com.qcloud.cos.model.COSObjectInputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockMultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.time.LocalDateTime;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,6 +55,7 @@ class EmploymentModuleIntegrationTest {
     @Autowired ApplicationRecordRepository applicationRepository;
     @Autowired JobSubscriptionPreferenceRepository preferenceRepository;
     @Autowired EmploymentNotificationRepository notificationRepository;
+    @MockBean CosService cosService;
 
     private User admin;
     private User user;
@@ -52,6 +66,7 @@ class EmploymentModuleIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        reset(cosService);
         notificationRepository.deleteAll();
         applicationRepository.deleteAll();
         resumeRepository.deleteAll();
@@ -139,6 +154,35 @@ class EmploymentModuleIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.totalItems").value(1))
             .andExpect(jsonPath("$.data.items[0].title").value("后台筛选岗位"));
+    }
+
+    @Test
+    void adminResumeSummaryIsReadOnlyAndDoesNotExposeCosLocation() throws Exception {
+        user.setGrade("2026");
+        userRepository.save(user);
+        resumeRepository.save(ResumeProfile.builder()
+            .user(user)
+            .templateType("default")
+            .resumeFileName("resume.pdf")
+            .resumeFileSize(120L)
+            .resumeFileType("application/pdf")
+            .resumeCosKey("employment/resumes/" + user.getId() + "/resume.pdf")
+            .resumeUploadedAt(LocalDateTime.now())
+            .build());
+
+        mockMvc.perform(get("/api/admin/employment/resumes"))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/admin/employment/resumes").header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/admin/employment/resumes").header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[?(@.userId == " + user.getId() + ")].name").value(hasItem("就业用户")))
+            .andExpect(jsonPath("$.data[?(@.userId == " + user.getId() + ")].grade").value(hasItem("2026")))
+            .andExpect(jsonPath("$.data[?(@.userId == " + user.getId() + ")].resumeFile.hasFile").value(hasItem(true)))
+            .andExpect(jsonPath("$.data[?(@.userId == " + user.getId() + ")].resumeFile.fileName").value(hasItem("resume.pdf")))
+            .andExpect(jsonPath("$.data[?(@.userId == " + user.getId() + ")].resumeFile.cosKey").doesNotExist())
+            .andExpect(jsonPath("$.data[?(@.userId == " + user.getId() + ")].resumeFile.url").doesNotExist())
+            .andExpect(jsonPath("$.data[?(@.userId == " + otherUser.getId() + ")].resumeFile.hasFile").value(hasItem(false)));
     }
 
     @Test
@@ -373,6 +417,142 @@ class EmploymentModuleIntegrationTest {
                 .content(json(Map.of("companyName", "未来科技", "jobTitle", "Java 后端", "status", "INTERVIEW"))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.status").value("INTERVIEW"));
+
+        mockMvc.perform(get("/api/job/applications").header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data").isArray())
+            .andExpect(jsonPath("$.data[0].companyName").value("未来科技"))
+            .andExpect(jsonPath("$.data[0].resumeFile").doesNotExist());
+    }
+
+    @Test
+    void resumeFileUploadDownloadReplaceAndDeleteDoesNotExposeCosLocation() throws Exception {
+        when(cosService.uploadFile(any(), anyLong(), anyString(), anyString()))
+            .thenReturn("https://cos.example.com/private/resume.pdf");
+
+        MockMultipartFile pdf = new MockMultipartFile(
+            "file", "resume.pdf", "application/pdf", "PDF-CONTENT".getBytes());
+        mockMvc.perform(multipart("/api/job/resume/file")
+                .file(pdf)
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.resumeFile.hasFile").value(true))
+            .andExpect(jsonPath("$.data.resumeFile.fileName").value("resume.pdf"))
+            .andExpect(jsonPath("$.data.resumeFile.fileType").value("application/pdf"))
+            .andExpect(jsonPath("$.data.resumeFile.cosKey").doesNotExist())
+            .andExpect(jsonPath("$.data.resumeFile.url").doesNotExist())
+            .andExpect(jsonPath("$.data.resumeCosKey").doesNotExist());
+
+        ResumeProfile uploaded = resumeRepository.findByUserId(user.getId()).orElseThrow();
+        assertThat(uploaded.getResumeCosKey()).startsWith("employment/resumes/" + user.getId() + "/");
+        assertThat(uploaded.getResumeFileName()).isEqualTo("resume.pdf");
+        String firstKey = uploaded.getResumeCosKey();
+
+        COSObject cosObject = mock(COSObject.class);
+        when(cosObject.getObjectContent()).thenReturn(
+            new COSObjectInputStream(new ByteArrayInputStream("PDF-CONTENT".getBytes()), null));
+        when(cosService.getObject(firstKey)).thenReturn(cosObject);
+
+        MvcResult download = mockMvc.perform(get("/api/job/resume/file/download")
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(header().string("Content-Disposition", containsString("resume.pdf")))
+            .andReturn();
+        assertThat(download.getResponse().getContentAsByteArray()).isEqualTo("PDF-CONTENT".getBytes());
+
+        MockMultipartFile docx = new MockMultipartFile(
+            "file",
+            "resume-v2.docx",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "DOCX".getBytes());
+        mockMvc.perform(multipart("/api/job/resume/file")
+                .file(docx)
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.resumeFile.fileName").value("resume-v2.docx"));
+
+        ResumeProfile replaced = resumeRepository.findByUserId(user.getId()).orElseThrow();
+        assertThat(replaced.getResumeCosKey()).isNotEqualTo(firstKey);
+        verify(cosService).deleteFile(firstKey);
+        String secondKey = replaced.getResumeCosKey();
+
+        mockMvc.perform(delete("/api/job/resume/file")
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.resumeFile.hasFile").value(false));
+
+        ResumeProfile deleted = resumeRepository.findByUserId(user.getId()).orElseThrow();
+        assertThat(deleted.getResumeCosKey()).isNull();
+        verify(cosService).deleteFile(secondKey);
+    }
+
+    @Test
+    void resumeFileValidationRejectsUnsupportedAndOversizedFilesWithoutReplacingExisting() throws Exception {
+        resumeRepository.save(ResumeProfile.builder()
+            .user(user)
+            .templateType("default")
+            .resumeFileName("existing.pdf")
+            .resumeFileSize(12L)
+            .resumeFileType("application/pdf")
+            .resumeCosKey("employment/resumes/" + user.getId() + "/existing.pdf")
+            .resumeUploadedAt(LocalDateTime.now())
+            .build());
+
+        MockMultipartFile txt = new MockMultipartFile("file", "resume.txt", "text/plain", "TEXT".getBytes());
+        mockMvc.perform(multipart("/api/job/resume/file")
+                .file(txt)
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("简历附件仅支持 PDF、DOC、DOCX 格式"));
+
+        byte[] tooLarge = new byte[10 * 1024 * 1024 + 1];
+        MockMultipartFile largePdf = new MockMultipartFile("file", "large.pdf", "application/pdf", tooLarge);
+        mockMvc.perform(multipart("/api/job/resume/file")
+                .file(largePdf)
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("简历附件不能超过10MB"));
+
+        ResumeProfile afterRejectedUploads = resumeRepository.findByUserId(user.getId()).orElseThrow();
+        assertThat(afterRejectedUploads.getResumeCosKey()).isEqualTo("employment/resumes/" + user.getId() + "/existing.pdf");
+        verify(cosService, never()).uploadFile(any(), anyLong(), anyString(), anyString());
+    }
+
+    @Test
+    void resumeFileDeleteClearsMetadataEvenWhenCosCleanupFails() throws Exception {
+        ResumeProfile resume = resumeRepository.save(ResumeProfile.builder()
+            .user(user)
+            .templateType("default")
+            .resumeFileName("existing.pdf")
+            .resumeFileSize(12L)
+            .resumeFileType("application/pdf")
+            .resumeCosKey("employment/resumes/" + user.getId() + "/existing.pdf")
+            .resumeUploadedAt(LocalDateTime.now())
+            .build());
+        String oldKey = resume.getResumeCosKey();
+        doAnswer(invocation -> {
+            assertThat(resumeRepository.findByUserId(user.getId()).orElseThrow().getResumeCosKey()).isNull();
+            throw new RuntimeException("COS cleanup failed");
+        }).when(cosService).deleteFile(oldKey);
+
+        mockMvc.perform(delete("/api/job/resume/file")
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.resumeFile.hasFile").value(false));
+
+        assertThat(resumeRepository.findByUserId(user.getId()).orElseThrow().getResumeCosKey()).isNull();
+    }
+
+    @Test
+    void resumeFileEndpointsRequireAuthentication() throws Exception {
+        MockMultipartFile pdf = new MockMultipartFile("file", "resume.pdf", "application/pdf", "PDF".getBytes());
+
+        mockMvc.perform(multipart("/api/job/resume/file").file(pdf))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/job/resume/file/download"))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/job/resume/file"))
+            .andExpect(status().isForbidden());
     }
 
     @Test
