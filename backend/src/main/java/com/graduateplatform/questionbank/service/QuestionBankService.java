@@ -38,9 +38,9 @@ public class QuestionBankService {
         List<QuestionBank> banks;
         String normalizedTarget = normalize(target);
         if (normalizedTarget != null) {
-            banks = repository.findByTargetAndActiveTrue(normalizedTarget);
+            banks = repository.findActiveBanksByTarget(normalizedTarget);
         } else {
-            banks = repository.findByActiveTrue();
+            banks = repository.findActiveBanks();
         }
         String normalizedSubject = normalize(subject);
         String normalizedDifficulty = normalize(difficulty);

@@ -14,10 +14,12 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     // 题库停用 = bank.active=false；不再级联翻转题目自身的 active，
     // 这样 disable→enable 题库后题目能恢复，可见性统一在查询侧过滤。
+    // bank.active 为 NULL 视为启用，兼容 active 列加入前的历史数据
+    // （否则上线后旧题库会因 active=NULL 被全部过滤为不可见）。
     @Query("SELECT q FROM Question q " +
            "WHERE q.bank.id = :bankId " +
            "AND q.active = true " +
-           "AND q.bank.active = true " +
+           "AND (q.bank.active IS NULL OR q.bank.active = true) " +
            "AND (q.status IS NULL OR q.status = 'published') " +
            "AND (:chapter IS NULL OR q.chapter = :chapter) " +
            "AND (:questionType IS NULL OR q.questionType = :questionType) " +

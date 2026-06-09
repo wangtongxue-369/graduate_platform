@@ -23,10 +23,11 @@ public interface WrongQuestionRepository extends JpaRepository<WrongQuestion, Lo
 
     // 仅返回题目仍可练习（题目和题库都未被停用）的错题；
     // 否则前端列出的错题在重练时会被 PracticeService 过滤掉，触发"所选错题均不可练习"的混乱报错。
+    // bank.active 为 NULL 视为启用，兼容 active 列加入前的历史数据。
     @Query("SELECT w FROM WrongQuestion w " +
            "WHERE w.user.id = :userId " +
            "AND w.question.active = true " +
-           "AND (w.question.bank IS NULL OR w.question.bank.active = true) " +
+           "AND (w.question.bank IS NULL OR w.question.bank.active IS NULL OR w.question.bank.active = true) " +
            "AND (:target IS NULL OR w.question.bank.target = :target) " +
            "AND (:subject IS NULL OR w.question.bank.subject = :subject) " +
            "AND (:chapter IS NULL OR w.question.chapter = :chapter) " +
