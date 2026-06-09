@@ -26,6 +26,7 @@ function WrongQuestionPage() {
   const [retrying, setRetrying] = useState(false)
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
   const SIZE = 20
 
   useEffect(() => {
@@ -50,9 +51,11 @@ function WrongQuestionPage() {
       if (Array.isArray(data)) {
         setWrongs(data)
         setTotalPages(1)
+        setTotalCount(data.length)
       } else {
         setWrongs(data.items || data.content || [])
         setTotalPages(data.totalPages || 1)
+        setTotalCount(typeof data.total === 'number' ? data.total : (data.items?.length || 0))
       }
     } catch (err) {
       setError(err.message || '加载错题失败')
@@ -99,6 +102,36 @@ function WrongQuestionPage() {
       const data = await practiceApi.rebuildWrongSession(ids, token)
       // 路由 :id 是题库 id，会话 id 必须经 ?sessionId= 传入；
       // 否则作答页会误把 sessionId 当 bankId 去新建一个普通会话
+      navigate(`/practice/${data.bankId}?sessionId=${data.id}`)
+    } catch (err) {
+      setError(err.message || '创建重练会话失败')
+    } finally {
+      setRetrying(false)
+    }
+  }
+
+  // 重练全部（跨页）：按当前筛选条件再拉一次全量错题，再走 rebuild-session。
+  // 直接用 wrongs.map 仅能拿到当前页的 20 题，名不副实。
+  async function handleRetryAll() {
+    if (totalCount === 0) return
+    if (!window.confirm(`将创建一个包含 ${totalCount} 题的练习，确认开始？`)) return
+    setRetrying(true)
+    setError('')
+    try {
+      const query = { page: 0, size: Math.max(totalCount, 1) }
+      if (filters.target) query.target = filters.target
+      if (filters.subject) query.subject = filters.subject
+      if (filters.chapter) query.chapter = filters.chapter
+      if (filters.minWrongCount) query.minWrongCount = Number(filters.minWrongCount)
+      const all = await practiceApi.wrongQuestions(query, token)
+      const items = Array.isArray(all) ? all : (all?.items || all?.content || [])
+      const ids = items.map((w) => w.id)
+      if (ids.length === 0) {
+        setError('当前筛选条件下没有可重练的错题')
+        setRetrying(false)
+        return
+      }
+      const data = await practiceApi.rebuildWrongSession(ids, token)
       navigate(`/practice/${data.bankId}?sessionId=${data.id}`)
     } catch (err) {
       setError(err.message || '创建重练会话失败')
@@ -197,7 +230,7 @@ function WrongQuestionPage() {
                 />
                 <span>全选</span>
               </label>
-              <span className="muted">已选 {selectedIds.size} 题</span>
+              <span className="muted">已选 {selectedIds.size} 题 / 本页 {wrongs.length} 题 / 共 {totalCount} 题</span>
               {selectedIds.size > 0 && (
                 <button
                   className="btn primary small"
@@ -208,13 +241,23 @@ function WrongQuestionPage() {
                   {retrying ? '创建中...' : `重练选中 (${selectedIds.size})`}
                 </button>
               )}
+              {totalPages > 1 && (
+                <button
+                  className="btn outline small"
+                  type="button"
+                  disabled={retrying}
+                  onClick={() => handleRetry(wrongs.map((w) => w.id))}
+                >
+                  {retrying ? '创建中...' : `重练本页 (${wrongs.length})`}
+                </button>
+              )}
               <button
                 className="btn outline small"
                 type="button"
-                disabled={retrying}
-                onClick={() => handleRetry(wrongs.map((w) => w.id))}
+                disabled={retrying || totalCount === 0}
+                onClick={handleRetryAll}
               >
-                {retrying ? '创建中...' : '重练全部'}
+                {retrying ? '创建中...' : `重练全部 (${totalCount})`}
               </button>
             </div>
           )}

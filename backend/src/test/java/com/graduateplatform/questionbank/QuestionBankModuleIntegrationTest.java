@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -191,6 +192,63 @@ class QuestionBankModuleIntegrationTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.message").value("题库名称不能为空"));
+    }
+
+    // Bug #1: 题库 disable→enable 必须可逆——重新启用后题目应自动恢复练习候选，
+    // 旧实现级联停用题目，启用题库时未回滚，导致 questionCount=0 且公共列表隐藏。
+    @Test
+    void disablingBankHidesQuestionsAndReEnablingRestoresThem() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+        questionRepository.save(Question.builder()
+            .bank(bank).stem("Q1").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").status("published").active(true).versionNo(1).build());
+
+        // 题库启用时：公共列表可见，且至少一道候选
+        mockMvc.perform(get("/api/question-banks?target=kaoyan"))
+            .andExpect(jsonPath("$.data.length()").value(1))
+            .andExpect(jsonPath("$.data[0].questionCount").value(1));
+
+        // 停用题库
+        mockMvc.perform(put("/api/admin/question-banks/" + bank.getId() + "/status")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("status", "inactive"))))
+            .andExpect(status().isOk());
+
+        // 公共列表不再返回该题库
+        mockMvc.perform(get("/api/question-banks?target=kaoyan"))
+            .andExpect(jsonPath("$.data.length()").value(0));
+
+        // 重新启用题库
+        mockMvc.perform(put("/api/admin/question-banks/" + bank.getId() + "/status")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("status", "active"))))
+            .andExpect(status().isOk());
+
+        // 题目自动恢复——无须逐题重新发布
+        mockMvc.perform(get("/api/question-banks?target=kaoyan"))
+            .andExpect(jsonPath("$.data.length()").value(1))
+            .andExpect(jsonPath("$.data[0].questionCount").value(1));
+    }
+
+    // Bug #1 后置不变量：题库停用不应改写题目自身的 active；这样启用题库时无须级联恢复。
+    @Test
+    void togglingBankStatusDoesNotMutateQuestionActiveFlag() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+        Question q = questionRepository.save(Question.builder()
+            .bank(bank).stem("Q1").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").status("published").active(true).versionNo(1).build());
+
+        mockMvc.perform(put("/api/admin/question-banks/" + bank.getId() + "/status")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("status", "inactive"))))
+            .andExpect(status().isOk());
+
+        Question reloaded = questionRepository.findById(q.getId()).orElseThrow();
+        assertThat(reloaded.getActive()).isTrue();
+        assertThat(reloaded.getStatus()).isEqualTo("published");
     }
 
     @Test
@@ -414,6 +472,101 @@ class QuestionBankModuleIntegrationTest {
             .andExpect(jsonPath("$.data.content.length()").value(3))
             .andExpect(jsonPath("$.data.totalElements").value(5))
             .andExpect(jsonPath("$.data.totalPages").value(2));
+    }
+
+    // ==================== File import (CSV) — Bug #6 ====================
+
+    // 旧实现按 BufferedReader.readLine() + 手写 parseCsvLine 切字段，
+    // 题干带换行或选项带 "" 转义时会切碎/字段错位。换 commons-csv 后必须能正确解析。
+    @Test
+    void csvImportHandlesMultiLineFieldsAndEscapedQuotes() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+
+        // 第 2 行的 stem 跨两行；第 3 行的 stem 含 "" 转义的双引号；选项里也带逗号。
+        String csv = "stem,optionsJson,answer,chapter,questionType,difficulty\n"
+            + "\"多行题干第一段\n第二段\",\"[\"\"A.对\"\",\"\"B.错\"\"]\",A,第1章,single,easy\n"
+            + "\"含\"\"双引号\"\"的题干\",\"[\"\"A,有逗号\"\",\"\"B.无\"\"]\",A,第1章,single,easy\n";
+
+        org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile(
+            "file", "questions.csv", "text/csv", csv.getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(multipart("/api/admin/question-banks/" + bank.getId() + "/questions/import")
+                .file(file)
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.created").value(2))
+            .andExpect(jsonPath("$.data.failed").value(0));
+
+        List<Question> saved = questionRepository.findByBankId(bank.getId());
+        assertThat(saved).hasSize(2);
+        assertThat(saved).anyMatch(q -> q.getStem().equals("多行题干第一段\n第二段"));
+        assertThat(saved).anyMatch(q -> q.getStem().equals("含\"双引号\"的题干"));
+    }
+
+    // ==================== Batch update guards (Bug #4 + #5) ====================
+
+    @Test
+    void batchUpdateRejectsUnknownStatusValue() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+        Question q = questionRepository.save(Question.builder()
+            .bank(bank).stem("Q").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").status("published").active(true).versionNo(1).build());
+
+        mockMvc.perform(put("/api/admin/questions/batch")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("ids", List.of(q.getId()), "updates", Map.of("status", "archived")))))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("状态值无效，仅支持 published/disabled"));
+
+        // 题目状态未被改写
+        Question reloaded = questionRepository.findById(q.getId()).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo("published");
+        assertThat(reloaded.getActive()).isTrue();
+    }
+
+    @Test
+    void batchUpdateRejectsBlankDifficulty() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+        Question q = questionRepository.save(Question.builder()
+            .bank(bank).stem("Q").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("middle").status("published").active(true).versionNo(1).build());
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("difficulty", "");
+        mockMvc.perform(put("/api/admin/questions/batch")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("ids", List.of(q.getId()), "updates", updates))))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("批量更新 difficulty 不能为空"));
+
+        // 难度未被静默清空
+        assertThat(questionRepository.findById(q.getId()).orElseThrow().getDifficulty()).isEqualTo("middle");
+    }
+
+    @Test
+    void batchUpdateAcceptsValidStatusAndUpdatesAllSelected() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+        Question q1 = questionRepository.save(Question.builder()
+            .bank(bank).stem("Q1").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").status("published").active(true).versionNo(1).build());
+        Question q2 = questionRepository.save(Question.builder()
+            .bank(bank).stem("Q2").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").status("published").active(true).versionNo(1).build());
+
+        mockMvc.perform(put("/api/admin/questions/batch")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("ids", List.of(q1.getId(), q2.getId()),
+                                     "updates", Map.of("status", "disabled")))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.updated").value(2))
+            .andExpect(jsonPath("$.data.failed").value(0));
+
+        assertThat(questionRepository.findById(q1.getId()).orElseThrow().getActive()).isFalse();
+        assertThat(questionRepository.findById(q2.getId()).orElseThrow().getActive()).isFalse();
     }
 
     private QuestionBank bank(String name, String target, String subject, String difficulty) {

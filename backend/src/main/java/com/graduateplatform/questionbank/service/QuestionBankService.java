@@ -38,9 +38,9 @@ public class QuestionBankService {
         List<QuestionBank> banks;
         String normalizedTarget = normalize(target);
         if (normalizedTarget != null) {
-            banks = repository.findByTargetAndActiveTrue(normalizedTarget);
+            banks = repository.findActiveBanksByTarget(normalizedTarget);
         } else {
-            banks = repository.findByActiveTrue();
+            banks = repository.findActiveBanks();
         }
         String normalizedSubject = normalize(subject);
         String normalizedDifficulty = normalize(difficulty);
@@ -138,14 +138,11 @@ public class QuestionBankService {
         QuestionBank bank = repository.findById(id)
             .orElseThrow(() -> new BusinessException("题库不存在"));
 
-        // 逻辑删除：标记为停用，保留历史记录可追溯
+        // 逻辑删除：仅停用题库本身，保留题目自身 active 标志不变。
+        // 练习候选/错题本查询会按 bank.active=true 过滤，此时题库内题目自动不可见；
+        // 后续启用题库后，题目无须重新逐个发布即可恢复练习。
         bank.setActive(false);
         bank.setStatus("inactive");
-
-        bank.getQuestions().forEach(q -> {
-            q.setActive(false);
-            q.setStatus("disabled");
-        });
         repository.save(bank);
     }
 
@@ -155,19 +152,11 @@ public class QuestionBankService {
         QuestionBank bank = repository.findById(id)
             .orElseThrow(() -> new BusinessException("题库不存在"));
 
-        boolean active = "active".equals(status);
+        // 仅翻转题库自身状态；题目可见性由查询侧 bank.active 联合过滤决定，
+        // 不再级联改写题目 active —— 否则 disable→enable 单向不可逆，
+        // 重新启用后题目仍是 disabled，公共列表显示 questionCount=0。
         bank.setStatus(status);
-        bank.setActive(active);
-
-        // 启用题库时不同步启用题目（题目状态由题目管理独立控制）
-        if (!active) {
-            // 停用题库时同步停用所有题目，确保练习侧不可见
-            bank.getQuestions().forEach(q -> {
-                q.setActive(false);
-                q.setStatus("disabled");
-            });
-        }
-
+        bank.setActive("active".equals(status));
         repository.save(bank);
         return BankResponse.from(bank);
     }

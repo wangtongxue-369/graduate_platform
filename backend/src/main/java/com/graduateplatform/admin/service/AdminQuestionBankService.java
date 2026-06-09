@@ -11,12 +11,16 @@ import com.graduateplatform.questionbank.dto.SnapshotResponse;
 import com.graduateplatform.questionbank.service.QuestionBankService;
 import com.graduateplatform.questionbank.service.QuestionService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -139,7 +143,7 @@ public class AdminQuestionBankService {
 
     @Transactional
     public Map<String, Object> importQuestions(Long bankId, MultipartFile file) {
-        // 校验文件
+        // 1. 校验文件
         if (file == null || file.isEmpty()) {
             throw new BusinessException("上传文件不能为空");
         }
@@ -153,40 +157,42 @@ public class AdminQuestionBankService {
             throw new BusinessException("仅支持 .csv 和 .json 格式文件");
         }
 
-        // 上传到 COS
-        String cosKey = "questionbank/imports/" + UUID.randomUUID() + ext;
+        // 2. 读取原始字节（解析与审计上传都要用，避免 InputStream 一次性消费）
+        byte[] bytes;
         try {
-            cosService.uploadFile(file.getInputStream(), file.getSize(), cosKey, file.getContentType());
+            bytes = file.getBytes();
         } catch (Exception e) {
-            log.error("Failed to upload import file to COS", e);
-            throw new BusinessException("文件上传失败: " + e.getMessage());
+            throw new BusinessException("读取上传文件失败: " + e.getMessage());
         }
 
-        // 解析文件
+        // 3. 先解析、入库——这是用户期望的核心结果。失败必须立即回滚，
+        //    且不留 COS 孤儿对象（旧实现先传 COS 再解析，解析失败时 COS 文件无法清理）。
         List<Map<String, Object>> parsed;
         try {
-            if (".json".equals(ext)) {
-                parsed = parseJsonFile(file);
-            } else {
-                parsed = parseCsvFile(file);
-            }
+            parsed = ".json".equals(ext) ? parseJsonBytes(bytes) : parseCsvBytes(bytes);
         } catch (Exception e) {
             throw new BusinessException("文件解析失败: " + e.getMessage());
         }
-
         if (parsed.isEmpty()) {
             throw new BusinessException("文件中没有有效数据");
         }
-
-        // 调用已有批量创建
         Map<String, Object> result = questionService.batchCreateQuestions(bankId, parsed);
-        result.put("cosKey", cosKey);
+
+        // 4. 审计性上传 COS：失败仅记录日志，不影响主流程。
+        //    业务结果已落库，没必要让 COS 故障导致整个导入失败。
+        try {
+            String cosKey = "questionbank/imports/" + UUID.randomUUID() + ext;
+            cosService.uploadFile(new ByteArrayInputStream(bytes), bytes.length, cosKey, file.getContentType());
+            result.put("cosKey", cosKey);
+        } catch (Exception e) {
+            log.warn("Audit upload to COS failed (import already succeeded)", e);
+        }
+
         return result;
     }
 
-    private List<Map<String, Object>> parseJsonFile(MultipartFile file) throws Exception {
-        List<Map<String, Object>> raw = objectMapper.readValue(
-            file.getInputStream(), new TypeReference<>() {});
+    private List<Map<String, Object>> parseJsonBytes(byte[] bytes) throws Exception {
+        List<Map<String, Object>> raw = objectMapper.readValue(bytes, new TypeReference<>() {});
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map<String, Object> item : raw) {
             Map<String, Object> normalized = new HashMap<>();
@@ -205,67 +211,53 @@ public class AdminQuestionBankService {
         return result;
     }
 
-    private List<Map<String, Object>> parseCsvFile(MultipartFile file) throws Exception {
+    /**
+     * 用 commons-csv 解析：天然支持多行字段（题干/选项含换行）和 "" 双引号转义；
+     * 旧实现按 readLine() + 手写状态机切分，遇上述真实数据会切碎或字段错位。
+     */
+    private List<Map<String, Object>> parseCsvBytes(byte[] bytes) throws Exception {
         List<Map<String, Object>> result = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            String headerLine = reader.readLine();
-            if (headerLine == null) return result;
-            String[] headers = parseCsvLine(headerLine);
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.isBlank()) continue;
-                String[] values = parseCsvLine(line);
-                Map<String, Object> row = new HashMap<>();
-                for (int i = 0; i < headers.length && i < values.length; i++) {
-                    row.put(headers[i].trim(), values[i].trim());
-                }
-                // 映射 CSV 列名到字段名
+        // 注意：CSVFormat.DEFAULT 已处理 RFC 4180；setHeader/setSkipHeaderRecord 让我们能按列名取值。
+        CSVFormat format = CSVFormat.DEFAULT.builder()
+            .setHeader()
+            .setSkipHeaderRecord(true)
+            .setIgnoreEmptyLines(true)
+            .setTrim(true)
+            .build();
+        try (Reader reader = new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.UTF_8);
+             CSVParser parser = format.parse(reader)) {
+            for (CSVRecord row : parser) {
                 Map<String, Object> mapped = new HashMap<>();
-                mapped.put("stem", getOrDefault(row, "stem", "题干"));
-                mapped.put("optionsJson", getOrDefault(row, "optionsJson", "选项"));
-                mapped.put("answer", getOrDefault(row, "answer", "答案"));
-                mapped.put("analysis", row.getOrDefault("analysis", row.get("解析")));
-                mapped.put("chapter", row.getOrDefault("chapter", row.get("章节")));
-                mapped.put("questionType", row.getOrDefault("questionType", row.get("题型")));
-                mapped.put("knowledgePoint", row.getOrDefault("knowledgePoint", row.get("知识点")));
-                mapped.put("difficulty", row.getOrDefault("difficulty", row.get("难度")));
-                Object yearVal = row.getOrDefault("year", row.get("年份"));
-                if (yearVal != null && !yearVal.toString().isBlank()) {
-                    try { mapped.put("year", Integer.parseInt(yearVal.toString().trim())); } catch (NumberFormatException ignored) {}
+                mapped.put("stem", csvField(row, "stem", "题干"));
+                mapped.put("optionsJson", csvField(row, "optionsJson", "选项"));
+                mapped.put("answer", csvField(row, "answer", "答案"));
+                mapped.put("analysis", csvField(row, "analysis", "解析"));
+                mapped.put("chapter", csvField(row, "chapter", "章节"));
+                mapped.put("questionType", csvField(row, "questionType", "题型"));
+                mapped.put("knowledgePoint", csvField(row, "knowledgePoint", "知识点"));
+                mapped.put("difficulty", csvField(row, "difficulty", "难度"));
+                mapped.put("status", csvField(row, "status", "状态"));
+                String yearVal = csvField(row, "year", "年份");
+                if (yearVal != null && !yearVal.isBlank()) {
+                    try { mapped.put("year", Integer.parseInt(yearVal.trim())); } catch (NumberFormatException ignored) {}
                 }
-                mapped.put("status", row.getOrDefault("status", row.get("状态")));
                 result.add(mapped);
             }
         }
         return result;
     }
 
-    private String getOrDefault(Map<String, Object> row, String key1, String key2) {
-        Object v = row.get(key1);
-        if (v != null) return v.toString();
-        v = row.get(key2);
-        return v != null ? v.toString() : "";
-    }
-
-    private String[] parseCsvLine(String line) {
-        List<String> fields = new ArrayList<>();
-        StringBuilder current = new StringBuilder();
-        boolean inQuotes = false;
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
-            if (c == '"') {
-                inQuotes = !inQuotes;
-            } else if (c == ',' && !inQuotes) {
-                fields.add(current.toString());
-                current.setLength(0);
-            } else {
-                current.append(c);
-            }
+    /** 从 CSV 行按主键名/中文别名取值；列不存在或为空返回 null。 */
+    private String csvField(CSVRecord row, String key, String aliasKey) {
+        if (row.isMapped(key)) {
+            String v = row.get(key);
+            if (v != null && !v.isEmpty()) return v;
         }
-        fields.add(current.toString());
-        return fields.toArray(new String[0]);
+        if (row.isMapped(aliasKey)) {
+            String v = row.get(aliasKey);
+            if (v != null && !v.isEmpty()) return v;
+        }
+        return null;
     }
 
     // ==================== 辅助 ====================
