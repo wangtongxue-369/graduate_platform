@@ -24,6 +24,39 @@ public class ResumeProfile {
     @Column(length = 80)
     private String templateType;
 
+    @Column(length = 120)
+    private String targetRole;
+
+    @Column(length = 500)
+    private String expectedCities;
+
+    @Column(length = 500)
+    private String expectedIndustries;
+
+    @Column(length = 120)
+    private String expectedSalary;
+
+    @Column(length = 80)
+    private String educationLevel;
+
+    @Column(length = 120)
+    private String major;
+
+    @Column(length = 500)
+    private String skillTags;
+
+    @Column(length = 500)
+    private String projectKeywords;
+
+    @Column(length = 500)
+    private String internshipKeywords;
+
+    @Column(length = 500)
+    private String certificates;
+
+    @Column(length = 500)
+    private String portfolioUrl;
+
     @Lob
     @Column(columnDefinition = "LONGTEXT")
     private String baseInfo;

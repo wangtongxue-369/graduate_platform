@@ -42,7 +42,7 @@ const activeStatusClassMap = {
   false: 'is-neutral',
 }
 
-const ADMIN_PAGE_SIZE = 5
+const ADMIN_PAGE_SIZE = 4
 const emptyListQuery = { keyword: '', active: 'all', page: 1 }
 const emptyResumeListQuery = { keyword: '', fileStatus: 'all', page: 1 }
 const resumeFileDefaults = { hasFile: false, fileName: '', fileSize: null, fileType: '', uploadedAt: '' }

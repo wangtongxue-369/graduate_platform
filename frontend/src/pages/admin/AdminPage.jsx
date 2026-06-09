@@ -11,7 +11,7 @@ const shortcutLinks = [
   { to: '/admin/users', label: '用户管理', variant: 'btn outline' },
   { to: '/admin/reports', label: '举报处理', variant: 'btn outline' },
   { to: '/admin/categories', label: '社区分类管理', variant: 'btn outline' },
-  { to: '/admin/employment', label: 'Employment management', variant: 'btn outline' },
+  { to: '/admin/employment', label: '就业管理', variant: 'btn outline' },
   { to: '/admin/kaogong-data', label: '考公数据维护', variant: 'btn outline' },
   { to: '/admin/kaoyan-data', label: '考研数据维护', variant: 'btn outline' },
   { to: '/admin/material-review', label: '资料审核', variant: 'btn outline' },
@@ -47,11 +47,11 @@ const capabilityCards = [
     cta: '管理分类',
   },
   {
-    title: 'Employment source data',
+    title: '就业数据管理',
     code: 'JOB',
-    description: 'Create career fairs and job postings, then trigger matched in-app notifications.',
+    description: '维护招聘会和岗位信息，并向匹配用户触发站内提醒。',
     to: '/admin/employment',
-    cta: 'Manage employment',
+    cta: '管理就业',
   },
   {
     title: '考公数据维护',

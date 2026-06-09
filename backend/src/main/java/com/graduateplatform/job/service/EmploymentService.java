@@ -156,6 +156,17 @@ public class EmploymentService {
         } else if (trim(resume.getTemplateType()) == null) {
             resume.setTemplateType("default");
         }
+        resume.setTargetRole(trim(req.getTargetRole()));
+        resume.setExpectedCities(trim(req.getExpectedCities()));
+        resume.setExpectedIndustries(trim(req.getExpectedIndustries()));
+        resume.setExpectedSalary(trim(req.getExpectedSalary()));
+        resume.setEducationLevel(trim(req.getEducationLevel()));
+        resume.setMajor(trim(req.getMajor()));
+        resume.setSkillTags(trim(req.getSkillTags()));
+        resume.setProjectKeywords(trim(req.getProjectKeywords()));
+        resume.setInternshipKeywords(trim(req.getInternshipKeywords()));
+        resume.setCertificates(trim(req.getCertificates()));
+        resume.setPortfolioUrl(trim(req.getPortfolioUrl()));
         resume.setBaseInfo(trim(req.getBaseInfo()));
         resume.setEducation(trim(req.getEducation()));
         resume.setProjects(trim(req.getProjects()));
@@ -224,14 +235,14 @@ public class EmploymentService {
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> recommendations(Long userId, String city, String industry, String roleType) {
+    public List<Map<String, Object>> recommendations(Long userId, Map<String, String> filters) {
         User user = ensureUser(userId);
         JobSubscriptionPreference pref = preferenceRepository.findByUserId(userId).orElse(null);
         ResumeProfile resume = resumeRepository.findByUserId(userId).orElse(null);
         List<JobPosting> jobs = jobRepository.findByActiveTrueOrderByCreatedAtDesc();
         return jobs.stream()
-            .map(job -> recommendationMap(job, user, pref, resume, city, industry, roleType))
-            .filter(map -> ((Integer) map.get("matchScore")) > 0)
+            .map(job -> recommendationMap(job, user, pref, resume, filters == null ? Map.of() : filters))
+            .filter(Objects::nonNull)
             .sorted((a, b) -> Integer.compare((Integer) b.get("matchScore"), (Integer) a.get("matchScore")))
             .toList();
     }
@@ -537,35 +548,166 @@ public class EmploymentService {
     }
 
     private Map<String, Object> recommendationMap(JobPosting job, User user, JobSubscriptionPreference pref,
-                                                  ResumeProfile resume, String city, String industry, String roleType) {
-        int score = 0;
+                                                  ResumeProfile resume, Map<String, String> filters) {
+        String keyword = filterValue(filters, "keyword");
+        String city = filterValue(filters, "city");
+        String industry = filterValue(filters, "industry");
+        String roleType = filterValue(filters, "roleType");
+        String companyType = filterValue(filters, "companyType");
+        String education = firstFilterValue(filters, "education", "educationRequirement");
+        String major = firstFilterValue(filters, "major", "majorKeywords");
+        String skills = firstFilterValue(filters, "skills", "skillTags");
+        String salaryRange = filterValue(filters, "salaryRange");
+        boolean onlyApplyable = Boolean.parseBoolean(defaultString(filterValue(filters, "onlyApplyable"), "false"));
+        String resumeTargetRole = resume == null ? null : resume.getTargetRole();
+        String resumeExpectedCities = resume == null ? null : resume.getExpectedCities();
+        String resumeExpectedIndustries = resume == null ? null : resume.getExpectedIndustries();
+        String resumeExpectedSalary = resume == null ? null : resume.getExpectedSalary();
+        String resumeEducationLevel = resume == null ? null : resume.getEducationLevel();
+
+        if (hasText(keyword) && !matchesJobKeyword(job, keyword)) {
+            return null;
+        }
+        if (!manualTextFilterPasses(job.getCity(), city)
+            || !manualTextFilterPasses(job.getIndustry(), industry)
+            || !manualTextFilterPasses(job.getRoleType(), roleType)
+            || !manualTextFilterPasses(job.getCompanyType(), companyType)
+            || !manualRequirementFilterPasses(job.getEducationRequirement(), education)
+            || !manualRequirementFilterPasses(job.getMajorKeywords(), major)
+            || !manualRequirementFilterPasses(job.getSkillTags(), skills)
+            || !manualTextFilterPasses(job.getSalaryRange(), salaryRange)
+            || (onlyApplyable && !hasText(job.getApplyUrl()))) {
+            return null;
+        }
+
+        int score = 40;
         List<String> reasons = new ArrayList<>();
-        if (matchesText(job.getCity(), city) || (pref != null && matchesAny(pref.getCities(), job.getCity()))) {
-            score += 20; reasons.add("城市匹配");
+        if (hasText(keyword)) {
+            score += 6; reasons.add("关键词匹配");
         }
-        if (matchesText(job.getIndustry(), industry) || (pref != null && matchesAny(pref.getIndustries(), job.getIndustry()))) {
-            score += 20; reasons.add("行业匹配");
+        if (hasText(city) && matchesText(job.getCity(), city)) {
+            score += 12; reasons.add("城市匹配");
+        } else if (pref != null && matchesAny(pref.getCities(), job.getCity())) {
+            score += 6; reasons.add("偏好城市匹配");
         }
-        if (matchesText(job.getRoleType(), roleType) || (pref != null && matchesAny(pref.getRoleTypes(), job.getRoleType()))) {
-            score += 20; reasons.add("岗位匹配");
+        if (!hasText(city) && matchesAny(resumeExpectedCities, job.getCity())) {
+            score += 8; reasons.add("简历期望城市匹配");
         }
-        if (pref != null && matchesAny(pref.getCompanyTypes(), job.getCompanyType())) {
-            score += 10; reasons.add("企业类型匹配");
+        if (hasText(industry) && matchesText(job.getIndustry(), industry)) {
+            score += 10; reasons.add("行业匹配");
+        } else if (pref != null && matchesAny(pref.getIndustries(), job.getIndustry())) {
+            score += 6; reasons.add("偏好行业匹配");
         }
-        if (matchesAny(job.getMajorKeywords(), user.getMajor())) {
-            score += 20; reasons.add("专业匹配");
+        if (!hasText(industry) && matchesAny(resumeExpectedIndustries, job.getIndustry())) {
+            score += 8; reasons.add("简历期望行业匹配");
         }
-        if (resume != null && (matchesAny(job.getSkillTags(), resume.getSkills()) || matchesAny(job.getSkillTags(), resume.getProjects()))) {
-            score += 20; reasons.add("技能匹配");
+        if (hasText(roleType) && matchesText(job.getRoleType(), roleType)) {
+            score += 14; reasons.add("岗位类型匹配");
+        } else if (pref != null && matchesAny(pref.getRoleTypes(), job.getRoleType())) {
+            score += 8; reasons.add("偏好岗位匹配");
         }
-        if (score == 0 && pref == null && resume == null && hasText(user.getTarget()) && "job".equals(user.getTarget())) {
-            score = 5;
-            reasons.add("就业方向兜底推荐");
+        if (!hasText(roleType) && matchesResumeRole(job, resumeTargetRole)) {
+            score += 12; reasons.add("简历求职意向匹配");
+        }
+        if (hasText(companyType) && matchesText(job.getCompanyType(), companyType)) {
+            score += 8; reasons.add("企业类型匹配");
+        } else if (pref != null && matchesAny(pref.getCompanyTypes(), job.getCompanyType())) {
+            score += 6; reasons.add("偏好企业类型匹配");
+        }
+        if (hasText(education) && requirementMatches(job.getEducationRequirement(), education)) {
+            score += 10; reasons.add("学历符合");
+        } else if (!hasText(education) && hasText(resumeEducationLevel) && requirementMatches(job.getEducationRequirement(), resumeEducationLevel)) {
+            score += 8; reasons.add("简历学历符合");
+        }
+        if (hasText(major) && requirementMatches(job.getMajorKeywords(), major)) {
+            score += 14; reasons.add("专业条件匹配");
+        } else if (resume != null && matchesAnyCandidate(job.getMajorKeywords(), resume.getMajor(), resume.getEducation())) {
+            score += 14; reasons.add("简历专业匹配");
+        } else if (matchesAny(job.getMajorKeywords(), user.getMajor())) {
+            score += 14; reasons.add("用户专业匹配");
+        }
+        if (hasText(skills) && requirementMatches(job.getSkillTags(), skills)) {
+            score += 14; reasons.add("技能标签匹配");
+        } else if (resume != null && matchesAnyCandidate(job.getSkillTags(), resume.getSkillTags(), resume.getSkills(), resume.getCertificates())) {
+            score += 14; reasons.add("简历技能匹配");
+        }
+        if (resume != null && matchesAnyCandidate(job.getSkillTags(), resume.getProjectKeywords(), resume.getProjects())) {
+            score += 8; reasons.add("项目经历匹配");
+        }
+        if (resume != null && (matchesAnyCandidate(job.getSkillTags(), resume.getInternshipKeywords(), resume.getInternships())
+            || matchesAnyCandidate(job.getRoleType(), resume.getInternshipKeywords(), resume.getInternships())
+            || matchesAnyCandidate(job.getIndustry(), resume.getInternshipKeywords(), resume.getInternships()))) {
+            score += 8; reasons.add("实习经历匹配");
+        }
+        if (hasText(salaryRange) && matchesText(job.getSalaryRange(), salaryRange)) {
+            score += 6; reasons.add("薪资偏好匹配");
+        } else if (pref != null && matchesText(job.getSalaryRange(), pref.getSalaryRange())) {
+            score += 4; reasons.add("偏好薪资匹配");
+        } else if (matchesText(job.getSalaryRange(), resumeExpectedSalary)) {
+            score += 4; reasons.add("简历期望薪资匹配");
+        }
+        if (hasText(job.getApplyUrl())) {
+            score += 4; reasons.add("可直接投递");
         }
         Map<String, Object> map = toJobMap(job);
-        map.put("matchScore", score);
+        map.put("matchScore", Math.min(score, 100));
         map.put("matchReasons", reasons);
         return map;
+    }
+
+    private String filterValue(Map<String, String> filters, String key) {
+        if (filters == null || key == null) return null;
+        return trim(filters.get(key));
+    }
+
+    private String firstFilterValue(Map<String, String> filters, String... keys) {
+        if (keys == null) return null;
+        for (String key : keys) {
+            String value = filterValue(filters, key);
+            if (hasText(value)) return value;
+        }
+        return null;
+    }
+
+    private boolean manualTextFilterPasses(String actual, String expected) {
+        return !hasText(expected) || matchesText(actual, expected);
+    }
+
+    private boolean manualRequirementFilterPasses(String requirement, String expected) {
+        return !hasText(expected) || requirementMatches(requirement, expected);
+    }
+
+    private boolean requirementMatches(String requirement, String value) {
+        if (!hasText(value) || unlimited(requirement)) return true;
+        return matchesText(requirement, value) || matchesAny(requirement, value);
+    }
+
+    private boolean unlimited(String requirement) {
+        return !hasText(requirement) || requirement.contains("不限");
+    }
+
+    private boolean matchesJobKeyword(JobPosting job, String keyword) {
+        return matchesText(job.getTitle(), keyword)
+            || matchesText(job.getCompanyName(), keyword)
+            || matchesText(job.getCity(), keyword)
+            || matchesText(job.getIndustry(), keyword)
+            || matchesText(job.getCompanyType(), keyword)
+            || matchesText(job.getRoleType(), keyword)
+            || matchesText(job.getDescription(), keyword);
+    }
+
+    private boolean matchesResumeRole(JobPosting job, String targetRole) {
+        return hasText(targetRole) && (matchesText(job.getRoleType(), targetRole) || matchesText(job.getTitle(), targetRole));
+    }
+
+    private boolean matchesAnyCandidate(String source, String... candidates) {
+        if (!hasText(source) || candidates == null) return false;
+        for (String candidate : candidates) {
+            if (matchesAny(source, candidate) || matchesText(source, candidate)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean matchesPreference(JobSubscriptionPreference pref, String city, String industry, String roleType, String companyType) {
@@ -791,6 +933,17 @@ public class EmploymentService {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", resume.getId());
         map.put("templateType", resume.getTemplateType());
+        map.put("targetRole", resume.getTargetRole());
+        map.put("expectedCities", resume.getExpectedCities());
+        map.put("expectedIndustries", resume.getExpectedIndustries());
+        map.put("expectedSalary", resume.getExpectedSalary());
+        map.put("educationLevel", resume.getEducationLevel());
+        map.put("major", resume.getMajor());
+        map.put("skillTags", resume.getSkillTags());
+        map.put("projectKeywords", resume.getProjectKeywords());
+        map.put("internshipKeywords", resume.getInternshipKeywords());
+        map.put("certificates", resume.getCertificates());
+        map.put("portfolioUrl", resume.getPortfolioUrl());
         map.put("baseInfo", resume.getBaseInfo());
         map.put("education", resume.getEducation());
         map.put("projects", resume.getProjects());
@@ -974,7 +1127,10 @@ public class EmploymentService {
 
     private boolean matchesText(String actual, String expected) {
         if (!hasText(expected)) return false;
-        return hasText(actual) && actual.toLowerCase(Locale.ROOT).contains(expected.trim().toLowerCase(Locale.ROOT));
+        if (!hasText(actual)) return false;
+        String normalizedActual = actual.trim().toLowerCase(Locale.ROOT);
+        String normalizedExpected = expected.trim().toLowerCase(Locale.ROOT);
+        return normalizedActual.contains(normalizedExpected) || normalizedExpected.contains(normalizedActual);
     }
 
     private boolean matchesAny(String source, String candidate) {
