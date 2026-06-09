@@ -194,12 +194,15 @@ export default function AdminQuestionsPage() {
     const ids = Array.from(selectedIds)
     const updates = {}
     const { type, value } = batchUpdateForm
+    // 不允许"留空 = 静默清空"——必须主动选/输入一个值才发请求。
     if (type === 'status') {
+      if (!value) { setError('请选择状态'); return }
       updates.status = value
     } else if (type === 'chapter') {
       if (!value.trim()) { setError('请输入章节名称'); return }
       updates.chapter = value.trim()
     } else if (type === 'difficulty') {
+      if (!value) { setError('请选择难度'); return }
       updates.difficulty = value
     }
     try {

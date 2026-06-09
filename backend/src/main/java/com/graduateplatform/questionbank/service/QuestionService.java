@@ -25,6 +25,10 @@ import java.util.Map;
 @Service
 public class QuestionService {
 
+    // 与单条 /status 接口、批量更新接口共用的字段白名单，避免下次新加入口又漏校验。
+    private static final java.util.Set<String> ALLOWED_STATUSES = java.util.Set.of("published", "disabled");
+    private static final java.util.Set<String> ALLOWED_DIFFICULTIES = java.util.Set.of("easy", "middle", "hard");
+
     private final QuestionRepository questionRepository;
     private final QuestionBankRepository bankRepository;
     private final QuestionSnapshotRepository snapshotRepository;
@@ -153,12 +157,14 @@ public class QuestionService {
     @Transactional
     @CacheEvict(value = "questionBank:options", allEntries = true)
     public QuestionResponse toggleQuestionStatus(Long id, String status) {
+        if (!ALLOWED_STATUSES.contains(status)) {
+            throw new BusinessException("状态值无效，仅支持 published/disabled");
+        }
         Question question = questionRepository.findById(id)
             .orElseThrow(() -> new BusinessException("题目不存在"));
 
-        boolean active = "published".equals(status);
         question.setStatus(status);
-        question.setActive(active);
+        question.setActive("published".equals(status));
         questionRepository.save(question);
         return QuestionResponse.from(question);
     }
@@ -224,6 +230,48 @@ public class QuestionService {
     @Transactional
     @CacheEvict(value = "questionBank:options", allEntries = true)
     public Map<String, Object> batchUpdateQuestions(List<Long> ids, Map<String, Object> updates) {
+        // 整批前校验 updates，避免每条题目重复抛同样错误填满 errors，
+        // 也防止"留空 = 静默清空"的危险行为（前端选了字段但忘选值时）。
+        String validatedStatus = null;
+        if (updates.containsKey("status")) {
+            String status = updates.get("status") == null ? null : updates.get("status").toString();
+            if (status == null || status.isBlank()) {
+                throw new BusinessException("批量更新 status 不能为空");
+            }
+            if (!ALLOWED_STATUSES.contains(status)) {
+                throw new BusinessException("状态值无效，仅支持 published/disabled");
+            }
+            validatedStatus = status;
+        }
+        String validatedDifficulty = null;
+        if (updates.containsKey("difficulty")) {
+            String diff = updates.get("difficulty") == null ? null : updates.get("difficulty").toString();
+            if (diff == null || diff.isBlank()) {
+                throw new BusinessException("批量更新 difficulty 不能为空");
+            }
+            if (!ALLOWED_DIFFICULTIES.contains(diff)) {
+                throw new BusinessException("难度值无效，仅支持 easy/middle/hard");
+            }
+            validatedDifficulty = diff;
+        }
+        String validatedChapter = null;
+        if (updates.containsKey("chapter")) {
+            String chapter = updates.get("chapter") == null ? null : updates.get("chapter").toString().trim();
+            if (chapter == null || chapter.isEmpty()) {
+                throw new BusinessException("批量更新 chapter 不能为空");
+            }
+            validatedChapter = chapter;
+        }
+        QuestionBank validatedBank = null;
+        if (updates.containsKey("bankId")) {
+            Object raw = updates.get("bankId");
+            if (!(raw instanceof Number bankIdNum)) {
+                throw new BusinessException("bankId 必须为数字");
+            }
+            validatedBank = bankRepository.findById(bankIdNum.longValue())
+                .orElseThrow(() -> new BusinessException("目标题库不存在: id=" + bankIdNum.longValue()));
+        }
+
         int updated = 0;
         List<Map<String, String>> errors = new ArrayList<>();
 
@@ -236,22 +284,18 @@ public class QuestionService {
                 // Save snapshot before batch update
                 saveSnapshot(question);
 
-                if (updates.containsKey("status")) {
-                    String status = (String) updates.get("status");
-                    question.setStatus(status);
-                    question.setActive("published".equals(status));
+                if (validatedStatus != null) {
+                    question.setStatus(validatedStatus);
+                    question.setActive("published".equals(validatedStatus));
                 }
-                if (updates.containsKey("chapter")) {
-                    question.setChapter(nullable(updates.get("chapter")));
+                if (validatedChapter != null) {
+                    question.setChapter(validatedChapter);
                 }
-                if (updates.containsKey("difficulty")) {
-                    question.setDifficulty(nullable(updates.get("difficulty")));
+                if (validatedDifficulty != null) {
+                    question.setDifficulty(validatedDifficulty);
                 }
-                if (updates.containsKey("bankId")) {
-                    Long newBankId = ((Number) updates.get("bankId")).longValue();
-                    QuestionBank newBank = bankRepository.findById(newBankId)
-                        .orElseThrow(() -> new BusinessException("目标题库不存在: id=" + newBankId));
-                    question.setBank(newBank);
+                if (validatedBank != null) {
+                    question.setBank(validatedBank);
                 }
 
                 question.setVersionNo(question.getVersionNo() == null ? 1 : question.getVersionNo() + 1);

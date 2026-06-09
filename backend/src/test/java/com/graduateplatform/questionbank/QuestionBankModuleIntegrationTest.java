@@ -473,6 +473,72 @@ class QuestionBankModuleIntegrationTest {
             .andExpect(jsonPath("$.data.totalPages").value(2));
     }
 
+    // ==================== Batch update guards (Bug #4 + #5) ====================
+
+    @Test
+    void batchUpdateRejectsUnknownStatusValue() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+        Question q = questionRepository.save(Question.builder()
+            .bank(bank).stem("Q").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").status("published").active(true).versionNo(1).build());
+
+        mockMvc.perform(put("/api/admin/questions/batch")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("ids", List.of(q.getId()), "updates", Map.of("status", "archived")))))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("状态值无效，仅支持 published/disabled"));
+
+        // 题目状态未被改写
+        Question reloaded = questionRepository.findById(q.getId()).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo("published");
+        assertThat(reloaded.getActive()).isTrue();
+    }
+
+    @Test
+    void batchUpdateRejectsBlankDifficulty() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+        Question q = questionRepository.save(Question.builder()
+            .bank(bank).stem("Q").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("middle").status("published").active(true).versionNo(1).build());
+
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("difficulty", "");
+        mockMvc.perform(put("/api/admin/questions/batch")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("ids", List.of(q.getId()), "updates", updates))))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("批量更新 difficulty 不能为空"));
+
+        // 难度未被静默清空
+        assertThat(questionRepository.findById(q.getId()).orElseThrow().getDifficulty()).isEqualTo("middle");
+    }
+
+    @Test
+    void batchUpdateAcceptsValidStatusAndUpdatesAllSelected() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+        Question q1 = questionRepository.save(Question.builder()
+            .bank(bank).stem("Q1").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").status("published").active(true).versionNo(1).build());
+        Question q2 = questionRepository.save(Question.builder()
+            .bank(bank).stem("Q2").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").status("published").active(true).versionNo(1).build());
+
+        mockMvc.perform(put("/api/admin/questions/batch")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("ids", List.of(q1.getId(), q2.getId()),
+                                     "updates", Map.of("status", "disabled")))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.updated").value(2))
+            .andExpect(jsonPath("$.data.failed").value(0));
+
+        assertThat(questionRepository.findById(q1.getId()).orElseThrow().getActive()).isFalse();
+        assertThat(questionRepository.findById(q2.getId()).orElseThrow().getActive()).isFalse();
+    }
+
     private QuestionBank bank(String name, String target, String subject, String difficulty) {
         return QuestionBank.builder()
             .name(name).target(target).subject(subject).difficulty(difficulty)
