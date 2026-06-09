@@ -419,7 +419,8 @@ class PracticeModuleIntegrationTest {
 
     @Test
     void practiceRequiresAuthOnAllEndpoints() throws Exception {
-        // 个人练习数据：匿名访问（含 GET）应被安全层干净拒绝为 403，而非进入控制器强转 principal 抛 500
+
+        // Practice endpoints require a valid JWT before reaching controller logic.
         mockMvc.perform(get("/api/practice/sessions/1")).andExpect(status().isForbidden());
         mockMvc.perform(put("/api/practice/sessions/1/answers/1")).andExpect(status().isForbidden());
         mockMvc.perform(post("/api/practice/sessions/1/submit")).andExpect(status().isForbidden());

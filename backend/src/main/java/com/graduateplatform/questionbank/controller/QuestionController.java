@@ -1,7 +1,8 @@
 package com.graduateplatform.questionbank.controller;
 
-import com.graduateplatform.questionbank.dto.SubmitAttemptRequest;
 import com.graduateplatform.common.dto.ApiResponse;
+import com.graduateplatform.common.exception.UnauthorizedException;
+import com.graduateplatform.questionbank.dto.SubmitAttemptRequest;
 import com.graduateplatform.questionbank.service.AttemptService;
 import com.graduateplatform.questionbank.service.QuestionService;
 import jakarta.validation.Valid;
@@ -29,7 +30,13 @@ public class QuestionController {
     public ApiResponse<?> submitAttempt(@PathVariable Long id,
                                         @Valid @RequestBody SubmitAttemptRequest req,
                                         Authentication auth) {
-        Long userId = (Long) auth.getPrincipal();
-        return ApiResponse.ok(attemptService.submit(id, userId, req), "答题记录已保存");
+        return ApiResponse.ok(attemptService.submit(id, requiredUserId(auth), req), "答题记录已保存");
+    }
+
+    private Long requiredUserId(Authentication auth) {
+        if (auth == null || !(auth.getPrincipal() instanceof Long userId)) {
+            throw new UnauthorizedException("请先登录");
+        }
+        return userId;
     }
 }

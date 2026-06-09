@@ -1,6 +1,7 @@
 package com.graduateplatform.questionbank.controller;
 
 import com.graduateplatform.common.dto.ApiResponse;
+import com.graduateplatform.common.exception.UnauthorizedException;
 import com.graduateplatform.questionbank.dto.CreatePracticeSessionRequest;
 import com.graduateplatform.questionbank.dto.SavePracticeAnswerRequest;
 import com.graduateplatform.questionbank.service.PracticeService;
@@ -91,6 +92,9 @@ public class PracticeController {
     }
 
     private Long currentUserId(Authentication auth) {
-        return (Long) auth.getPrincipal();
+        if (auth == null || !(auth.getPrincipal() instanceof Long userId)) {
+            throw new UnauthorizedException("请先登录");
+        }
+        return userId;
     }
 }

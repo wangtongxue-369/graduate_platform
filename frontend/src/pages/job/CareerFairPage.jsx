@@ -13,6 +13,7 @@ const pageSize = 6
 
 export default function CareerFairPage() {
   const { token, isAuthed } = useAuth()
+  const canUseRemote = Boolean(isAuthed && token && token !== 'dev-token')
   const [filters, setFilters] = useState(emptyFilters)
   const [preference, setPreference] = useState(emptyPreference)
   const [fairs, setFairs] = useState([])
@@ -42,11 +43,12 @@ export default function CareerFairPage() {
 
   useEffect(() => { loadFairs() }, [loadFairs])
   useEffect(() => {
-    if (!isAuthed) return
+    if (!canUseRemote) return
     employmentApi.preference(token).then(data => setPreference({ ...emptyPreference, ...data })).catch(e => setError(e.message))
-  }, [isAuthed, token])
+  }, [canUseRemote, token])
 
   async function savePreference() {
+    if (!canUseRemote) { setError('请使用真实账号登录后再保存偏好。'); return }
     if (!isAuthed) { setError('请先登录后再保存偏好。'); return }
     setSaving(true); setMessage(''); setError('')
     try {

@@ -45,6 +45,7 @@ function formatFileSize(size) {
 
 export default function ApplicationTrackingPage() {
   const { token, isAuthed, loading: authLoading } = useAuth()
+  const canUseRemote = Boolean(isAuthed && token && token !== 'dev-token')
   const [searchParams] = useSearchParams()
   const [records, setRecords] = useState([])
   const [resumeFile, setResumeFile] = useState(resumeFileDefaults)
@@ -62,6 +63,13 @@ export default function ApplicationTrackingPage() {
     .slice(0, 3)
 
   const loadRecords = useCallback(async () => {
+    if (!canUseRemote) {
+      setRecords([])
+      setResumeFile(resumeFileDefaults)
+      setLoading(false)
+      setError('请使用真实账号登录后查看投递记录。')
+      return
+    }
     setLoading(true)
     setError('')
     try {
@@ -76,14 +84,16 @@ export default function ApplicationTrackingPage() {
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [canUseRemote, token])
 
   useEffect(() => {
-    if (isAuthed) {
+    if (canUseRemote) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       loadRecords()
+    } else {
+      setLoading(false)
     }
-  }, [isAuthed, loadRecords])
+  }, [canUseRemote, loadRecords])
   useEffect(() => {
     const jobPostingId = searchParams.get('jobPostingId')
     const companyName = searchParams.get('companyName')
@@ -114,6 +124,7 @@ export default function ApplicationTrackingPage() {
   }
 
   async function saveRecord() {
+    if (!canUseRemote) { setError('请使用真实账号登录后再保存投递记录。'); return }
     if (!editingId && hasDuplicateRecord() && !window.confirm('已存在相同岗位的投递记录，仍要继续新增吗？')) return
     setSaving(true)
     setError('')
@@ -131,6 +142,7 @@ export default function ApplicationTrackingPage() {
   }
   async function downloadResumeFile() {
     if (!resumeFile.hasFile) return
+    if (!canUseRemote) { setError('请使用真实账号登录后再下载附件。'); return }
     setError('')
     try {
       await employmentApi.downloadResumeFile(token)
@@ -140,6 +152,7 @@ export default function ApplicationTrackingPage() {
   }
 
   async function deleteRecord(id) {
+    if (!canUseRemote) { setError('请使用真实账号登录后再删除投递记录。'); return }
     if (!window.confirm('确认删除这条投递记录？删除后无法在页面恢复。')) return
     setError('')
     try {
