@@ -31,6 +31,23 @@ public class StudyAbroadController {
         this.studyAbroadService = studyAbroadService;
     }
 
+    @GetMapping("/schools/page")
+    public ApiResponse<?> schoolProgramsPage(@RequestParam(required = false) String country,
+                                             @RequestParam(required = false) String subjectArea,
+                                             @RequestParam(required = false) Boolean partnerOnly,
+                                             @RequestParam(required = false) String keyword,
+                                             @RequestParam(defaultValue = "0") int page,
+                                             @RequestParam(defaultValue = "9") int size) {
+        return ApiResponse.ok(studyAbroadService.getSchoolProgramsPage(
+            country,
+            subjectArea,
+            partnerOnly,
+            keyword,
+            page,
+            size
+        ));
+    }
+
     @GetMapping("/admission-cases/page")
     public ApiResponse<?> admissionCasesPage(@RequestParam(required = false) String country,
                                              @RequestParam(required = false) String result,

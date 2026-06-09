@@ -34,6 +34,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,
                     "/api/studyabroad/experiences",
                     "/api/studyabroad/experiences/page",
+                    "/api/studyabroad/schools/page",
                     "/api/studyabroad/admission-cases/page").permitAll()
                 // Study abroad management APIs require authenticated users
                 .requestMatchers("/api/studyabroad/**").authenticated()

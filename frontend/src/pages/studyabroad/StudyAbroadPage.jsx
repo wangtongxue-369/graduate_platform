@@ -19,6 +19,11 @@ const featureCards = [
     to: '/studyabroad/applications',
   },
   {
+    title: '院校项目库',
+    desc: '浏览主流国家院校项目、排名学费、申请要求、政策摘要和避雷提示。',
+    to: '/studyabroad/schools',
+  },
+  {
     title: '申请时间线',
     desc: '追踪语言考试、文书、网申、面试和签证节点。',
     to: '/studyabroad/timeline',
