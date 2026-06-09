@@ -3216,6 +3216,72 @@
   min-height: 250px;
 }
 
+.experience-page .experience-filters {
+  order: 1;
+}
+
+.experience-page .notice-box {
+  order: 2;
+}
+
+.experience-page .experience-grid {
+  order: 3;
+}
+
+.experience-page .experience-detail {
+  order: 4;
+}
+
+.experience-page .pagination {
+  order: 5;
+}
+
+.experience-page .experience-form {
+  order: 6;
+}
+
+.experience-page .study-cta {
+  order: 7;
+}
+
+.experience-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.experience-card .tag-row {
+  margin-top: auto;
+}
+
+.experience-card-actions {
+  margin: 14px 0 0;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.experience-detail {
+  gap: 18px;
+}
+
+.experience-detail .section-head h2 {
+  margin: 10px 0 0;
+}
+
+.experience-detail-content {
+  display: grid;
+  gap: 12px;
+  max-width: 880px;
+  color: var(--text);
+  line-height: 1.85;
+  font-size: 16px;
+}
+
+.experience-detail-content p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .study-cta {
   margin-top: 8px;
 }

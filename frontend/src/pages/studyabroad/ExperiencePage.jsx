@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Navbar from '../../components/Navbar.jsx'
 import Footer from '../../components/Footer.jsx'
@@ -43,6 +43,8 @@ function normalizeTags(tags) {
 
 export default function ExperiencePage() {
   const { token, user } = useAuth()
+  const formRef = useRef(null)
+  const detailRef = useRef(null)
   const isDevMode = token === 'dev-token'
   const canUseRemote = Boolean(token && token !== 'dev-token')
   const [experiences, setExperiences] = useState([])
@@ -54,6 +56,7 @@ export default function ExperiencePage() {
   const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
   const [debouncedKeyword, setDebouncedKeyword] = useState('')
+  const [selectedExperienceId, setSelectedExperienceId] = useState(null)
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -123,6 +126,24 @@ export default function ExperiencePage() {
     })
   }, [debouncedKeyword, experiences, filters.country, filters.topic, isDevMode, pageInfo.totalElements])
 
+  const selectedExperience = useMemo(() => {
+    return visibleExperiences.find((item) => String(item.id) === String(selectedExperienceId)) || null
+  }, [selectedExperienceId, visibleExperiences])
+
+  useEffect(() => {
+    if (selectedExperienceId && !selectedExperience) {
+      setSelectedExperienceId(null)
+    }
+  }, [selectedExperience, selectedExperienceId])
+
+  useEffect(() => {
+    if (selectedExperience) {
+      window.setTimeout(() => {
+        detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 0)
+    }
+  }, [selectedExperience])
+
   function saveLocal(nextItems) {
     setExperiences(nextItems)
     saveExperienceItems(nextItems)
@@ -154,6 +175,9 @@ export default function ExperiencePage() {
       content: item.content || '',
       tags: normalizeTags(item.tags).join(', '),
     })
+    window.setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
   }
 
   async function handleSubmit(event) {
@@ -185,6 +209,7 @@ export default function ExperiencePage() {
         if (!editingId) {
           setPageInfo((current) => ({ ...current, totalElements: current.totalElements + 1 }))
         }
+        setSelectedExperienceId(saved.id)
         setNotice(editingId ? '经验已更新。' : '经验已发布到后端。')
       } else if (isDevMode) {
         const saved = {
@@ -196,6 +221,7 @@ export default function ExperiencePage() {
           ? experiences.map((item) => (item.id === editingId ? saved : item))
           : [saved, ...experiences]
         saveLocal(next)
+        setSelectedExperienceId(saved.id)
         setNotice(editingId ? '本地演示经验已更新。' : '本地演示经验已创建。真实发布需要登录正式账号。')
       } else {
         setNotice('请先登录，再发布留学经验。游客可以浏览，不能发布。')
@@ -213,8 +239,14 @@ export default function ExperiencePage() {
       if (canUseRemote) {
         await studyAbroadApi.deleteExperience(id, token)
         setExperiences((current) => current.filter((item) => item.id !== id))
+        if (String(selectedExperienceId) === String(id)) {
+          setSelectedExperienceId(null)
+        }
       } else if (isDevMode) {
         saveLocal(experiences.filter((item) => item.id !== id))
+        if (String(selectedExperienceId) === String(id)) {
+          setSelectedExperienceId(null)
+        }
       } else {
         setNotice('请先登录，再删除自己发布的经验。')
         return
@@ -229,7 +261,7 @@ export default function ExperiencePage() {
     <div className="app">
       <Navbar />
       <main className="shell">
-        <section className="section">
+        <section className="section experience-page">
           <div className="detail-header">
             <div>
               <p className="eyebrow">留学 / 经验库</p>
@@ -239,7 +271,7 @@ export default function ExperiencePage() {
             <Link className="btn ghost" to="/studyabroad">返回工作台</Link>
           </div>
 
-          <div className="feature-card">
+          <div className="feature-card experience-filters">
             <div className="filter-grid">
               <label className="field">
                 <span>国家 / 地区</span>
@@ -281,7 +313,7 @@ export default function ExperiencePage() {
             </div>
           </div>
 
-          <form className="feature-card" onSubmit={handleSubmit}>
+          <form className="feature-card experience-form" ref={formRef} onSubmit={handleSubmit}>
             <div className="section-head compact">
               <h2>{editingId ? '编辑经验' : '发布经验'}</h2>
               <span className="tag subtle">{canUseRemote ? '后端保存' : isDevMode ? '本地演示' : '登录后发布'}</span>
@@ -349,7 +381,7 @@ export default function ExperiencePage() {
             </div>
           ) : null}
 
-          <div className="track-grid">
+          <div className="track-grid experience-grid">
             {visibleExperiences.map((item) => (
               <article className="track-card experience-card" key={item.id}>
                 <div className="track-head">
@@ -367,8 +399,11 @@ export default function ExperiencePage() {
                     <span className="tag subtle" key={tag}>{tag}</span>
                   ))}
                 </div>
+                <div className="hero-actions experience-card-actions">
+                  <button className="btn primary small" type="button" onClick={() => setSelectedExperienceId(item.id)}>查看全文</button>
+                </div>
                 {canManageExperience(item) ? (
-                  <div className="hero-actions">
+                  <div className="hero-actions experience-card-actions">
                     <button className="btn outline small" type="button" onClick={() => startEdit(item)}>编辑</button>
                     <button className="btn outline small" type="button" onClick={() => handleDelete(item.id)}>删除</button>
                   </div>
@@ -385,6 +420,40 @@ export default function ExperiencePage() {
               </div>
             ) : null}
           </div>
+
+          {selectedExperience ? (
+            <article className="feature-card experience-detail" ref={detailRef}>
+              <div className="section-head compact">
+                <div>
+                  <span className="tag subtle">{countryLabelMap[selectedExperience.country] || selectedExperience.country}</span>
+                  <h2>{selectedExperience.title}</h2>
+                </div>
+                <button className="btn outline small" type="button" onClick={() => setSelectedExperienceId(null)}>收起</button>
+              </div>
+              <div className="detail-meta">
+                <span>{topicLabelMap[selectedExperience.topic] || selectedExperience.topic}</span>
+                <span>{selectedExperience.authorName}</span>
+                <span>{selectedExperience.readTime}</span>
+              </div>
+              <p className="lead">{selectedExperience.summary}</p>
+              <div className="experience-detail-content">
+                {(selectedExperience.content || '').split('\n').filter(Boolean).map((paragraph, index) => (
+                  <p key={`${selectedExperience.id}-${index}`}>{paragraph}</p>
+                ))}
+              </div>
+              <div className="tag-row">
+                {normalizeTags(selectedExperience.tags).map((tag) => (
+                  <span className="tag subtle" key={tag}>{tag}</span>
+                ))}
+              </div>
+              {canManageExperience(selectedExperience) ? (
+                <div className="hero-actions experience-card-actions">
+                  <button className="btn outline small" type="button" onClick={() => startEdit(selectedExperience)}>编辑这篇经验</button>
+                  <button className="btn outline small" type="button" onClick={() => handleDelete(selectedExperience.id)}>删除</button>
+                </div>
+              ) : null}
+            </article>
+          ) : null}
 
           <div className="pagination">
             <span className="pagination-count">共 {pageInfo.totalElements} 条，第 {pageInfo.page + 1} / {pageInfo.totalPages} 页</span>
