@@ -264,6 +264,48 @@ class PracticeModuleIntegrationTest {
             .andExpect(jsonPath("$.data.items.length()").value(0));
     }
 
+    // Bug #3: 错题本不应列出已停用的题目，否则用户勾选重练时会被 PracticeService 静默过滤掉。
+    @Test
+    void wrongQuestionsExcludeDisabledQuestionsAndDisabledBanks() throws Exception {
+        // 先答错两题
+        String createResp = mockMvc.perform(post("/api/practice/sessions")
+                .header("Authorization", "Bearer " + userToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("bankId", bank.getId(), "mode", "chapter", "chapter", "第1章"))))
+            .andReturn().getResponse().getContentAsString();
+        long sessionId = objectMapper.readTree(createResp).path("data").path("id").asLong();
+        JsonNode questions = objectMapper.readTree(createResp).path("data").path("questions");
+        for (int i = 0; i < questions.size(); i++) {
+            mockMvc.perform(put("/api/practice/sessions/" + sessionId + "/answers/" + questions.get(i).path("id").asLong())
+                    .header("Authorization", "Bearer " + userToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(json(Map.of("answer", "wrong"))));
+        }
+        mockMvc.perform(post("/api/practice/sessions/" + sessionId + "/submit")
+                .header("Authorization", "Bearer " + userToken));
+
+        mockMvc.perform(get("/api/practice/wrong-questions").header("Authorization", "Bearer " + userToken))
+            .andExpect(jsonPath("$.data.items.length()").value(2));
+
+        // 停用其中一题（管理端单题停用 = active=false）
+        Question q1Reload = questionRepository.findById(q1.getId()).orElseThrow();
+        q1Reload.setActive(false);
+        q1Reload.setStatus("disabled");
+        questionRepository.save(q1Reload);
+
+        mockMvc.perform(get("/api/practice/wrong-questions").header("Authorization", "Bearer " + userToken))
+            .andExpect(jsonPath("$.data.items.length()").value(1));
+
+        // 停用整个题库——剩下那道题也应被隐藏
+        QuestionBank bankReload = bankRepository.findById(bank.getId()).orElseThrow();
+        bankReload.setActive(false);
+        bankReload.setStatus("inactive");
+        bankRepository.save(bankReload);
+
+        mockMvc.perform(get("/api/practice/wrong-questions").header("Authorization", "Bearer " + userToken))
+            .andExpect(jsonPath("$.data.items.length()").value(0));
+    }
+
     // ==================== Statistics ====================
 
     @Test

@@ -12,9 +12,12 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findByBankId(Long bankId);
     Page<Question> findByBankId(Long bankId, Pageable pageable);
 
+    // 题库停用 = bank.active=false；不再级联翻转题目自身的 active，
+    // 这样 disable→enable 题库后题目能恢复，可见性统一在查询侧过滤。
     @Query("SELECT q FROM Question q " +
            "WHERE q.bank.id = :bankId " +
            "AND q.active = true " +
+           "AND q.bank.active = true " +
            "AND (q.status IS NULL OR q.status = 'published') " +
            "AND (:chapter IS NULL OR q.chapter = :chapter) " +
            "AND (:questionType IS NULL OR q.questionType = :questionType) " +

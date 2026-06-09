@@ -193,6 +193,63 @@ class QuestionBankModuleIntegrationTest {
             .andExpect(jsonPath("$.message").value("题库名称不能为空"));
     }
 
+    // Bug #1: 题库 disable→enable 必须可逆——重新启用后题目应自动恢复练习候选，
+    // 旧实现级联停用题目，启用题库时未回滚，导致 questionCount=0 且公共列表隐藏。
+    @Test
+    void disablingBankHidesQuestionsAndReEnablingRestoresThem() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+        questionRepository.save(Question.builder()
+            .bank(bank).stem("Q1").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").status("published").active(true).versionNo(1).build());
+
+        // 题库启用时：公共列表可见，且至少一道候选
+        mockMvc.perform(get("/api/question-banks?target=kaoyan"))
+            .andExpect(jsonPath("$.data.length()").value(1))
+            .andExpect(jsonPath("$.data[0].questionCount").value(1));
+
+        // 停用题库
+        mockMvc.perform(put("/api/admin/question-banks/" + bank.getId() + "/status")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("status", "inactive"))))
+            .andExpect(status().isOk());
+
+        // 公共列表不再返回该题库
+        mockMvc.perform(get("/api/question-banks?target=kaoyan"))
+            .andExpect(jsonPath("$.data.length()").value(0));
+
+        // 重新启用题库
+        mockMvc.perform(put("/api/admin/question-banks/" + bank.getId() + "/status")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("status", "active"))))
+            .andExpect(status().isOk());
+
+        // 题目自动恢复——无须逐题重新发布
+        mockMvc.perform(get("/api/question-banks?target=kaoyan"))
+            .andExpect(jsonPath("$.data.length()").value(1))
+            .andExpect(jsonPath("$.data[0].questionCount").value(1));
+    }
+
+    // Bug #1 后置不变量：题库停用不应改写题目自身的 active；这样启用题库时无须级联恢复。
+    @Test
+    void togglingBankStatusDoesNotMutateQuestionActiveFlag() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+        Question q = questionRepository.save(Question.builder()
+            .bank(bank).stem("Q1").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").status("published").active(true).versionNo(1).build());
+
+        mockMvc.perform(put("/api/admin/question-banks/" + bank.getId() + "/status")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("status", "inactive"))))
+            .andExpect(status().isOk());
+
+        Question reloaded = questionRepository.findById(q.getId()).orElseThrow();
+        assertThat(reloaded.getActive()).isTrue();
+        assertThat(reloaded.getStatus()).isEqualTo("published");
+    }
+
     @Test
     void adminDeleteNonExistentBankReturnsError() throws Exception {
         mockMvc.perform(delete("/api/admin/question-banks/99999")
