@@ -49,6 +49,7 @@ function isAllowedResumeFile(file) {
 
 export default function ResumePage() {
   const { token, isAuthed, loading: authLoading } = useAuth()
+  const canUseRemote = Boolean(isAuthed && token && token !== 'dev-token')
   const [resume, setResume] = useState(emptyResume)
   const [selectedFile, setSelectedFile] = useState(null)
   const [uploading, setUploading] = useState(false)
@@ -61,16 +62,20 @@ export default function ResumePage() {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    if (!isAuthed) return
+    if (!canUseRemote) {
+      setLoading(false)
+      return
+    }
     employmentApi.resume(token)
       .then(data => setResume(normalizeResume(data)))
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
-  }, [isAuthed, token])
+  }, [canUseRemote, token])
 
   if (!authLoading && !isAuthed) return <Navigate to="/login" replace />
 
   async function saveResume() {
+    if (!canUseRemote) { setError('请使用真实账号登录后再保存简历。'); return }
     setSaving(true); setError(''); setMessage('')
     try {
       const saved = await employmentApi.saveResume(resume, token)
@@ -82,6 +87,10 @@ export default function ResumePage() {
   async function uploadResumeFile() {
     setError('')
     setMessage('')
+    if (!canUseRemote) {
+      setError('请使用真实账号登录后再上传附件。')
+      return
+    }
     if (!selectedFile) {
       setError('请先选择 PDF、DOC 或 DOCX 简历附件。')
       return
@@ -111,6 +120,7 @@ export default function ResumePage() {
 
   async function downloadResumeFile() {
     if (!resume.resumeFile?.hasFile) return
+    if (!canUseRemote) { setError('请使用真实账号登录后再下载附件。'); return }
     setError('')
     setDownloading(true)
     try {
@@ -124,6 +134,7 @@ export default function ResumePage() {
 
   async function deleteResumeFile() {
     if (!resume.resumeFile?.hasFile) return
+    if (!canUseRemote) { setError('请使用真实账号登录后再删除附件。'); return }
     if (!window.confirm('确认删除当前简历附件？在线文本简历会保留。')) return
     setError('')
     setMessage('')

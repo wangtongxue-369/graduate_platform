@@ -30,6 +30,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Public authentication POST endpoints
                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/send-code", "/api/auth/reset-password").permitAll()
+                .requestMatchers("/api/auth/me", "/api/auth/logout", "/api/users/**").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/studyabroad/experiences", "/api/studyabroad/experiences/page").permitAll()
                 // Study abroad management APIs require authenticated users
                 .requestMatchers("/api/studyabroad/**").authenticated()
@@ -37,9 +38,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/kaoyan/materials/my").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/kaoyan/materials/*/download/*").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/kaoyan/materials").authenticated()
-                // Admin APIs must be declared before generic /api/** GET allow rules
+                .requestMatchers(HttpMethod.GET, "/api/kaoyan/score-lines/favorites").authenticated()
+                .requestMatchers("/api/kaoyan/mentors/me", "/api/kaoyan/mentors/counseling/**").authenticated()
+                .requestMatchers("/api/kaoyan/plans/**", "/api/kaoyan/checkins/**").authenticated()
+                .requestMatchers("/api/kaoyan/study-rooms/me", "/api/kaoyan/study-rooms/me/created").authenticated()
+                // Admin APIs must be declared before public GET allow rules
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/community/notifications/**").authenticated()
+                .requestMatchers("/api/attempts/**", "/api/practice/**").authenticated()
                 // Kaogong endpoints that require authenticated users
                 .requestMatchers(HttpMethod.GET, "/api/kaogong/jobs/favorites").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/kaogong/jobs/match-history").authenticated()
@@ -68,16 +74,30 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/job/fairs/**", "/api/job/postings/**").permitAll()
                 .requestMatchers("/api/job/resume/**", "/api/job/applications/**", "/api/job/notifications/**",
                     "/api/job/preferences/**", "/api/job/recommendations/**").authenticated()
+                // Public read-only browsing APIs
+                .requestMatchers(HttpMethod.GET, "/api/post-categories/**", "/api/posts/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/question-banks/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/kaoyan/schools/page", "/api/kaoyan/score-lines/page").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/kaoyan/materials/page", "/api/kaoyan/materials/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/kaoyan/mentors/page", "/api/kaoyan/mentors/*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/kaoyan/study-rooms", "/api/kaoyan/study-rooms/*",
+                    "/api/kaoyan/study-rooms/*/messages", "/api/kaoyan/study-rooms/*/stream",
+                    "/api/kaoyan/study-rooms/*/leaderboard").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/kaogong/jobs", "/api/kaogong/jobs/page",
+                    "/api/kaogong/score-lines", "/api/kaogong/score-lines/page",
+                    "/api/kaogong/calendar/events", "/api/kaogong/calendar/events/page", "/api/kaogong/calendar/exams/page",
+                    "/api/kaogong/interviews", "/api/kaogong/interviews/page",
+                    "/api/kaogong/interviews/*/stream", "/api/kaogong/interviews/*/messages",
+                    "/api/kaogong/interviews/*/messages/page", "/api/kaogong/interviews/*/attachments",
+                    "/api/kaogong/interviews/*/attachments/page", "/api/kaogong/interviews/*/feedback",
+                    "/api/kaogong/interviews/*/feedback/page").permitAll()
                 // 题库练习与答题记录属于个人数据：所有方法都需登录，
                 // 否则匿名 GET 会命中下方 /api/** 放行规则、在控制器里强转 principal 抛 500
                 .requestMatchers("/api/practice/**").authenticated()
                 .requestMatchers("/api/attempts/**").authenticated()
-                // Generic GET APIs are public for read-only browsing
-                .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
                 // Write operations, question attempts, and user profile APIs require auth
                 .requestMatchers(HttpMethod.POST, "/api/posts/**").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/questions/*/attempt").authenticated()
-                .requestMatchers("/api/auth/me", "/api/auth/logout", "/api/users/**").authenticated()
                 // H2 console
                 .requestMatchers("/h2-console/**").permitAll()
                 .anyRequest().authenticated()
