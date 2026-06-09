@@ -97,7 +97,9 @@ function WrongQuestionPage() {
     setError('')
     try {
       const data = await practiceApi.rebuildWrongSession(ids, token)
-      navigate(`/practice/${data.id}`)
+      // 路由 :id 是题库 id，会话 id 必须经 ?sessionId= 传入；
+      // 否则作答页会误把 sessionId 当 bankId 去新建一个普通会话
+      navigate(`/practice/${data.bankId}?sessionId=${data.id}`)
     } catch (err) {
       setError(err.message || '创建重练会话失败')
     } finally {

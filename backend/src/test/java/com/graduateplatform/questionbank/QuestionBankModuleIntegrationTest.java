@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -176,8 +177,9 @@ class QuestionBankModuleIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true));
 
-        // Verify deleted
-        assertThat(bankRepository.findById(bankId)).isEmpty();
+        // Verify soft-deleted: row retained but marked inactive (history-preserving)
+        QuestionBank softDeleted = bankRepository.findById(bankId).orElseThrow();
+        assertThat(softDeleted.getActive()).isFalse();
     }
 
     @Test
@@ -269,6 +271,55 @@ class QuestionBankModuleIntegrationTest {
                 .content(json(Map.of("stem", "Q", "answer", "A"))))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.success").value(false));
+    }
+
+    // Bug 1: 前端编辑表单始终携带 year 键，留空时为 null；旧实现 ((Number) null).intValue() 抛 NPE → 500
+    @Test
+    void updateQuestionWithExplicitNullYearSucceeds() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+        Question q = questionRepository.save(Question.builder()
+            .bank(bank).stem("Q").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").year(2024).status("published").active(true).versionNo(1).build());
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("stem", "Q-updated");
+        body.put("year", null); // 显式 null（Map.of 不允许 null，故用 HashMap）
+
+        mockMvc.perform(put("/api/admin/questions/" + q.getId())
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(body)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.stem").value("Q-updated"));
+
+        Question reloaded = questionRepository.findById(q.getId()).orElseThrow();
+        assertThat(reloaded.getYear()).isNull();
+    }
+
+    // Bug 2: 主观题等无选项题目，optionsJson 留空旧实现存 null 违反 NOT NULL → 500；现回退为 "[]"
+    @Test
+    void createSubjectiveQuestionWithoutOptionsSucceeds() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+
+        String resp = mockMvc.perform(post("/api/admin/question-banks/" + bank.getId() + "/questions")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "stem", "简述市场经济的特征",
+                    "answer", "见解析",
+                    "optionsJson", "",
+                    "questionType", "subjective",
+                    "difficulty", "hard"
+                ))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.questionType").value("subjective"))
+            .andReturn().getResponse().getContentAsString();
+
+        long qid = objectMapper.readTree(resp).path("data").path("id").asLong();
+        Question saved = questionRepository.findById(qid).orElseThrow();
+        assertThat(saved.getOptionsJson()).isEqualTo("[]");
     }
 
     // ==================== Batch Import ====================

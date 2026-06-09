@@ -91,6 +91,10 @@ public class SecurityConfig {
                     "/api/kaogong/interviews/*/messages/page", "/api/kaogong/interviews/*/attachments",
                     "/api/kaogong/interviews/*/attachments/page", "/api/kaogong/interviews/*/feedback",
                     "/api/kaogong/interviews/*/feedback/page").permitAll()
+                // 题库练习与答题记录属于个人数据：所有方法都需登录，
+                // 否则匿名 GET 会命中下方 /api/** 放行规则、在控制器里强转 principal 抛 500
+                .requestMatchers("/api/practice/**").authenticated()
+                .requestMatchers("/api/attempts/**").authenticated()
                 // Write operations, question attempts, and user profile APIs require auth
                 .requestMatchers(HttpMethod.POST, "/api/posts/**").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/questions/*/attempt").authenticated()

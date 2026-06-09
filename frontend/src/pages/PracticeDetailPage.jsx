@@ -127,6 +127,16 @@ function PracticeDetailPage() {
     }
   }
 
+  // 多选题：点击切换选项，答案为已选字母排序后的拼接（如 "AC"），与后端判分一致
+  function handleToggleOption(question, optionKey) {
+    if (!session || session.status === 'submitted') return
+    const selected = new Set((answers[question.id] || '').split('').filter(Boolean))
+    if (selected.has(optionKey)) selected.delete(optionKey)
+    else selected.add(optionKey)
+    const next = Array.from(selected).sort().join('')
+    handleAnswer(question, next)
+  }
+
   async function handleSubmitPaper() {
     if (!session || submitting) return
     setSubmitting(true)
@@ -254,11 +264,17 @@ function PracticeDetailPage() {
                       <div className="question-options">
                         {current.options.map((option, index) => {
                           const optionKey = String.fromCharCode(65 + index)
+                          const isMultiple = current.questionType === 'multiple'
+                          const selected = isMultiple
+                            ? (answers[current.id] || '').includes(optionKey)
+                            : answers[current.id] === optionKey
                           return (
                             <button
-                              className={`option-btn ${answers[current.id] === optionKey ? 'active' : ''}`}
+                              className={`option-btn ${selected ? 'active' : ''}`}
                               key={optionKey}
-                              onClick={() => handleAnswer(current, optionKey)}
+                              onClick={() => (isMultiple
+                                ? handleToggleOption(current, optionKey)
+                                : handleAnswer(current, optionKey))}
                               disabled={session?.status === 'submitted'}
                               type="button"
                             >

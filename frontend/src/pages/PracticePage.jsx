@@ -101,7 +101,8 @@ function PracticePage() {
         ])
         if (active) {
           setStatistics(stats)
-          setWrongQuestions(wrongs || [])
+          // 错题接口返回分页对象 {items,total,...}，直接存对象会让下方 .slice 报错导致整页空白
+          setWrongQuestions(Array.isArray(wrongs) ? wrongs : (wrongs?.items || wrongs?.content || []))
         }
       } catch {
         if (active) {

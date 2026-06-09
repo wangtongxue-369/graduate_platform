@@ -158,6 +158,8 @@ class EmploymentModuleIntegrationTest {
 
     @Test
     void adminResumeSummaryIsReadOnlyAndDoesNotExposeCosLocation() throws Exception {
+        user.setGrade("2026");
+        userRepository.save(user);
         resumeRepository.save(ResumeProfile.builder()
             .user(user)
             .templateType("default")
@@ -174,6 +176,8 @@ class EmploymentModuleIntegrationTest {
             .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/admin/employment/resumes").header("Authorization", "Bearer " + adminToken))
             .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[?(@.userId == " + user.getId() + ")].name").value(hasItem("就业用户")))
+            .andExpect(jsonPath("$.data[?(@.userId == " + user.getId() + ")].grade").value(hasItem("2026")))
             .andExpect(jsonPath("$.data[?(@.userId == " + user.getId() + ")].resumeFile.hasFile").value(hasItem(true)))
             .andExpect(jsonPath("$.data[?(@.userId == " + user.getId() + ")].resumeFile.fileName").value(hasItem("resume.pdf")))
             .andExpect(jsonPath("$.data[?(@.userId == " + user.getId() + ")].resumeFile.cosKey").doesNotExist())
