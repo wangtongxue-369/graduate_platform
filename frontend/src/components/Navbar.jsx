@@ -42,6 +42,7 @@ const trackMenus = {
       { label: '申请时间线', to: '/studyabroad/timeline' },
       { label: '材料清单', to: '/studyabroad/materials' },
       { label: '经验库', to: '/studyabroad/experience' },
+      { label: '录取案例库', to: '/studyabroad/admission-cases' },
       { label: '留学社区（并入）', to: '/community?category=liuxue' },
     ],
   },

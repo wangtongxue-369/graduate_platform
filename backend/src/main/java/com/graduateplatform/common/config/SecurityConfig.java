@@ -31,7 +31,10 @@ public class SecurityConfig {
                 // Public authentication POST endpoints
                 .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/send-code", "/api/auth/reset-password").permitAll()
                 .requestMatchers("/api/auth/me", "/api/auth/logout", "/api/users/**").authenticated()
-                .requestMatchers(HttpMethod.GET, "/api/studyabroad/experiences", "/api/studyabroad/experiences/page").permitAll()
+                .requestMatchers(HttpMethod.GET,
+                    "/api/studyabroad/experiences",
+                    "/api/studyabroad/experiences/page",
+                    "/api/studyabroad/admission-cases/page").permitAll()
                 // Study abroad management APIs require authenticated users
                 .requestMatchers("/api/studyabroad/**").authenticated()
                 // Kaoyan materials - my page and download require auth

@@ -480,6 +480,21 @@ export const studyAbroadApi = {
   deleteExperience(id, token) {
     return request(`/api/studyabroad/experiences/${id}`, { method: 'DELETE', token })
   },
+  admissionCasesPage(params = {}) {
+    const search = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '' && value !== 'all') {
+        search.set(key, value)
+      }
+    })
+    return request(`/api/studyabroad/admission-cases/page?${search.toString()}`)
+  },
+  createAdmissionCase(payload, token) {
+    return request('/api/studyabroad/admission-cases', { method: 'POST', body: payload, token })
+  },
+  deleteAdmissionCase(id, token) {
+    return request(`/api/studyabroad/admission-cases/${id}`, { method: 'DELETE', token })
+  },
   applications(token) {
     return request('/api/studyabroad/applications', { token })
   },
