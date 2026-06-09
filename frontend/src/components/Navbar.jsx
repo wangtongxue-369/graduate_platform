@@ -39,6 +39,7 @@ const trackMenus = {
     to: '/studyabroad',
     items: [
       { label: '申请项目', to: '/studyabroad/applications' },
+      { label: '院校项目库', to: '/studyabroad/schools' },
       { label: '申请时间线', to: '/studyabroad/timeline' },
       { label: '材料清单', to: '/studyabroad/materials' },
       { label: '经验库', to: '/studyabroad/experience' },

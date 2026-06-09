@@ -6,11 +6,13 @@ import com.graduateplatform.common.repository.UserRepository;
 import com.graduateplatform.common.security.JwtTokenProvider;
 import com.graduateplatform.common.service.CosService;
 import com.graduateplatform.init.DataInitializer;
+import com.graduateplatform.studyabroad.entity.StudyAbroadSchoolProgram;
 import com.graduateplatform.studyabroad.repository.StudyAbroadAdmissionCaseRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadApplicationRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadExperienceRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadMaterialAttachmentRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadMaterialRepository;
+import com.graduateplatform.studyabroad.repository.StudyAbroadSchoolProgramRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadTimelineRepository;
 import com.qcloud.cos.model.COSObject;
 import com.qcloud.cos.model.ObjectMetadata;
@@ -28,6 +30,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -50,6 +53,7 @@ class StudyAbroadModuleIntegrationTest {
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired UserRepository userRepository;
     @Autowired StudyAbroadAdmissionCaseRepository admissionCaseRepository;
+    @Autowired StudyAbroadSchoolProgramRepository schoolProgramRepository;
     @Autowired StudyAbroadApplicationRepository applicationRepository;
     @Autowired StudyAbroadTimelineRepository timelineRepository;
     @Autowired StudyAbroadMaterialRepository materialRepository;
@@ -63,6 +67,7 @@ class StudyAbroadModuleIntegrationTest {
     void setUp() {
         materialAttachmentRepository.deleteAll();
         admissionCaseRepository.deleteAll();
+        schoolProgramRepository.deleteAll();
         experienceRepository.deleteAll();
         materialRepository.deleteAll();
         timelineRepository.deleteAll();
@@ -253,6 +258,45 @@ class StudyAbroadModuleIntegrationTest {
         mockMvc.perform(delete("/api/studyabroad/experiences/" + experienceId)
                 .header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk());
+    }
+
+    @Test
+    void schoolProgramDirectoryPublicBrowseAndFilterFlow() throws Exception {
+        schoolProgramRepository.save(StudyAbroadSchoolProgram.builder()
+            .country("UK")
+            .schoolName("University College London")
+            .programName("Computer Science MSc")
+            .degree("Master")
+            .subjectArea("Computer and Data")
+            .qsRank("QS 2026: Top 10")
+            .theRank("THE: Top 30")
+            .usNewsRank("USNews: Top 20")
+            .tuitionRange("GBP 35k-45k/year")
+            .durationText("1 year")
+            .deadlineText("Rolling rounds from October to April")
+            .applicationRequirements("Transcript, language score, PS and recommendations.")
+            .visaPolicy("Student visa usually requires CAS and proof of funds.")
+            .employmentPolicy("Graduate route depends on official policy.")
+            .partnerProgram(true)
+            .partnerNote("Partner summer research record")
+            .riskTags("competitive,high tuition")
+            .riskSummary("Popular program with strong competition.")
+            .sourceNote("Demo data for integration test.")
+            .policyUpdatedAt(LocalDate.of(2026, 6, 1))
+            .build());
+
+        mockMvc.perform(get("/api/studyabroad/schools/page")
+                .param("country", "UK")
+                .param("subjectArea", "Computer and Data")
+                .param("partnerOnly", "true")
+                .param("keyword", "Computer")
+                .param("page", "0")
+                .param("size", "6"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.content[0].schoolName").value("University College London"))
+            .andExpect(jsonPath("$.data.content[0].partnerProgram").value(true))
+            .andExpect(jsonPath("$.data.content[0].riskTags[0]").value("competitive"))
+            .andExpect(jsonPath("$.data.totalElements").value(1));
     }
 
     @Test
