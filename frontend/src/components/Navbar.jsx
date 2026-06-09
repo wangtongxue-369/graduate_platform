@@ -29,7 +29,7 @@ const trackMenus = {
     to: '/job',
     items: [
       { label: '宣讲会/网申', to: '/job/fairs' },
-      { label: '简历模板', to: '/job/resume' },
+      { label: '在线简历', to: '/job/resume' },
       { label: '岗位推荐', to: '/job/recommend' },
       { label: '投递跟踪', to: '/job/applications' },
     ],

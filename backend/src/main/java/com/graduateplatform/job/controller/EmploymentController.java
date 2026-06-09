@@ -15,6 +15,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/job")
@@ -110,11 +111,8 @@ public class EmploymentController {
     }
 
     @GetMapping("/recommendations")
-    public ApiResponse<?> recommendations(@RequestParam(required = false) String city,
-                                          @RequestParam(required = false) String industry,
-                                          @RequestParam(required = false) String roleType,
-                                          Authentication auth) {
-        return ApiResponse.ok(employmentService.recommendations(currentUserId(auth), city, industry, roleType));
+    public ApiResponse<?> recommendations(@RequestParam Map<String, String> filters, Authentication auth) {
+        return ApiResponse.ok(employmentService.recommendations(currentUserId(auth), filters));
     }
 
     @GetMapping("/applications")

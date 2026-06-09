@@ -42,6 +42,7 @@ Microsoft/
 docs/
 !docs/
 docs/*
+!docs/employment-module-guide.md
 !docs/superpowers/
 docs/superpowers/*
 !docs/superpowers/specs/

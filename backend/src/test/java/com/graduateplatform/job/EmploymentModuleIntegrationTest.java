@@ -387,13 +387,31 @@ class EmploymentModuleIntegrationTest {
         mockMvc.perform(put("/api/job/resume")
                 .header("Authorization", "Bearer " + userToken)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(json(Map.of("templateType", "技术岗", "skills", "Java,Spring Boot", "projects", "就业平台"))))
+                .content(json(Map.ofEntries(
+                    Map.entry("templateType", "技术岗"),
+                    Map.entry("targetRole", "Java 后端工程师"),
+                    Map.entry("expectedCities", "上海,苏州"),
+                    Map.entry("expectedIndustries", "互联网,金融科技"),
+                    Map.entry("expectedSalary", "18k-25k"),
+                    Map.entry("educationLevel", "本科"),
+                    Map.entry("major", "计算机科学与技术"),
+                    Map.entry("skillTags", "Java,Spring Boot,MySQL"),
+                    Map.entry("projectKeywords", "就业平台,权限系统"),
+                    Map.entry("internshipKeywords", "后端开发"),
+                    Map.entry("certificates", "CET-6"),
+                    Map.entry("portfolioUrl", "https://github.com/example/resume"),
+                    Map.entry("skills", "Java,Spring Boot"),
+                    Map.entry("projects", "就业平台")
+                ))))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.templateType").value("技术岗"));
+            .andExpect(jsonPath("$.data.templateType").value("技术岗"))
+            .andExpect(jsonPath("$.data.targetRole").value("Java 后端工程师"))
+            .andExpect(jsonPath("$.data.skillTags").value("Java,Spring Boot,MySQL"));
 
         mockMvc.perform(get("/api/job/resume").header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.skills").value("Java,Spring Boot"));
+            .andExpect(jsonPath("$.data.skills").value("Java,Spring Boot"))
+            .andExpect(jsonPath("$.data.expectedCities").value("上海,苏州"));
 
         String createResponse = mockMvc.perform(post("/api/job/applications")
                 .header("Authorization", "Bearer " + userToken)
@@ -590,7 +608,65 @@ class EmploymentModuleIntegrationTest {
         mockMvc.perform(get("/api/job/recommendations").header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data[0].title").value("Java 后端工程师"))
-            .andExpect(jsonPath("$.data[0].matchScore").value(80));
+            .andExpect(jsonPath("$.data[0].matchScore").value(74));
+    }
+
+    @Test
+    void recommendationsDefaultToAllActiveJobsWithoutPreferences() throws Exception {
+        jobRepository.save(JobPosting.builder()
+            .title("默认展示岗位 A").companyName("默认企业 A").city("上海").industry("互联网")
+            .roleType("后端").active(true).build());
+        jobRepository.save(JobPosting.builder()
+            .title("默认展示岗位 B").companyName("默认企业 B").city("苏州").industry("智能制造")
+            .roleType("质量工程").active(true).build());
+
+        mockMvc.perform(get("/api/job/recommendations").header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[0].matchScore").value(40))
+            .andExpect(jsonPath("$.data[1].matchScore").value(40));
+
+        mockMvc.perform(get("/api/job/recommendations")
+                .param("city", "上海")
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[0].title").value("默认展示岗位 A"))
+            .andExpect(jsonPath("$.data[1]").doesNotExist());
+    }
+
+    @Test
+    void recommendationsUseStructuredResumeAsSoftRankingSignal() throws Exception {
+        jobRepository.save(JobPosting.builder()
+            .title("Java 后端工程师").companyName("未来科技").city("上海").industry("互联网")
+            .roleType("后端").salaryRange("18k-25k").educationRequirement("本科")
+            .majorKeywords("计算机科学,软件工程").skillTags("Java,Spring Boot,MySQL,权限系统")
+            .description("负责校园招聘产品后端服务。").active(true).build());
+        jobRepository.save(JobPosting.builder()
+            .title("财务专员").companyName("财务公司").city("北京").industry("金融")
+            .roleType("财务").salaryRange("10k-12k").educationRequirement("本科")
+            .majorKeywords("会计学").skillTags("Excel,报表").active(true).build());
+
+        mockMvc.perform(put("/api/job/resume")
+                .header("Authorization", "Bearer " + userToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.ofEntries(
+                    Map.entry("targetRole", "Java 后端工程师"),
+                    Map.entry("expectedCities", "上海"),
+                    Map.entry("expectedIndustries", "互联网"),
+                    Map.entry("expectedSalary", "18k-25k"),
+                    Map.entry("educationLevel", "本科"),
+                    Map.entry("major", "计算机科学"),
+                    Map.entry("skillTags", "Java,Spring Boot,MySQL"),
+                    Map.entry("projectKeywords", "权限系统,接口开发"),
+                    Map.entry("internshipKeywords", "后端开发")
+                ))))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/job/recommendations").header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[0].title").value("Java 后端工程师"))
+            .andExpect(jsonPath("$.data[0].matchScore").value(100))
+            .andExpect(jsonPath("$.data[0].matchReasons").value(hasItem("简历求职意向匹配")))
+            .andExpect(jsonPath("$.data[0].matchReasons").value(hasItem("简历技能匹配")));
     }
 
     @Test
@@ -611,8 +687,8 @@ class EmploymentModuleIntegrationTest {
         mockMvc.perform(get("/api/job/recommendations").header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data[0].title").value("国企管培生"))
-            .andExpect(jsonPath("$.data[0].matchScore").value(10))
-            .andExpect(jsonPath("$.data[0].matchReasons[0]").value("企业类型匹配"));
+            .andExpect(jsonPath("$.data[0].matchScore").value(46))
+            .andExpect(jsonPath("$.data[0].matchReasons[0]").value("偏好企业类型匹配"));
     }
 
     @Test

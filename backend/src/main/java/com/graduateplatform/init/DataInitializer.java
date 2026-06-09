@@ -106,13 +106,31 @@ public class DataInitializer implements CommandLineRunner {
 
         if (!userRepository.existsByEmail("job@graduate.local")) {
             User jobUser = userRepository.save(User.builder()
-                .name("Employment Test User").email("job@graduate.local").phone("13800138001")
+                .name("就业测试用户").email("job@graduate.local").phone("13800138001")
                 .password(passwordEncoder.encode("job1234"))
-                .school("Graduate University").major("Computer Science").grade("2024")
+                .school("测试大学").major("计算机科学").grade("2024")
                 .target("job").role("user").status("normal").build());
             jobUser.setCreatedAt(thirtyDaysAgo);
             userRepository.save(jobUser);
         }
+        userRepository.findByEmail("job@graduate.local").ifPresent(jobUser -> {
+            boolean changed = false;
+            if ("Employment Test User".equals(jobUser.getName())) {
+                jobUser.setName("就业测试用户");
+                changed = true;
+            }
+            if ("Graduate University".equals(jobUser.getSchool())) {
+                jobUser.setSchool("测试大学");
+                changed = true;
+            }
+            if ("Computer Science".equals(jobUser.getMajor())) {
+                jobUser.setMajor("计算机科学");
+                changed = true;
+            }
+            if (changed) {
+                userRepository.save(jobUser);
+            }
+        });
     }
 
     private void initQuestionBanks() {
@@ -199,6 +217,63 @@ public class DataInitializer implements CommandLineRunner {
                 .build());
         }
 
+        java.time.LocalDateTime aiFairStart = java.time.LocalDateTime.now().plusDays(5).withHour(14).withMinute(0).withSecond(0).withNano(0);
+        boolean hasAiFair = careerFairRepository.existsByTitleAndCompanyName("人工智能算法专场宣讲会", "星河智能科技");
+        if (!hasAiFair) {
+            careerFairRepository.save(CareerFair.builder()
+                .title("人工智能算法专场宣讲会")
+                .companyName("星河智能科技")
+                .city("上海")
+                .industry("人工智能")
+                .targetRoles("算法工程师,机器学习工程师,数据挖掘工程师")
+                .location("学生中心 B201")
+                .startTime(aiFairStart)
+                .endTime(aiFairStart.plusHours(2))
+                .applyDeadline(aiFairStart.plusDays(3).withHour(23).withMinute(59))
+                .applyUrl("https://jobs.example.com/galaxy-ai")
+                .description("面向计算机、软件工程、人工智能等相关专业毕业生，介绍算法研发、模型训练、数据分析等岗位需求和校招流程。")
+                .active(true)
+                .build());
+        }
+
+        java.time.LocalDateTime fintechFairStart = java.time.LocalDateTime.now().plusDays(9).withHour(10).withMinute(0).withSecond(0).withNano(0);
+        boolean hasFintechFair = careerFairRepository.existsByTitleAndCompanyName("金融科技校招宣讲会", "海通数科");
+        if (!hasFintechFair) {
+            careerFairRepository.save(CareerFair.builder()
+                .title("金融科技校招宣讲会")
+                .companyName("海通数科")
+                .city("上海")
+                .industry("金融科技")
+                .targetRoles("Java开发工程师,测试开发工程师,数据分析师")
+                .location("经管楼 305")
+                .startTime(fintechFairStart)
+                .endTime(fintechFairStart.plusHours(2))
+                .applyDeadline(fintechFairStart.plusDays(3).withHour(18).withMinute(0))
+                .applyUrl("https://jobs.example.com/haitong-fintech")
+                .description("围绕银行、证券和支付场景发布技术类校招岗位，说明笔试、面试和实习转正安排。")
+                .active(true)
+                .build());
+        }
+
+        java.time.LocalDateTime donghaiFairStart = java.time.LocalDateTime.now().plusDays(14).withHour(15).withMinute(0).withSecond(0).withNano(0);
+        boolean hasDonghaiFair = careerFairRepository.existsByTitleAndCompanyName("智能制造管培生招聘会", "东海精工集团");
+        if (!hasDonghaiFair) {
+            careerFairRepository.save(CareerFair.builder()
+                .title("智能制造管培生招聘会")
+                .companyName("东海精工集团")
+                .city("苏州")
+                .industry("智能制造")
+                .targetRoles("生产管培生,质量工程师,供应链计划专员")
+                .location("就业指导中心 1 楼报告厅")
+                .startTime(donghaiFairStart)
+                .endTime(donghaiFairStart.plusHours(2).plusMinutes(30))
+                .applyDeadline(donghaiFairStart.plusDays(3).withHour(20).withMinute(0))
+                .applyUrl("https://jobs.example.com/donghai-manufacturing")
+                .description("面向工科和管理类毕业生介绍制造业校招培养体系，覆盖生产运营、质量管理和供应链方向。")
+                .active(true)
+                .build());
+        }
+
         boolean hasBackendJob = jobPostingRepository.existsByTitleAndCompanyName("Java Backend Engineer", "Future Tech")
             || jobPostingRepository.existsByTitleAndCompanyName("Java 后端工程师", "未来科技");
         if (!hasBackendJob) {
@@ -235,6 +310,101 @@ public class DataInitializer implements CommandLineRunner {
                 .skillTags("数据分析,沟通协调,项目管理")
                 .description("负责产品运营数据分析、流程协同和项目跟进，参与制造业校招生管培培养计划。")
                 .applyUrl("https://jobs.example.com/product-operation")
+                .active(true)
+                .build());
+        }
+
+        boolean hasFrontendJob = jobPostingRepository.existsByTitleAndCompanyName("前端开发工程师", "未来科技");
+        if (!hasFrontendJob) {
+            jobPostingRepository.save(JobPosting.builder()
+                .title("前端开发工程师")
+                .companyName("未来科技")
+                .city("上海")
+                .industry("互联网")
+                .companyType("民企")
+                .roleType("前端")
+                .salaryRange("16k-22k")
+                .educationRequirement("本科及以上")
+                .majorKeywords("计算机科学,软件工程,数字媒体技术")
+                .skillTags("Vue,React,JavaScript,TypeScript")
+                .description("参与校园招聘平台 Web 前端建设，负责页面开发、组件封装、接口联调和交互体验优化。")
+                .applyUrl("https://jobs.example.com/frontend-engineer")
+                .active(true)
+                .build());
+        }
+
+        boolean hasDataAnalystJob = jobPostingRepository.existsByTitleAndCompanyName("数据分析师", "海通数科");
+        if (!hasDataAnalystJob) {
+            jobPostingRepository.save(JobPosting.builder()
+                .title("数据分析师")
+                .companyName("海通数科")
+                .city("上海")
+                .industry("金融科技")
+                .companyType("国企")
+                .roleType("数据分析")
+                .salaryRange("14k-20k")
+                .educationRequirement("本科及以上")
+                .majorKeywords("统计学,数据科学,计算机科学,金融工程")
+                .skillTags("SQL,Python,Excel,Tableau")
+                .description("围绕金融业务场景进行数据清洗、指标建设、报表分析和业务洞察输出，支持产品与运营决策。")
+                .applyUrl("https://jobs.example.com/data-analyst")
+                .active(true)
+                .build());
+        }
+
+        boolean hasTestDevelopmentJob = jobPostingRepository.existsByTitleAndCompanyName("测试开发工程师", "星河智能科技");
+        if (!hasTestDevelopmentJob) {
+            jobPostingRepository.save(JobPosting.builder()
+                .title("测试开发工程师")
+                .companyName("星河智能科技")
+                .city("上海")
+                .industry("人工智能")
+                .companyType("民企")
+                .roleType("测试开发")
+                .salaryRange("15k-21k")
+                .educationRequirement("本科及以上")
+                .majorKeywords("计算机科学,软件工程,人工智能")
+                .skillTags("Python,自动化测试,接口测试,Linux")
+                .description("负责 AI 平台和模型服务的测试体系建设，参与自动化测试、接口验证、质量度量和发布保障。")
+                .applyUrl("https://jobs.example.com/test-development")
+                .active(true)
+                .build());
+        }
+
+        boolean hasSecurityJob = jobPostingRepository.existsByTitleAndCompanyName("网络安全工程师", "云盾安全");
+        if (!hasSecurityJob) {
+            jobPostingRepository.save(JobPosting.builder()
+                .title("网络安全工程师")
+                .companyName("云盾安全")
+                .city("杭州")
+                .industry("网络安全")
+                .companyType("民企")
+                .roleType("安全")
+                .salaryRange("18k-26k")
+                .educationRequirement("本科及以上")
+                .majorKeywords("网络空间安全,信息安全,计算机科学")
+                .skillTags("渗透测试,漏洞分析,Linux,Python")
+                .description("参与企业安全服务项目，负责漏洞验证、安全加固、日志分析和应急响应支持。")
+                .applyUrl("https://jobs.example.com/security-engineer")
+                .active(true)
+                .build());
+        }
+
+        boolean hasProductAssistantJob = jobPostingRepository.existsByTitleAndCompanyName("产品经理助理", "港湾装备集团");
+        if (!hasProductAssistantJob) {
+            jobPostingRepository.save(JobPosting.builder()
+                .title("产品经理助理")
+                .companyName("港湾装备集团")
+                .city("苏州")
+                .industry("智能制造")
+                .companyType("国企")
+                .roleType("产品")
+                .salaryRange("10k-15k")
+                .educationRequirement("本科及以上")
+                .majorKeywords("管理学,工业工程,计算机科学,自动化")
+                .skillTags("需求分析,Axure,数据分析,沟通协调")
+                .description("参与制造业数字化产品的需求调研、原型设计、项目跟进和跨部门沟通，协助推动产品落地。")
+                .applyUrl("https://jobs.example.com/product-assistant")
                 .active(true)
                 .build());
         }
