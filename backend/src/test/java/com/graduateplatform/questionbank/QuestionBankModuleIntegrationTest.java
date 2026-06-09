@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -471,6 +472,35 @@ class QuestionBankModuleIntegrationTest {
             .andExpect(jsonPath("$.data.content.length()").value(3))
             .andExpect(jsonPath("$.data.totalElements").value(5))
             .andExpect(jsonPath("$.data.totalPages").value(2));
+    }
+
+    // ==================== File import (CSV) — Bug #6 ====================
+
+    // 旧实现按 BufferedReader.readLine() + 手写 parseCsvLine 切字段，
+    // 题干带换行或选项带 "" 转义时会切碎/字段错位。换 commons-csv 后必须能正确解析。
+    @Test
+    void csvImportHandlesMultiLineFieldsAndEscapedQuotes() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+
+        // 第 2 行的 stem 跨两行；第 3 行的 stem 含 "" 转义的双引号；选项里也带逗号。
+        String csv = "stem,optionsJson,answer,chapter,questionType,difficulty\n"
+            + "\"多行题干第一段\n第二段\",\"[\"\"A.对\"\",\"\"B.错\"\"]\",A,第1章,single,easy\n"
+            + "\"含\"\"双引号\"\"的题干\",\"[\"\"A,有逗号\"\",\"\"B.无\"\"]\",A,第1章,single,easy\n";
+
+        org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile(
+            "file", "questions.csv", "text/csv", csv.getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(multipart("/api/admin/question-banks/" + bank.getId() + "/questions/import")
+                .file(file)
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.created").value(2))
+            .andExpect(jsonPath("$.data.failed").value(0));
+
+        List<Question> saved = questionRepository.findByBankId(bank.getId());
+        assertThat(saved).hasSize(2);
+        assertThat(saved).anyMatch(q -> q.getStem().equals("多行题干第一段\n第二段"));
+        assertThat(saved).anyMatch(q -> q.getStem().equals("含\"双引号\"的题干"));
     }
 
     // ==================== Batch update guards (Bug #4 + #5) ====================
