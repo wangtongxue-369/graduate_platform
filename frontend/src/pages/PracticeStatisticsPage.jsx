@@ -71,9 +71,12 @@ function PracticeStatisticsPage() {
     )
   }
 
+  // 后端约定：客观题数为 0 时 averageAccuracy=null（"该周期未练客观题"）。
+  // 这里保留 null 让 recharts 在该点自然断线，而不是用 ?? 0 强制画成 0%
+  // 误导用户以为"全错"。
   const trendData = (stats?.trend || []).map((item) => ({
     ...item,
-    accuracy: item.averageAccuracy ?? 0,
+    accuracy: item.averageAccuracy,
   }))
 
   const wrongPointData = (stats?.frequentWrongKnowledgePoints || []).map((item) => ({

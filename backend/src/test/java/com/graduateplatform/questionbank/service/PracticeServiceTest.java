@@ -144,6 +144,55 @@ class PracticeServiceTest {
         verify(wrongQuestionRepository).save(any(WrongQuestion.class));
     }
 
+    // Bug #7: 错题题目失去 bank 关联时，必须抛干净的 BusinessException(400)
+    // 而不是让 session.setTarget(bank.getTarget()) 在下一行 NPE 500。
+    @Test
+    void wrongRetryWithOrphanedQuestionThrowsBusinessException() {
+        User user = user(1L);
+        Question orphan = objectiveQuestion(200L, null, "A"); // 无 bank
+        WrongQuestion wq = WrongQuestion.builder().id(1L).user(user).question(orphan).wrongCount(1).build();
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(wrongQuestionRepository.findById(1L)).thenReturn(Optional.of(wq));
+
+        CreatePracticeSessionRequest req = new CreatePracticeSessionRequest();
+        req.setMode("wrong_retry");
+        req.setWrongQuestionIds(List.of(1L));
+
+        assertThatThrownBy(() -> practiceService.createSession(user.getId(), req))
+            .isInstanceOf(BusinessException.class)
+            .hasMessageContaining("题库已不存在");
+    }
+
+    // Bug #9: 错题重练应尊重 req.getLimit()，与标准模式一致。
+    @Test
+    void wrongRetryRespectsRequestLimit() {
+        User user = user(1L);
+        QuestionBank bank = bank(10L);
+        WrongQuestion w1 = WrongQuestion.builder().id(1L).user(user).question(objectiveQuestion(101L, bank, "A")).build();
+        WrongQuestion w2 = WrongQuestion.builder().id(2L).user(user).question(objectiveQuestion(102L, bank, "B")).build();
+        WrongQuestion w3 = WrongQuestion.builder().id(3L).user(user).question(objectiveQuestion(103L, bank, "C")).build();
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(wrongQuestionRepository.findById(1L)).thenReturn(Optional.of(w1));
+        when(wrongQuestionRepository.findById(2L)).thenReturn(Optional.of(w2));
+        when(wrongQuestionRepository.findById(3L)).thenReturn(Optional.of(w3));
+        when(sessionRepository.save(any(PracticeSession.class))).thenAnswer(invocation -> {
+            PracticeSession s = invocation.getArgument(0);
+            s.setId(99L);
+            return s;
+        });
+
+        CreatePracticeSessionRequest req = new CreatePracticeSessionRequest();
+        req.setMode("wrong_retry");
+        req.setWrongQuestionIds(List.of(1L, 2L, 3L));
+        req.setLimit(2);
+
+        Map<String, Object> resp = practiceService.createSession(user.getId(), req);
+        List<?> questions = (List<?>) resp.get("questions");
+        assertThat(questions).hasSize(2);
+    }
+
     @Test
     void getStatisticsAggregatesSubmittedSessionsAndWrongKnowledgePoints() {
         PracticeSession first = PracticeSession.builder()
