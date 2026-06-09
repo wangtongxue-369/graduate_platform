@@ -25,8 +25,19 @@ class QuestionBankSeedDumpSqlTest {
     void dumpSeedSql() throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append("-- 题库练习模块 — 种子题库与题目，幂等可重复执行。\n");
-        sb.append("-- 仅在题库名不存在时插入题库；题目以 (bank_name, stem) 复合键去重。\n");
-        sb.append("-- 字符集与时间戳与 JPA 写入路径保持一致。\n");
+        sb.append("-- \n");
+        sb.append("-- 行为说明：\n");
+        sb.append("--   1) 同名题库已存在时 → 跳过 INSERT bank，但 @bank_id 仍指向已有那一行；\n");
+        sb.append("--   2) 同 (bank_id, stem) 题目已存在时 → 跳过 INSERT question；\n");
+        sb.append("--   3) 题库不存在时 → 新建题库，再补该库下所有题目。\n");
+        sb.append("-- \n");
+        sb.append("-- 用途：\n");
+        sb.append("--   线上数据库已有 \"考研政治题库\" 等 4 个旧库（各 5 题）时，跑本脚本会：\n");
+        sb.append("--     - 旧库自动复用，仅补 25 道新题；\n");
+        sb.append("--     - 新增 \"考研数学题库\" 与 \"计算机专业课题库\"；\n");
+        sb.append("--   在干净数据库上跑则全 6 库 × ~30 题完整建立。\n");
+        sb.append("-- \n");
+        sb.append("-- 由 QuestionBankSeedDumpSqlTest 自动从 Java 种子数据生成，请勿手工修改本文件。\n");
         sb.append("SET NAMES utf8mb4;\n\n");
 
         for (SeedBank bank : QuestionBankSeed.ALL_BANKS) {
