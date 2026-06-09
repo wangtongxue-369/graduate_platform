@@ -4,15 +4,18 @@ import com.graduateplatform.common.entity.User;
 import com.graduateplatform.common.exception.BusinessException;
 import com.graduateplatform.common.repository.UserRepository;
 import com.graduateplatform.common.service.CosService;
+import com.graduateplatform.studyabroad.dto.AdmissionCaseRequest;
 import com.graduateplatform.studyabroad.dto.ApplicationRequest;
 import com.graduateplatform.studyabroad.dto.ExperienceRequest;
 import com.graduateplatform.studyabroad.dto.MaterialRequest;
 import com.graduateplatform.studyabroad.dto.TimelineRequest;
+import com.graduateplatform.studyabroad.entity.StudyAbroadAdmissionCase;
 import com.graduateplatform.studyabroad.entity.StudyAbroadApplication;
 import com.graduateplatform.studyabroad.entity.StudyAbroadExperience;
 import com.graduateplatform.studyabroad.entity.StudyAbroadMaterial;
 import com.graduateplatform.studyabroad.entity.StudyAbroadMaterialAttachment;
 import com.graduateplatform.studyabroad.entity.StudyAbroadTimeline;
+import com.graduateplatform.studyabroad.repository.StudyAbroadAdmissionCaseRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadApplicationRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadExperienceRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadMaterialAttachmentRepository;
@@ -40,9 +43,11 @@ public class StudyAbroadService {
     private static final Set<String> VALID_APPLICATION_STATUSES =
         Set.of("planning", "preparing", "submitted", "offer", "rejected");
     private static final Set<String> VALID_PRIORITIES = Set.of("dream", "match", "safe");
+    private static final Set<String> VALID_ADMISSION_RESULTS = Set.of("admit", "reject", "waitlist");
     private static final long MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
     private static final int MAX_ATTACHMENT_COUNT = 5;
 
+    private final StudyAbroadAdmissionCaseRepository admissionCaseRepository;
     private final StudyAbroadApplicationRepository applicationRepository;
     private final StudyAbroadExperienceRepository experienceRepository;
     private final StudyAbroadTimelineRepository timelineRepository;
@@ -51,13 +56,15 @@ public class StudyAbroadService {
     private final UserRepository userRepository;
     private final CosService cosService;
 
-    public StudyAbroadService(StudyAbroadApplicationRepository applicationRepository,
+    public StudyAbroadService(StudyAbroadAdmissionCaseRepository admissionCaseRepository,
+                              StudyAbroadApplicationRepository applicationRepository,
                               StudyAbroadExperienceRepository experienceRepository,
                               StudyAbroadTimelineRepository timelineRepository,
                               StudyAbroadMaterialRepository materialRepository,
                               StudyAbroadMaterialAttachmentRepository materialAttachmentRepository,
                               UserRepository userRepository,
                               CosService cosService) {
+        this.admissionCaseRepository = admissionCaseRepository;
         this.applicationRepository = applicationRepository;
         this.experienceRepository = experienceRepository;
         this.timelineRepository = timelineRepository;
@@ -94,6 +101,63 @@ public class StudyAbroadService {
         map.put("totalElements", result.getTotalElements());
         map.put("totalPages", Math.max(1, result.getTotalPages()));
         return map;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getAdmissionCasesPage(String country,
+                                                     String result,
+                                                     String major,
+                                                     String keyword,
+                                                     int page,
+                                                     int size) {
+        Page<StudyAbroadAdmissionCase> pageResult = admissionCaseRepository.searchPage(
+            normalizeFilter(country),
+            normalizeFilter(result),
+            normalizeFilter(major),
+            normalizeFilter(keyword),
+            PageRequest.of(Math.max(0, page), Math.max(1, Math.min(size, 50)), Sort.by(Sort.Direction.DESC, "createdAt"))
+        );
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("content", pageResult.getContent().stream().map(this::toAdmissionCaseMap).toList());
+        map.put("page", pageResult.getNumber());
+        map.put("size", pageResult.getSize());
+        map.put("totalElements", pageResult.getTotalElements());
+        map.put("totalPages", Math.max(1, pageResult.getTotalPages()));
+        return map;
+    }
+
+    @Transactional
+    public Map<String, Object> createAdmissionCase(Long userId, AdmissionCaseRequest req) {
+        User user = ensureUser(userId);
+        StudyAbroadAdmissionCase item = StudyAbroadAdmissionCase.builder()
+            .author(user)
+            .applicationYear(req.getApplicationYear().trim())
+            .studentMajor(req.getStudentMajor().trim())
+            .gpa(req.getGpa().trim())
+            .rankPercent(normalize(req.getRankPercent(), "未填写"))
+            .languageType(req.getLanguageType().trim())
+            .languageScore(req.getLanguageScore().trim())
+            .standardizedScore(normalize(req.getStandardizedScore(), "无"))
+            .softBackground(normalize(req.getSoftBackground(), "暂未补充"))
+            .country(req.getCountry().trim())
+            .school(req.getSchool().trim())
+            .program(req.getProgram().trim())
+            .degree(req.getDegree().trim())
+            .admissionResult(normalizeAdmissionResult(req.getAdmissionResult()))
+            .scholarship(normalize(req.getScholarship(), "未说明"))
+            .applicationMode(normalize(req.getApplicationMode(), "匿名分享"))
+            .tags(normalize(req.getTags(), ""))
+            .summary(req.getSummary().trim())
+            .build();
+        return toAdmissionCaseMap(admissionCaseRepository.save(item));
+    }
+
+    @Transactional
+    public void deleteAdmissionCase(Long userId, Long id) {
+        ensureUser(userId);
+        StudyAbroadAdmissionCase item = admissionCaseRepository.findByIdAndAuthorId(id, userId)
+            .orElseThrow(() -> new BusinessException("录取案例不存在或无权限操作"));
+        admissionCaseRepository.delete(item);
     }
 
     @Transactional
@@ -392,6 +456,14 @@ public class StudyAbroadService {
         return normalized;
     }
 
+    private String normalizeAdmissionResult(String result) {
+        String normalized = result == null || result.isBlank() ? "admit" : result.trim();
+        if (!VALID_ADMISSION_RESULTS.contains(normalized)) {
+            throw new BusinessException("录取结果状态无效");
+        }
+        return normalized;
+    }
+
     private String normalize(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value.trim();
     }
@@ -414,6 +486,32 @@ public class StudyAbroadService {
         map.put("summary", item.getSummary());
         map.put("content", item.getContent());
         map.put("tags", splitTags(item.getTags()));
+        map.put("createdAt", item.getCreatedAt() != null ? item.getCreatedAt().toString() : null);
+        map.put("updatedAt", item.getUpdatedAt() != null ? item.getUpdatedAt().toString() : null);
+        return map;
+    }
+
+    private Map<String, Object> toAdmissionCaseMap(StudyAbroadAdmissionCase item) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", item.getId());
+        map.put("authorId", item.getAuthor() != null ? item.getAuthor().getId() : null);
+        map.put("applicationYear", item.getApplicationYear());
+        map.put("studentMajor", item.getStudentMajor());
+        map.put("gpa", item.getGpa());
+        map.put("rankPercent", item.getRankPercent());
+        map.put("languageType", item.getLanguageType());
+        map.put("languageScore", item.getLanguageScore());
+        map.put("standardizedScore", item.getStandardizedScore());
+        map.put("softBackground", item.getSoftBackground());
+        map.put("country", item.getCountry());
+        map.put("school", item.getSchool());
+        map.put("program", item.getProgram());
+        map.put("degree", item.getDegree());
+        map.put("admissionResult", item.getAdmissionResult());
+        map.put("scholarship", item.getScholarship());
+        map.put("applicationMode", item.getApplicationMode());
+        map.put("tags", splitTags(item.getTags()));
+        map.put("summary", item.getSummary());
         map.put("createdAt", item.getCreatedAt() != null ? item.getCreatedAt().toString() : null);
         map.put("updatedAt", item.getUpdatedAt() != null ? item.getUpdatedAt().toString() : null);
         return map;

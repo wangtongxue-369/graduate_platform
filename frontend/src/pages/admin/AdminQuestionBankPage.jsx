@@ -64,7 +64,8 @@ export default function AdminQuestionBankPage() {
   }
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`确定删除题库「${name}」吗？该操作会同时删除库内所有题目且不可恢复。`)) return
+    // 后端是软删除（仅置 active=false），可经 /status 重新启用，文案与实际行为对齐。
+    if (!window.confirm(`确定停用题库「${name}」吗？停用后该题库与库内题目对用户不可见，可在列表中重新启用。`)) return
     try {
       await adminQuestionBankApi.deleteBank(id, token)
       loadBanks()

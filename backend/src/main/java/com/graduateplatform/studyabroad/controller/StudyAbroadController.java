@@ -1,6 +1,7 @@
 package com.graduateplatform.studyabroad.controller;
 
 import com.graduateplatform.common.dto.ApiResponse;
+import com.graduateplatform.studyabroad.dto.AdmissionCaseRequest;
 import com.graduateplatform.studyabroad.dto.ApplicationRequest;
 import com.graduateplatform.studyabroad.dto.ExperienceRequest;
 import com.graduateplatform.studyabroad.dto.MaterialRequest;
@@ -28,6 +29,30 @@ public class StudyAbroadController {
 
     public StudyAbroadController(StudyAbroadService studyAbroadService) {
         this.studyAbroadService = studyAbroadService;
+    }
+
+    @GetMapping("/admission-cases/page")
+    public ApiResponse<?> admissionCasesPage(@RequestParam(required = false) String country,
+                                             @RequestParam(required = false) String result,
+                                             @RequestParam(required = false) String major,
+                                             @RequestParam(required = false) String keyword,
+                                             @RequestParam(defaultValue = "0") int page,
+                                             @RequestParam(defaultValue = "9") int size) {
+        return ApiResponse.ok(studyAbroadService.getAdmissionCasesPage(country, result, major, keyword, page, size));
+    }
+
+    @PostMapping("/admission-cases")
+    public ApiResponse<?> createAdmissionCase(@Valid @RequestBody AdmissionCaseRequest req, Authentication auth) {
+        return ApiResponse.ok(
+            studyAbroadService.createAdmissionCase(getCurrentUserId(auth), req),
+            "Admission case created"
+        );
+    }
+
+    @DeleteMapping("/admission-cases/{id}")
+    public ApiResponse<?> deleteAdmissionCase(@PathVariable Long id, Authentication auth) {
+        studyAbroadService.deleteAdmissionCase(getCurrentUserId(auth), id);
+        return ApiResponse.ok(null, "Admission case deleted");
     }
 
     @GetMapping("/experiences")

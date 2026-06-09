@@ -4,6 +4,7 @@ export const countryOptions = [
   { value: 'US', label: '美国' },
   { value: 'Australia', label: '澳大利亚' },
   { value: 'Canada', label: '加拿大' },
+  { value: 'Hong Kong', label: '中国香港' },
   { value: 'Singapore', label: '新加坡' },
   { value: 'Japan', label: '日本' },
   { value: 'Germany', label: '德国' },

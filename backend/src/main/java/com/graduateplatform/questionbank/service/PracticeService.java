@@ -94,7 +94,15 @@ public class PracticeService {
             if (questions.isEmpty()) {
                 throw new BusinessException("所选错题均不可练习");
             }
+            // 错题题目可能因数据迁移/历史脏数据失去关联题库；显式抛业务异常，
+            // 而不是让 session.setTarget(bank.getTarget()) 在下一行 NPE 500。
             bank = questions.get(0).getBank();
+            if (bank == null) {
+                throw new BusinessException("错题所属题库已不存在，无法重练");
+            }
+            // 与标准模式保持一致：尊重 req.getLimit()，便于前端/后续场景统一控制题量。
+            int limit = resolveLimit(req.getLimit(), mode, questions.size());
+            questions = questions.stream().limit(limit).toList();
         } else {
             // 标准模式：按题库条件筛选
             if (req.getBankId() == null) {

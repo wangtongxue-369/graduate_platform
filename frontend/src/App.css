@@ -3157,6 +3157,16 @@
   color: #0f766e;
 }
 
+.study-status.warning {
+  background: rgba(245, 158, 11, 0.16);
+  color: #92400e;
+}
+
+.study-status.danger {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
 .study-check {
   min-width: 86px;
   display: flex;
@@ -3214,6 +3224,113 @@
 
 .experience-card {
   min-height: 250px;
+}
+
+.experience-page .experience-filters {
+  order: 1;
+}
+
+.experience-page .notice-box {
+  order: 2;
+}
+
+.experience-page .experience-grid {
+  order: 3;
+}
+
+.experience-page .experience-detail {
+  order: 4;
+}
+
+.experience-page .pagination {
+  order: 5;
+}
+
+.experience-page .experience-form {
+  order: 6;
+}
+
+.experience-page .study-cta {
+  order: 7;
+}
+
+.experience-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.experience-card .tag-row {
+  margin-top: auto;
+}
+
+.experience-card-actions {
+  margin: 14px 0 0;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.experience-detail {
+  gap: 18px;
+}
+
+.experience-detail .section-head h2 {
+  margin: 10px 0 0;
+}
+
+.experience-detail-content {
+  display: grid;
+  gap: 12px;
+  max-width: 880px;
+  color: var(--text);
+  line-height: 1.85;
+  font-size: 16px;
+}
+
+.experience-detail-content p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.admission-grid {
+  align-items: stretch;
+}
+
+.admission-card {
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.case-profile {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.case-profile span,
+.case-soft {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.78);
+  padding: 9px 10px;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.case-soft {
+  display: grid;
+  gap: 6px;
+}
+
+.case-soft strong {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.admission-card .tag-row {
+  margin-top: auto;
 }
 
 .study-cta {
@@ -4605,4 +4722,10 @@
 
 .resume-summary-grid .resume-status-panel {
   margin-top: 4px;
+}
+
+@media (max-width: 720px) {
+  .case-profile {
+    grid-template-columns: 1fr;
+  }
 }

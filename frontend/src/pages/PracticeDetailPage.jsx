@@ -10,6 +10,14 @@ const modeLabels = {
   chapter: '章节练习',
   random: '随机练习',
   mock: '模拟练习',
+  wrong_retry: '错题重练',
+}
+
+// 与后端 PracticeService.SUBJECTIVE_TYPES 一致：这些题型不计入判分、走主观题作答（textarea）。
+// 旧实现只识别 'subjective'，导致 essay/short_answer 题渲染成空选项按钮，用户无法作答。
+const SUBJECTIVE_QUESTION_TYPES = new Set(['subjective', 'essay', 'short_answer'])
+function isSubjectiveType(type) {
+  return SUBJECTIVE_QUESTION_TYPES.has(type)
 }
 
 function safeParseOptions(rawOptions) {
@@ -250,7 +258,7 @@ function PracticeDetailPage() {
                       <span>{current.knowledgePoint || '未标注知识点'}</span>
                     </div>
                     <div className="question-stem">{current.stem}</div>
-                    {current.questionType === 'subjective' ? (
+                    {isSubjectiveType(current.questionType) ? (
                       <textarea
                         className="text-area"
                         rows={8}

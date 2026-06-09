@@ -6,6 +6,7 @@ import com.graduateplatform.common.repository.UserRepository;
 import com.graduateplatform.common.security.JwtTokenProvider;
 import com.graduateplatform.common.service.CosService;
 import com.graduateplatform.init.DataInitializer;
+import com.graduateplatform.studyabroad.repository.StudyAbroadAdmissionCaseRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadApplicationRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadExperienceRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadMaterialAttachmentRepository;
@@ -48,6 +49,7 @@ class StudyAbroadModuleIntegrationTest {
     @Autowired JwtTokenProvider tokenProvider;
     @Autowired PasswordEncoder passwordEncoder;
     @Autowired UserRepository userRepository;
+    @Autowired StudyAbroadAdmissionCaseRepository admissionCaseRepository;
     @Autowired StudyAbroadApplicationRepository applicationRepository;
     @Autowired StudyAbroadTimelineRepository timelineRepository;
     @Autowired StudyAbroadMaterialRepository materialRepository;
@@ -60,6 +62,7 @@ class StudyAbroadModuleIntegrationTest {
     @BeforeEach
     void setUp() {
         materialAttachmentRepository.deleteAll();
+        admissionCaseRepository.deleteAll();
         experienceRepository.deleteAll();
         materialRepository.deleteAll();
         timelineRepository.deleteAll();
@@ -250,6 +253,83 @@ class StudyAbroadModuleIntegrationTest {
         mockMvc.perform(delete("/api/studyabroad/experiences/" + experienceId)
                 .header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk());
+    }
+
+    @Test
+    void admissionCasePublicBrowseCreateAndOwnershipDeleteFlow() throws Exception {
+        String createResponse = mockMvc.perform(post("/api/studyabroad/admission-cases")
+                .header("Authorization", "Bearer " + userToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.ofEntries(
+                    Map.entry("applicationYear", "2026"),
+                    Map.entry("studentMajor", "Computer Science"),
+                    Map.entry("gpa", "3.72/4.0"),
+                    Map.entry("rankPercent", "Top 20%"),
+                    Map.entry("languageType", "IELTS"),
+                    Map.entry("languageScore", "7.0"),
+                    Map.entry("standardizedScore", "GRE 324"),
+                    Map.entry("softBackground", "One research project and two internships."),
+                    Map.entry("country", "UK"),
+                    Map.entry("school", "University College London"),
+                    Map.entry("program", "Computer Science MSc"),
+                    Map.entry("degree", "Master"),
+                    Map.entry("admissionResult", "admit"),
+                    Map.entry("scholarship", "No scholarship"),
+                    Map.entry("applicationMode", "DIY"),
+                    Map.entry("tags", "DIY,CS,admit"),
+                    Map.entry("summary", "CS background with project fit helped the application.")
+                ))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.authorId").isNumber())
+            .andExpect(jsonPath("$.data.school").value("University College London"))
+            .andExpect(jsonPath("$.data.tags[0]").value("DIY"))
+            .andReturn().getResponse().getContentAsString();
+        long caseId = objectMapper.readTree(createResponse).path("data").path("id").asLong();
+
+        mockMvc.perform(get("/api/studyabroad/admission-cases/page")
+                .param("country", "UK")
+                .param("result", "admit")
+                .param("major", "Computer")
+                .param("keyword", "College")
+                .param("page", "0")
+                .param("size", "6"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.content[0].school").value("University College London"))
+            .andExpect(jsonPath("$.data.content[0].admissionResult").value("admit"))
+            .andExpect(jsonPath("$.data.totalElements").value(1));
+
+        mockMvc.perform(post("/api/studyabroad/admission-cases")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.ofEntries(
+                    Map.entry("applicationYear", "2026"),
+                    Map.entry("studentMajor", "Computer Science"),
+                    Map.entry("gpa", "3.72/4.0"),
+                    Map.entry("languageType", "IELTS"),
+                    Map.entry("languageScore", "7.0"),
+                    Map.entry("country", "UK"),
+                    Map.entry("school", "University College London"),
+                    Map.entry("program", "Computer Science MSc"),
+                    Map.entry("degree", "Master"),
+                    Map.entry("admissionResult", "admit"),
+                    Map.entry("summary", "Should require login.")
+                ))))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(delete("/api/studyabroad/admission-cases/" + caseId)
+                .header("Authorization", "Bearer " + otherToken))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("录取案例不存在或无权限操作"));
+
+        mockMvc.perform(delete("/api/studyabroad/admission-cases/" + caseId)
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/studyabroad/admission-cases/page")
+                .param("country", "UK")
+                .param("result", "admit"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.totalElements").value(0));
     }
 
     @Test
