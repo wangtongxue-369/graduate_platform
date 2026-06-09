@@ -1,6 +1,7 @@
 package com.graduateplatform.job.controller;
 
 import com.graduateplatform.common.dto.ApiResponse;
+import com.graduateplatform.common.exception.UnauthorizedException;
 import com.graduateplatform.job.dto.*;
 import com.graduateplatform.job.service.EmploymentService;
 import jakarta.validation.Valid;
@@ -150,7 +151,7 @@ public class EmploymentController {
 
     private Long currentUserId(Authentication auth) {
         if (auth == null || !(auth.getPrincipal() instanceof Long userId)) {
-            return null;
+            throw new UnauthorizedException("请先登录");
         }
         return userId;
     }

@@ -73,6 +73,7 @@ function parseBooleanFilter(value) {
 
 function ProfilePage() {
   const { token, user, isAuthed, logout } = useAuth()
+  const canUseRemote = Boolean(isAuthed && token && token !== 'dev-token')
   const [profile, setProfile] = useState(null)
   const [dashboard, setDashboard] = useState(null)
   const [error, setError] = useState('')
@@ -173,6 +174,24 @@ function ProfilePage() {
     let active = true
     async function load() {
       if (!token) return
+      if (!canUseRemote) {
+        const cachedProfile = user || {}
+        setProfile(cachedProfile)
+        setDashboard({ postCount: 0, commentCount: 0, attemptCount: 0, checkinCount: 0 })
+        setPostsData(emptyPaged)
+        setCommentsData(emptyPaged)
+        setAttemptsData(emptyPaged)
+        setNotificationsData(emptyPaged)
+        setForm({
+          name: cachedProfile?.name || '',
+          school: cachedProfile?.school || '',
+          major: cachedProfile?.major || '',
+          grade: cachedProfile?.grade || '',
+          target: cachedProfile?.target || 'kaoyan',
+          intentRegion: cachedProfile?.intentRegion || '',
+        })
+        return
+      }
       setError('')
       try {
         await Promise.all([
@@ -191,10 +210,10 @@ function ProfilePage() {
       active = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
+  }, [token, canUseRemote, user])
 
   async function refreshActiveTab() {
-    if (!token) return
+    if (!canUseRemote) { setError('请使用真实账号登录后刷新个人数据。'); return }
     setHistoryLoading(true)
     setError('')
     try {
@@ -238,6 +257,7 @@ function ProfilePage() {
 
   async function handleSaveProfile(event) {
     event.preventDefault()
+    if (!canUseRemote) { setSaveMessage('请使用真实账号登录后再编辑资料。'); return }
     if (!form.name.trim()) {
       setSaveMessage('昵称不能为空')
       return
@@ -286,6 +306,7 @@ function ProfilePage() {
 
   async function handleSavePost(event) {
     event.preventDefault()
+    if (!canUseRemote) { setPostActionMessage('请使用真实账号登录后再编辑帖子。'); return }
     if (!editingPost) return
     if (postForm.title.trim().length < POST_TITLE_MIN || postForm.title.trim().length > POST_TITLE_MAX) {
       setPostActionMessage(`标题需在 ${POST_TITLE_MIN}-${POST_TITLE_MAX} 个字符之间`)
@@ -321,6 +342,7 @@ function ProfilePage() {
   }
 
   async function handleDeletePost(postId) {
+    if (!canUseRemote) { setPostActionMessage('请使用真实账号登录后再删除帖子。'); return }
     const ok = window.confirm('确定删除这条帖子吗？删除后不可恢复。')
     if (!ok) return
     setPostActionMessage('')
@@ -335,6 +357,7 @@ function ProfilePage() {
   }
 
   async function handleDeleteComment(commentId) {
+    if (!canUseRemote) { setPostActionMessage('请使用真实账号登录后再删除评论。'); return }
     const ok = window.confirm('确定删除这条评论吗？删除后不可恢复。')
     if (!ok) return
     setPostActionMessage('')
@@ -349,7 +372,7 @@ function ProfilePage() {
   }
 
   async function handleMarkNotificationRead(notificationId) {
-    if (!token) return
+    if (!canUseRemote) { setPostActionMessage('请使用真实账号登录后再操作通知。'); return }
     setPostActionMessage('')
     try {
       await communityApi.markNotificationRead(notificationId, token)
@@ -362,6 +385,7 @@ function ProfilePage() {
 
   async function applyAttemptFilters(event) {
     event.preventDefault()
+    if (!canUseRemote) { setError('请使用真实账号登录后筛选练习记录。'); return }
     setHistoryLoading(true)
     setError('')
     try {

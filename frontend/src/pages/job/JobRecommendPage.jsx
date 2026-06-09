@@ -10,6 +10,7 @@ const emptyFilters = { city: '', industry: '', roleType: '' }
 
 export default function JobRecommendPage() {
   const { token, isAuthed, loading: authLoading } = useAuth()
+  const canUseRemote = Boolean(isAuthed && token && token !== 'dev-token')
   const [filters, setFilters] = useState(emptyFilters)
   const [recommendations, setRecommendations] = useState([])
   const [notifications, setNotifications] = useState({ items: [], unreadCount: 0 })
@@ -21,6 +22,12 @@ export default function JobRecommendPage() {
     : (notifications.unreadCount || 0)
 
   const refresh = useCallback(async (nextFilters = emptyFilters) => {
+    if (!canUseRemote) {
+      setRecommendations([])
+      setLoading(false)
+      setError('请使用真实账号登录后查看岗位推荐。')
+      return
+    }
     setLoading(true)
     setError('')
     try {
@@ -30,16 +37,21 @@ export default function JobRecommendPage() {
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [canUseRemote, token])
 
   useEffect(() => {
-    if (!isAuthed) return
+    if (!canUseRemote) {
+      setNotifications({ items: [], unreadCount: 0 })
+      setLoading(false)
+      return
+    }
     refresh()
     employmentApi.notifications(token).then(setNotifications).catch(e => setError(e.message))
-  }, [isAuthed, token, refresh])
+  }, [canUseRemote, token, refresh])
   if (!authLoading && !isAuthed) return <Navigate to="/login" replace />
 
   async function markRead(id) {
+    if (!canUseRemote) { setError('请使用真实账号登录后再操作提醒。'); return }
     try {
       const updated = await employmentApi.markNotificationRead(id, token)
       setNotifications((prev) => {

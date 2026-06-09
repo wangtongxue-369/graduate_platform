@@ -6,6 +6,7 @@ import com.graduateplatform.auth.dto.ResetPasswordRequest;
 import com.graduateplatform.auth.service.AuthService;
 import com.graduateplatform.auth.service.VerificationCodeService;
 import com.graduateplatform.common.dto.ApiResponse;
+import com.graduateplatform.common.exception.UnauthorizedException;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -57,15 +58,20 @@ public class AuthController {
 
     @GetMapping("/me")
     public ApiResponse<?> me(Authentication auth) {
-        Long userId = (Long) auth.getPrincipal();
-        return ApiResponse.ok(authService.getMe(userId));
+        return ApiResponse.ok(authService.getMe(requiredUserId(auth)));
     }
 
     @PostMapping("/logout")
     public ApiResponse<?> logout(Authentication auth) {
-        Long userId = (Long) auth.getPrincipal();
-        authService.logout(userId);
+        authService.logout(requiredUserId(auth));
         return ApiResponse.ok(null, "Logged out");
+    }
+
+    private Long requiredUserId(Authentication auth) {
+        if (auth == null || !(auth.getPrincipal() instanceof Long userId)) {
+            throw new UnauthorizedException("请先登录");
+        }
+        return userId;
     }
 
     private String resolveVerifyTarget(RegisterRequest req) {

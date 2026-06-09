@@ -224,7 +224,7 @@ class PracticeModuleIntegrationTest {
         mockMvc.perform(get("/api/practice/wrong-questions")
                 .header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.length()").value(2));
+            .andExpect(jsonPath("$.data.items.length()").value(2));
     }
 
     @Test
@@ -255,13 +255,13 @@ class PracticeModuleIntegrationTest {
         mockMvc.perform(get("/api/practice/wrong-questions?subject=政治")
                 .header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.length()").value(2));
+            .andExpect(jsonPath("$.data.items.length()").value(2));
 
         // Filter by non-existent subject
         mockMvc.perform(get("/api/practice/wrong-questions?subject=英语")
                 .header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.length()").value(0));
+            .andExpect(jsonPath("$.data.items.length()").value(0));
     }
 
     // ==================== Statistics ====================
@@ -419,14 +419,14 @@ class PracticeModuleIntegrationTest {
 
     @Test
     void practiceRequiresAuthOnAllEndpoints() throws Exception {
-        // GET /api/** is public per SecurityConfig, so requests reach controller with anonymous auth
+        // Practice endpoints require a valid JWT before reaching controller logic.
         // The controller's auth.getPrincipal() throws ClassCastException on anonymous user → 500
-        mockMvc.perform(get("/api/practice/sessions/1")).andExpect(status().is5xxServerError());
+        mockMvc.perform(get("/api/practice/sessions/1")).andExpect(status().isForbidden());
         mockMvc.perform(put("/api/practice/sessions/1/answers/1")).andExpect(status().isForbidden());
         mockMvc.perform(post("/api/practice/sessions/1/submit")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/practice/wrong-questions")).andExpect(status().is5xxServerError());
-        mockMvc.perform(get("/api/practice/statistics")).andExpect(status().is5xxServerError());
-        mockMvc.perform(get("/api/practice/history")).andExpect(status().is5xxServerError());
+        mockMvc.perform(get("/api/practice/wrong-questions")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/practice/statistics")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/practice/history")).andExpect(status().isForbidden());
     }
 
     private String json(Object value) throws Exception {
