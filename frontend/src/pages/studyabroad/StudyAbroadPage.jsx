@@ -33,6 +33,11 @@ const featureCards = [
     desc: '浏览公开经验，登录后发布自己的申请复盘。',
     to: '/studyabroad/experience',
   },
+  {
+    title: '录取案例库',
+    desc: '按背景、国家和录取结果查看匿名校友案例，辅助选校定位。',
+    to: '/studyabroad/admission-cases',
+  },
 ]
 
 const sharedEntries = [
