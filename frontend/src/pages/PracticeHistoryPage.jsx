@@ -10,6 +10,7 @@ const modeLabels = {
   chapter: '章节练习',
   random: '随机练习',
   mock: '模拟练习',
+  wrong_retry: '错题重练',
 }
 
 const modeOptions = [
@@ -17,6 +18,7 @@ const modeOptions = [
   { value: 'chapter', label: '章节练习' },
   { value: 'random', label: '随机练习' },
   { value: 'mock', label: '模拟练习' },
+  { value: 'wrong_retry', label: '错题重练' },
 ]
 
 function PracticeHistoryPage() {

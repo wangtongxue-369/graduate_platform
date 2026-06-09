@@ -106,7 +106,8 @@ export default function AdminQuestionsPage() {
 
   const handleDelete = async (id, stem) => {
     const preview = stem.length > 30 ? stem.substring(0, 30) + '...' : stem
-    if (!window.confirm(`确定删除题目「${preview}」吗？删除后不可恢复。`)) return
+    // 后端软删除（active=false + status=disabled），可在状态切换列重新启用，文案与实际行为对齐。
+    if (!window.confirm(`确定停用题目「${preview}」吗？停用后该题目对用户不可见，可在列表中重新启用。`)) return
     try {
       await adminQuestionBankApi.deleteQuestion(id, token)
       loadQuestions()
