@@ -1,4 +1,5 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { useAuth } from '@legacy/context/AuthContext.jsx'
 import CommunityDetailPageBridge from '@/pages/bridges/CommunityDetailPageBridge.jsx'
 import CommunityPageBridge from '@/pages/bridges/CommunityPageBridge.jsx'
 import ForgotPasswordPageBridge from '@/pages/bridges/ForgotPasswordPageBridge.jsx'
@@ -13,6 +14,27 @@ import RegisterPageBridge from '@/pages/bridges/RegisterPageBridge.jsx'
 import WrongQuestionPageBridge from '@/pages/bridges/WrongQuestionPageBridge.jsx'
 import GuestMainPage from '@/pages/guest/GuestMainPage.jsx'
 import PublicShell from '@/layouts/PublicShell.jsx'
+import StudentShell from '@/layouts/StudentShell.jsx'
+import { getRoleLandingPath } from '@/lib/roleRouting.js'
+import DirectionHoldingPage from '@/pages/student/DirectionHoldingPage.jsx'
+import JobStationPage from '@/pages/student/job/JobStationPage.jsx'
+
+function RoleLandingRoute() {
+  const { user, loading } = useAuth()
+
+  if (loading) return null
+
+  return <Navigate replace to={getRoleLandingPath(user)} />
+}
+
+function StudentOnly({ children }) {
+  const { user, isAuthed, loading } = useAuth()
+
+  if (loading) return null
+  if (!isAuthed || !user || user.role !== 'user') return <Navigate replace to="/login" />
+
+  return children
+}
 
 export default function App() {
   return (
@@ -20,6 +42,8 @@ export default function App() {
       <Route element={<PublicShell />}>
         <Route path="/" element={<GuestMainPage />} />
       </Route>
+
+      <Route path="/app" element={<RoleLandingRoute />} />
 
       <Route path="/community" element={<CommunityPageBridge />} />
       <Route path="/community/:id" element={<CommunityDetailPageBridge />} />
@@ -33,6 +57,19 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPageBridge />} />
       <Route path="/profile" element={<ProfilePageBridge />} />
       <Route path="/profile/posts/:postId/edit" element={<PostEditPageBridge />} />
+
+      <Route
+        element={(
+          <StudentOnly>
+            <StudentShell />
+          </StudentOnly>
+        )}
+      >
+        <Route path="/station/job" element={<JobStationPage />} />
+        <Route path="/station/kaoyan" element={<DirectionHoldingPage />} />
+        <Route path="/station/kaogong" element={<DirectionHoldingPage />} />
+        <Route path="/station/studyabroad" element={<DirectionHoldingPage />} />
+      </Route>
     </Routes>
   )
 }
