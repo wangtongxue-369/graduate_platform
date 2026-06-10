@@ -44,7 +44,6 @@ function normalizeTags(tags) {
 export default function ExperiencePage() {
   const { token, user } = useAuth()
   const formRef = useRef(null)
-  const detailRef = useRef(null)
   const isDevMode = token === 'dev-token'
   const canUseRemote = Boolean(token && token !== 'dev-token')
   const [experiences, setExperiences] = useState([])
@@ -137,10 +136,18 @@ export default function ExperiencePage() {
   }, [selectedExperience, selectedExperienceId])
 
   useEffect(() => {
-    if (selectedExperience) {
-      window.setTimeout(() => {
-        detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 0)
+    if (!selectedExperience) return undefined
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setSelectedExperienceId(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
     }
   }, [selectedExperience])
 
@@ -164,6 +171,7 @@ export default function ExperiencePage() {
   }
 
   function startEdit(item) {
+    setSelectedExperienceId(null)
     setEditingId(item.id)
     setForm({
       title: item.title || '',
@@ -421,40 +429,6 @@ export default function ExperiencePage() {
             ) : null}
           </div>
 
-          {selectedExperience ? (
-            <article className="feature-card experience-detail" ref={detailRef}>
-              <div className="section-head compact">
-                <div>
-                  <span className="tag subtle">{countryLabelMap[selectedExperience.country] || selectedExperience.country}</span>
-                  <h2>{selectedExperience.title}</h2>
-                </div>
-                <button className="btn outline small" type="button" onClick={() => setSelectedExperienceId(null)}>收起</button>
-              </div>
-              <div className="detail-meta">
-                <span>{topicLabelMap[selectedExperience.topic] || selectedExperience.topic}</span>
-                <span>{selectedExperience.authorName}</span>
-                <span>{selectedExperience.readTime}</span>
-              </div>
-              <p className="lead">{selectedExperience.summary}</p>
-              <div className="experience-detail-content">
-                {(selectedExperience.content || '').split('\n').filter(Boolean).map((paragraph, index) => (
-                  <p key={`${selectedExperience.id}-${index}`}>{paragraph}</p>
-                ))}
-              </div>
-              <div className="tag-row">
-                {normalizeTags(selectedExperience.tags).map((tag) => (
-                  <span className="tag subtle" key={tag}>{tag}</span>
-                ))}
-              </div>
-              {canManageExperience(selectedExperience) ? (
-                <div className="hero-actions experience-card-actions">
-                  <button className="btn outline small" type="button" onClick={() => startEdit(selectedExperience)}>编辑这篇经验</button>
-                  <button className="btn outline small" type="button" onClick={() => handleDelete(selectedExperience.id)}>删除</button>
-                </div>
-              ) : null}
-            </article>
-          ) : null}
-
           <div className="pagination">
             <span className="pagination-count">共 {pageInfo.totalElements} 条，第 {pageInfo.page + 1} / {pageInfo.totalPages} 页</span>
             <div className="pagination-actions">
@@ -472,6 +446,58 @@ export default function ExperiencePage() {
           </div>
         </section>
       </main>
+      {selectedExperience ? (
+        <div
+          className="experience-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setSelectedExperienceId(null)
+            }
+          }}
+        >
+          <article
+            className="experience-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="experience-modal-title"
+          >
+            <div className="experience-modal-head">
+              <div>
+                <div className="tag-row">
+                  <span className="tag subtle">{countryLabelMap[selectedExperience.country] || selectedExperience.country}</span>
+                  <span className="tag subtle">{topicLabelMap[selectedExperience.topic] || selectedExperience.topic}</span>
+                </div>
+                <h2 id="experience-modal-title">{selectedExperience.title}</h2>
+                <div className="detail-meta">
+                  <span>{selectedExperience.authorName}</span>
+                  <span>{selectedExperience.readTime}</span>
+                </div>
+              </div>
+              <button className="btn outline small" type="button" onClick={() => setSelectedExperienceId(null)}>关闭</button>
+            </div>
+            <div className="experience-modal-body">
+              <p className="lead">{selectedExperience.summary}</p>
+              <div className="experience-detail-content">
+                {(selectedExperience.content || '').split('\n').filter(Boolean).map((paragraph, index) => (
+                  <p key={`${selectedExperience.id}-${index}`}>{paragraph}</p>
+                ))}
+              </div>
+              <div className="tag-row">
+                {normalizeTags(selectedExperience.tags).map((tag) => (
+                  <span className="tag subtle" key={tag}>{tag}</span>
+                ))}
+              </div>
+            </div>
+            {canManageExperience(selectedExperience) ? (
+              <div className="experience-modal-actions">
+                <button className="btn outline small" type="button" onClick={() => startEdit(selectedExperience)}>编辑这篇经验</button>
+                <button className="btn outline small" type="button" onClick={() => handleDelete(selectedExperience.id)}>删除</button>
+              </div>
+            ) : null}
+          </article>
+        </div>
+      ) : null}
       <Footer />
     </div>
   )
