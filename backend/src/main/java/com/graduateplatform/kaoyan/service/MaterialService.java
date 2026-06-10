@@ -159,7 +159,7 @@ public class MaterialService {
     public Map<String, Object> adminListPendingPage(Map<String, String> filters) {
         Page<ResourceMaterial> page = materialRepository.findAll(
             (root, query, builder) -> builder.and(
-                root.get("status").in(MaterialStatus.PENDING),
+                builder.equal(root.get("status"), MaterialStatus.PENDING),
                 builder.isTrue(root.get("active")),
                 query.getRestriction()
             ),
