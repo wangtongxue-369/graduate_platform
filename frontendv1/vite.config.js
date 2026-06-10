@@ -12,6 +12,7 @@ export default defineConfig({
     alias: {
       '@': resolve(currentDir, 'src'),
       '@legacy': resolve(repoRoot, 'frontend/src'),
+      recharts: resolve(currentDir, 'node_modules/recharts'),
     },
   },
   server: {
