@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '@legacy/context/AuthContext.jsx'
 import { PreferencesProvider } from '@legacy/context/PreferencesContext.jsx'
 import App from './App.jsx'
+import PreviewDock from './components/PreviewDock.jsx'
 import './index.css'
 
 createRoot(document.getElementById('root')).render(
@@ -12,6 +13,7 @@ createRoot(document.getElementById('root')).render(
       <PreferencesProvider>
         <AuthProvider>
           <App />
+          <PreviewDock />
         </AuthProvider>
       </PreferencesProvider>
     </BrowserRouter>
