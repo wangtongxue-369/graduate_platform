@@ -138,7 +138,7 @@ export default function AdminMaterialReviewPage() {
             ))}
           </div>
 
-          <div className="admin-surface-card">
+          <div style={{ display: 'grid', gap: 16, marginBottom: '1.25rem' }}>
             <div className="track-head">
               <h3>审核列表</h3>
               <span className="admin-status-chip is-neutral">共 {totalElements} 条</span>
