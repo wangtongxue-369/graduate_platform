@@ -3218,6 +3218,11 @@
   color: #92400e;
 }
 
+.tag.done {
+  background: rgba(15, 118, 110, 0.14);
+  color: #0f766e;
+}
+
 .project-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3356,6 +3361,81 @@
 
 .admission-card .tag-row {
   margin-top: auto;
+}
+
+.school-program-list {
+  display: grid;
+  gap: 18px;
+}
+
+.school-program-card {
+  gap: 16px;
+}
+
+.program-title {
+  display: grid;
+  gap: 6px;
+}
+
+.program-title strong {
+  font-size: 20px;
+  color: var(--ink);
+}
+
+.program-title span {
+  color: var(--muted);
+}
+
+.directory-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.directory-metrics span {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.84);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.directory-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.directory-info-grid > div,
+.risk-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+  padding: 14px;
+}
+
+.directory-info-grid strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+
+.directory-info-grid p,
+.risk-panel p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.risk-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.study-check.inline {
+  min-width: 0;
+  justify-content: flex-start;
 }
 
 .study-cta {
@@ -4751,6 +4831,11 @@
 
 @media (max-width: 720px) {
   .case-profile {
+    grid-template-columns: 1fr;
+  }
+
+  .directory-metrics,
+  .directory-info-grid {
     grid-template-columns: 1fr;
   }
 }

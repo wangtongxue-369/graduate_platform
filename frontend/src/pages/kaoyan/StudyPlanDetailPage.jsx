@@ -291,7 +291,7 @@ export default function StudyPlanDetailPage() {
             <span style={{ fontSize: '1.5rem', fontWeight: 700, color: completionRate >= 100 ? '#27ae60' : '#3498db' }}>
               {completionRate}%
             </span>
-            <div style={{ height: '8px', background: '#eee', borderRadius: '4px', marginTop: '0.5rem' }}>
+            <div style={{ height: '8px', background: 'var(--surface-muted)', borderRadius: '4px', marginTop: '0.5rem' }}>
               <div style={{ height: '100%', width: `${Math.min(100, completionRate)}%`, background: completionRate >= 100 ? '#27ae60' : '#3498db', borderRadius: '4px', transition: 'width 0.3s' }} />
             </div>
           </div>
@@ -305,7 +305,7 @@ export default function StudyPlanDetailPage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center', marginBottom: '0.5rem' }}>
               {['日', '一', '二', '三', '四', '五', '六'].map(d => (
-                <div key={d} style={{ fontWeight: 600, color: '#888', fontSize: '0.85rem', padding: '4px' }}>{d}</div>
+                <div key={d} style={{ fontWeight: 600, color: 'var(--muted)', fontSize: '0.85rem', padding: '4px' }}>{d}</div>
               ))}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
@@ -324,9 +324,9 @@ export default function StudyPlanDetailPage() {
                       padding: '6px 4px',
                       borderRadius: '6px',
                       cursor: isClickable ? 'pointer' : 'default',
-                      background: status === 'checked' ? '#3498db' : status === 'missed' ? '#e74c3c' : status === 'today' ? '#27ae60' : status === 'out' ? '#f0f0f0' : 'transparent',
-                      color: status === 'checked' || status === 'missed' || status === 'today' ? '#fff' : status === 'out' ? '#ccc' : '#333',
-                      border: isSelected ? '2px solid #2c3e50' : '2px solid transparent',
+                      background: status === 'checked' ? '#3498db' : status === 'missed' ? '#e74c3c' : status === 'today' ? '#27ae60' : status === 'out' ? 'var(--surface-muted)' : 'transparent',
+                      color: status === 'checked' || status === 'missed' || status === 'today' ? '#fff' : status === 'out' ? 'var(--ink-muted)' : 'var(--ink)',
+                      border: isSelected ? '2px solid var(--primary)' : '2px solid transparent',
                       fontWeight: (status === 'checked' || status === 'missed' || status === 'today') ? 600 : 400,
                     }}
                   >
@@ -335,11 +335,11 @@ export default function StudyPlanDetailPage() {
                 )
               })}
             </div>
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem', fontSize: '0.85rem', color: '#666', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem', fontSize: '0.85rem', color: 'var(--muted)', flexWrap: 'wrap' }}>
               <span><span style={{ display: 'inline-block', width: '12px', height: '12px', background: '#27ae60', borderRadius: '2px', verticalAlign: 'middle' }}></span> 当天</span>
               <span><span style={{ display: 'inline-block', width: '12px', height: '12px', background: '#3498db', borderRadius: '2px', verticalAlign: 'middle' }}></span> 已打卡</span>
               <span><span style={{ display: 'inline-block', width: '12px', height: '12px', background: '#e74c3c', borderRadius: '2px', verticalAlign: 'middle' }}></span> 未打卡</span>
-              <span><span style={{ display: 'inline-block', width: '12px', height: '12px', background: '#f0f0f0', borderRadius: '2px', verticalAlign: 'middle' }}></span> 超出范围</span>
+              <span><span style={{ display: 'inline-block', width: '12px', height: '12px', background: 'var(--surface-muted)', borderRadius: '2px', verticalAlign: 'middle' }}></span> 超出范围</span>
             </div>
           </div>
 
@@ -354,8 +354,8 @@ export default function StudyPlanDetailPage() {
                     padding: '2px 10px',
                     borderRadius: '999px',
                     fontWeight: 600,
-                    background: selectedDayStatus === 'checked' ? '#3498db' : selectedDayStatus === 'today' ? '#27ae60' : selectedDayStatus === 'missed' ? '#e74c3c' : '#f0f0f0',
-                    color: selectedDayStatus === 'checked' || selectedDayStatus === 'today' || selectedDayStatus === 'missed' ? '#fff' : '#888',
+                    background: selectedDayStatus === 'checked' ? '#3498db' : selectedDayStatus === 'today' ? '#27ae60' : selectedDayStatus === 'missed' ? '#e74c3c' : 'var(--surface-muted)',
+                    color: selectedDayStatus === 'checked' || selectedDayStatus === 'today' || selectedDayStatus === 'missed' ? '#fff' : 'var(--muted)',
                   }}>
                     {selectedDayStatus === 'checked' ? '已打卡' : selectedDayStatus === 'today' ? '今日' : selectedDayStatus === 'missed' ? '未打卡' : '未来'}
                   </span>
@@ -372,7 +372,7 @@ export default function StudyPlanDetailPage() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {dayCheckIns.map(checkIn => (
-                    <div key={checkIn.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#f8f9fa', borderRadius: '8px' }}>
+                    <div key={checkIn.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'var(--surface-soft)', borderRadius: '8px' }}>
                       <div>
                         <div style={{ fontWeight: 600 }}>{parseFloat(checkIn.durationHours || 0).toFixed(2)} 小时</div>
                         {checkIn.remark && <div className="muted" style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>{checkIn.remark}</div>}

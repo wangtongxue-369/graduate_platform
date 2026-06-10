@@ -14,12 +14,14 @@ import com.graduateplatform.studyabroad.entity.StudyAbroadApplication;
 import com.graduateplatform.studyabroad.entity.StudyAbroadExperience;
 import com.graduateplatform.studyabroad.entity.StudyAbroadMaterial;
 import com.graduateplatform.studyabroad.entity.StudyAbroadMaterialAttachment;
+import com.graduateplatform.studyabroad.entity.StudyAbroadSchoolProgram;
 import com.graduateplatform.studyabroad.entity.StudyAbroadTimeline;
 import com.graduateplatform.studyabroad.repository.StudyAbroadAdmissionCaseRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadApplicationRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadExperienceRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadMaterialAttachmentRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadMaterialRepository;
+import com.graduateplatform.studyabroad.repository.StudyAbroadSchoolProgramRepository;
 import com.graduateplatform.studyabroad.repository.StudyAbroadTimelineRepository;
 import com.qcloud.cos.model.COSObject;
 import org.springframework.data.domain.Page;
@@ -48,6 +50,7 @@ public class StudyAbroadService {
     private static final int MAX_ATTACHMENT_COUNT = 5;
 
     private final StudyAbroadAdmissionCaseRepository admissionCaseRepository;
+    private final StudyAbroadSchoolProgramRepository schoolProgramRepository;
     private final StudyAbroadApplicationRepository applicationRepository;
     private final StudyAbroadExperienceRepository experienceRepository;
     private final StudyAbroadTimelineRepository timelineRepository;
@@ -57,6 +60,7 @@ public class StudyAbroadService {
     private final CosService cosService;
 
     public StudyAbroadService(StudyAbroadAdmissionCaseRepository admissionCaseRepository,
+                              StudyAbroadSchoolProgramRepository schoolProgramRepository,
                               StudyAbroadApplicationRepository applicationRepository,
                               StudyAbroadExperienceRepository experienceRepository,
                               StudyAbroadTimelineRepository timelineRepository,
@@ -65,6 +69,7 @@ public class StudyAbroadService {
                               UserRepository userRepository,
                               CosService cosService) {
         this.admissionCaseRepository = admissionCaseRepository;
+        this.schoolProgramRepository = schoolProgramRepository;
         this.applicationRepository = applicationRepository;
         this.experienceRepository = experienceRepository;
         this.timelineRepository = timelineRepository;
@@ -100,6 +105,29 @@ public class StudyAbroadService {
         map.put("size", result.getSize());
         map.put("totalElements", result.getTotalElements());
         map.put("totalPages", Math.max(1, result.getTotalPages()));
+        return map;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getSchoolProgramsPage(String country,
+                                                     String subjectArea,
+                                                     Boolean partnerOnly,
+                                                     String keyword,
+                                                     int page,
+                                                     int size) {
+        Page<StudyAbroadSchoolProgram> pageResult = schoolProgramRepository.searchPage(
+            normalizeFilter(country),
+            normalizeFilter(subjectArea),
+            partnerOnly,
+            normalizeFilter(keyword),
+            PageRequest.of(Math.max(0, page), Math.max(1, Math.min(size, 50)), Sort.by(Sort.Direction.ASC, "schoolName"))
+        );
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("content", pageResult.getContent().stream().map(this::toSchoolProgramMap).toList());
+        map.put("page", pageResult.getNumber());
+        map.put("size", pageResult.getSize());
+        map.put("totalElements", pageResult.getTotalElements());
+        map.put("totalPages", Math.max(1, pageResult.getTotalPages()));
         return map;
     }
 
@@ -512,6 +540,34 @@ public class StudyAbroadService {
         map.put("applicationMode", item.getApplicationMode());
         map.put("tags", splitTags(item.getTags()));
         map.put("summary", item.getSummary());
+        map.put("createdAt", item.getCreatedAt() != null ? item.getCreatedAt().toString() : null);
+        map.put("updatedAt", item.getUpdatedAt() != null ? item.getUpdatedAt().toString() : null);
+        return map;
+    }
+
+    private Map<String, Object> toSchoolProgramMap(StudyAbroadSchoolProgram item) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", item.getId());
+        map.put("country", item.getCountry());
+        map.put("schoolName", item.getSchoolName());
+        map.put("programName", item.getProgramName());
+        map.put("degree", item.getDegree());
+        map.put("subjectArea", item.getSubjectArea());
+        map.put("qsRank", item.getQsRank());
+        map.put("theRank", item.getTheRank());
+        map.put("usNewsRank", item.getUsNewsRank());
+        map.put("tuitionRange", item.getTuitionRange());
+        map.put("durationText", item.getDurationText());
+        map.put("deadlineText", item.getDeadlineText());
+        map.put("applicationRequirements", item.getApplicationRequirements());
+        map.put("visaPolicy", item.getVisaPolicy());
+        map.put("employmentPolicy", item.getEmploymentPolicy());
+        map.put("partnerProgram", item.getPartnerProgram());
+        map.put("partnerNote", item.getPartnerNote());
+        map.put("riskTags", splitTags(item.getRiskTags()));
+        map.put("riskSummary", item.getRiskSummary());
+        map.put("sourceNote", item.getSourceNote());
+        map.put("policyUpdatedAt", item.getPolicyUpdatedAt() != null ? item.getPolicyUpdatedAt().toString() : null);
         map.put("createdAt", item.getCreatedAt() != null ? item.getCreatedAt().toString() : null);
         map.put("updatedAt", item.getUpdatedAt() != null ? item.getUpdatedAt().toString() : null);
         return map;
