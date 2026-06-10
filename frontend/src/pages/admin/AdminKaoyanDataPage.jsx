@@ -82,6 +82,7 @@ export default function AdminKaoyanDataPage() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [editingId, setEditingId] = useState(null)
+  const [showFormModal, setShowFormModal] = useState(false)
   const [schoolForm, setSchoolForm] = useState(emptySchool)
   const [scoreForm, setScoreForm] = useState(emptyScore)
   const [schools, setSchools] = useState([])
@@ -168,6 +169,9 @@ export default function AdminKaoyanDataPage() {
       }
       setEditingId(null)
       setMessage(`${activeTab?.label || '数据'}已保存`)
+      setShowFormModal(false)
+      setSchoolForm(emptySchool)
+      setScoreForm(emptyScore)
       setPage(0)
       await loadRows(null, 0)
       await loadSchoolOptions()
@@ -198,6 +202,22 @@ export default function AdminKaoyanDataPage() {
       if (row.schoolId) form.schoolId = row.schoolId
       setScoreForm(form)
     }
+    setShowFormModal(true)
+  }
+
+  function openCreateModal() {
+    setEditingId(null)
+    setSchoolForm(emptySchool)
+    setScoreForm(emptyScore)
+    setMessage('')
+    setShowFormModal(true)
+  }
+
+  function closeFormModal() {
+    setShowFormModal(false)
+    setEditingId(null)
+    setSchoolForm(emptySchool)
+    setScoreForm(emptyScore)
   }
 
   async function deleteRecord(id) {
@@ -315,30 +335,9 @@ export default function AdminKaoyanDataPage() {
               {message ? <div className="admin-note-panel"><p>{message}</p></div> : null}
             </form>
 
-            <form className="admin-form-surface" onSubmit={createRecord}>
-              <div className="track-head">
-                <h3>{editingId ? '编辑' : '新增'}{activeTab?.label}</h3>
-                <span className="admin-status-chip is-neutral">后台维护</span>
-              </div>
-              {active === 'schools' ? renderSchoolForm(schoolForm, updateSchoolForm) : renderScoreForm(scoreForm, updateScoreForm, schools)}
-              <div className="question-actions">
-                <button className="btn primary" type="submit" disabled={loading}>保存</button>
-                {editingId ? (
-                  <button
-                    className="btn ghost"
-                    type="button"
-                    onClick={() => {
-                      setEditingId(null)
-                      setSchoolForm(emptySchool)
-                      setScoreForm(emptyScore)
-                      setMessage('')
-                    }}
-                  >
-                    取消编辑
-                  </button>
-                ) : null}
-              </div>
-            </form>
+            <div className="admin-page-action-row" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+              <button className="btn primary" type="button" onClick={openCreateModal}>+ 新增{activeTab?.label}</button>
+            </div>
 
             <div className="admin-surface-card">
               <div className="track-head">
@@ -364,6 +363,28 @@ export default function AdminKaoyanDataPage() {
         </section>
       </main>
       <Footer />
+
+      {showFormModal && (
+        <div className="modal-overlay" onClick={closeFormModal}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720 }}>
+            <div className="modal-header">
+              <h3 style={{ margin: 0 }}>{editingId ? `编辑${activeTab?.label || ''}` : `新增${activeTab?.label || ''}`}</h3>
+              <button className="btn ghost" type="button" onClick={closeFormModal} style={{ padding: '4px 8px', fontSize: '0.85rem' }}>✕</button>
+            </div>
+            <form onSubmit={createRecord}>
+              <div className="modal-body">
+                {active === 'schools'
+                  ? renderSchoolForm(schoolForm, updateSchoolForm)
+                  : renderScoreForm(scoreForm, updateScoreForm, schools)}
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn ghost" onClick={closeFormModal}>取消</button>
+                <button type="submit" className="btn primary" disabled={loading}>{loading ? '保存中...' : '保存'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

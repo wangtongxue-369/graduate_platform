@@ -136,7 +136,8 @@ describe('admin theme styles', () => {
     expect(reportPageSource).not.toContain('tag tag-btn')
 
     expect(adminKaoyanDataPageSource).toContain('admin-toolbar-card')
-    expect(adminKaoyanDataPageSource).toContain('admin-form-surface')
+    expect(adminKaoyanDataPageSource).toContain('modal-overlay')
+    expect(adminKaoyanDataPageSource).toContain('modal-box')
     expect(adminKaoyanDataPageSource).not.toContain('feature-card calendar-filter-panel')
 
     expect(kaogongDataPageSource).toContain('admin-toolbar-card')
