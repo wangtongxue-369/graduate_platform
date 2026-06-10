@@ -157,22 +157,23 @@ public class MaterialService {
     // ========== Admin ==========
 
     public Map<String, Object> adminListPendingPage(Map<String, String> filters) {
-        Page<ResourceMaterial> page = materialRepository.findAll(
-            (root, query, builder) -> builder.and(
-                builder.equal(root.get("status"), MaterialStatus.PENDING),
-                builder.isTrue(root.get("active")),
-                query.getRestriction()
-            ),
+        Page<ResourceMaterial> page = materialRepository.findByStatusAndActiveTrue(
+            MaterialStatus.PENDING,
             PageRequest.of(pageNumber(filters), pageSize(filters), Sort.by(Sort.Direction.DESC, "createdAt"))
         );
         return toPageMap(page);
     }
 
     public Map<String, Object> adminListMaterialsPage(Map<String, String> filters) {
-        Page<ResourceMaterial> page = materialRepository.findAll(
-            adminMaterialSpec(filters),
-            PageRequest.of(pageNumber(filters), pageSize(filters), Sort.by(Sort.Direction.DESC, "createdAt"))
-        );
+        PageRequest pageable = PageRequest.of(pageNumber(filters), pageSize(filters), Sort.by(Sort.Direction.DESC, "createdAt"));
+        String statusFilter = filters.get("status");
+        Page<ResourceMaterial> page;
+        if (statusFilter != null && !statusFilter.isEmpty()) {
+            MaterialStatus status = MaterialStatus.valueOf(statusFilter.toUpperCase());
+            page = materialRepository.findByStatusAndActiveTrue(status, pageable);
+        } else {
+            page = materialRepository.findByActiveTrue(pageable);
+        }
         return toPageMap(page);
     }
 

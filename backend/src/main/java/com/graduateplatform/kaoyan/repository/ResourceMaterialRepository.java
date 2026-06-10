@@ -13,6 +13,8 @@ public interface ResourceMaterialRepository extends JpaRepository<ResourceMateri
 
     Page<ResourceMaterial> findByStatusAndActiveTrue(MaterialStatus status, Pageable pageable);
 
+    Page<ResourceMaterial> findByActiveTrue(Pageable pageable);
+
     Page<ResourceMaterial> findByUploaderIdAndActiveTrue(Long uploaderId, Pageable pageable);
 
     Page<ResourceMaterial> findByUploaderIdAndStatusAndActiveTrue(Long uploaderId, MaterialStatus status, Pageable pageable);
