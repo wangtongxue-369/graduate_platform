@@ -41,6 +41,10 @@ export function StudyAbroadProgramsPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="项目目录"
+        pathItems={[
+          { label: '留学总览', to: '/station/studyabroad' },
+          { label: '项目目录' },
+        ]}
         title="先比较项目，再决定主申与备选。"
         lead="项目页承接 schools/page 的浏览行为，更适合做成项目书架而不是普通文章流。"
       />
@@ -64,6 +68,10 @@ export function StudyAbroadCasesPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="案例档案"
+        pathItems={[
+          { label: '留学总览', to: '/station/studyabroad' },
+          { label: '案例档案' },
+        ]}
         title="把录取案例做成一组可快速判断用途的档案。"
         lead="案例页用档案卡而不是表格，因为人真正要看的是每个案例能提供什么参考价值。"
       />
@@ -86,6 +94,10 @@ export function StudyAbroadApplicationsPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="申请跟踪"
+        pathItems={[
+          { label: '留学总览', to: '/station/studyabroad' },
+          { label: '申请跟踪' },
+        ]}
         title="把每个项目的申请状态挂成一条进度线。"
         lead="申请页本质是 pipeline，所以采用进度行而不是普通卡片。"
       />
@@ -111,6 +123,10 @@ export function StudyAbroadTimelinePage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="时间线"
+        pathItems={[
+          { label: '留学总览', to: '/station/studyabroad' },
+          { label: '时间线' },
+        ]}
         title="每一个申请节点都需要明确的时间窗。"
         lead="时间线页直接对应 timeline 接口，重点是阶段、窗口和下一步。"
       />
@@ -135,6 +151,10 @@ export function StudyAbroadMaterialsPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="材料清单"
+        pathItems={[
+          { label: '留学总览', to: '/station/studyabroad' },
+          { label: '材料清单' },
+        ]}
         title="先维护材料状态，再进入补件动作。"
         lead="材料页更适合做成状态清单，直接体现 materials 与附件操作的维护感。"
       />

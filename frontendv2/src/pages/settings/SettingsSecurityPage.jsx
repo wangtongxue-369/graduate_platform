@@ -38,6 +38,10 @@ export default function SettingsSecurityPage() {
       <div className="v2-main-column">
         <PageIntro
           kicker="security"
+          pathItems={[
+            { label: '个人设置', to: '/settings/profile' },
+            { label: '安全中心' },
+          ]}
           title="安全中心"
           lead="这里对应 profile.security 结构，把最近登录设备、时间与位置单独收进安全页。"
         />

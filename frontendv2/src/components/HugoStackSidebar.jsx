@@ -12,6 +12,7 @@ import {
   getShellDescription,
   getShellTitle,
 } from '@/lib/navigation.js'
+import { getRoleLandingPath } from '@/lib/roleRouting.js'
 
 const languageOptions = [
   { value: 'zh-CN', label: '中文' },
@@ -57,6 +58,7 @@ export default function HugoStackSidebar({ mode = 'app' }) {
   ), [mode, user])
 
   const profilePath = '/settings/profile'
+  const homePath = getRoleLandingPath(user)
   const avatarText = getAvatarText(user?.name)
 
   async function handleLogout() {
@@ -72,19 +74,36 @@ export default function HugoStackSidebar({ mode = 'app' }) {
   return (
     <aside className="v2-stack-sidebar">
       <div className="v2-stack-sidebar__column">
-        <Link
-          aria-label="个人设置"
-          className="v2-stack-profile v2-glass-card"
-          to={profilePath}
-        >
-          <span aria-hidden="true" className="v2-stack-profile__avatar">{avatarText}</span>
-          <div className="v2-stack-profile__copy">
-            <p className="v2-kicker">{mode === 'settings' ? 'profile hub' : 'graduate platform'}</p>
-            <strong>{user?.name || '当前用户'}</strong>
-            <span>{getShellTitle(user, mode)}</span>
-            <small>{getShellDescription(user, mode)}</small>
+        {mode === 'settings' ? (
+          <div className="v2-stack-profile v2-glass-card">
+            <span aria-hidden="true" className="v2-stack-profile__avatar">{avatarText}</span>
+            <div className="v2-stack-profile__copy">
+              <p className="v2-kicker">profile hub</p>
+              <strong>{user?.name || '当前用户'}</strong>
+              <span>{getShellTitle(user, mode)}</span>
+              <small>{getShellDescription(user, mode)}</small>
+              <div className="v2-stack-profile__actions">
+                <Link aria-label="返回主站" className="v2-secondary-link v2-stack-profile__home" to={homePath}>
+                  返回主站
+                </Link>
+              </div>
+            </div>
           </div>
-        </Link>
+        ) : (
+          <Link
+            aria-label="个人设置"
+            className="v2-stack-profile v2-glass-card"
+            to={profilePath}
+          >
+            <span aria-hidden="true" className="v2-stack-profile__avatar">{avatarText}</span>
+            <div className="v2-stack-profile__copy">
+              <p className="v2-kicker">graduate platform</p>
+              <strong>{user?.name || '当前用户'}</strong>
+              <span>{getShellTitle(user, mode)}</span>
+              <small>{getShellDescription(user, mode)}</small>
+            </div>
+          </Link>
+        )}
 
         <div className="v2-stack-nav-wrap">
           {groups.map((group) => (

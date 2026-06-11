@@ -54,6 +54,10 @@ export function JobResumePage() {
       <div className="v2-main-column">
         <PageIntro
           kicker="简历中心"
+          pathItems={[
+            { label: '就业总览', to: '/station/job' },
+            { label: '简历中心' },
+          ]}
           title="先把简历做成可维护对象，再去投递。"
           lead="这里按后端的 resume 与附件能力组织成文档工作区，让在线简历和文件简历一眼可见。"
         />
@@ -88,6 +92,10 @@ export function JobRecommendationsPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="岗位推荐"
+        pathItems={[
+          { label: '就业总览', to: '/station/job' },
+          { label: '岗位推荐' },
+        ]}
         title="把推荐岗位排成一张可比较的候选清单。"
         lead="推荐页采用排名清单而不是大卡片，因为真正关键的是匹配分、原因和下一步动作。"
       />
@@ -114,6 +122,10 @@ export function JobApplicationsPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="投递跟踪"
+        pathItems={[
+          { label: '就业总览', to: '/station/job' },
+          { label: '投递跟踪' },
+        ]}
         title="把每一次投递都挂在一条清晰的推进线上。"
         lead="投递页更像进度面板，重点不是展示岗位本身，而是当前状态、下一步和需要补的动作。"
       />
@@ -139,6 +151,10 @@ export function JobFairsPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="招聘会目录"
+        pathItems={[
+          { label: '就业总览', to: '/station/job' },
+          { label: '招聘会目录' },
+        ]}
         title="先按时间和城市筛选，再决定去哪个现场。"
         lead="招聘会页用时间与城市驱动的目录视图，符合 fairs 与 fairDetail 的浏览方式。"
       />

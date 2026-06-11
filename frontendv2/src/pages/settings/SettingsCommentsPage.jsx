@@ -36,6 +36,10 @@ export default function SettingsCommentsPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="my comments"
+        pathItems={[
+          { label: '个人设置', to: '/settings/profile' },
+          { label: '我的评论' },
+        ]}
         title="我的评论"
         lead="对应后端 myComments 分页结构，强调评论内容与原帖回链。"
       />

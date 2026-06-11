@@ -41,6 +41,10 @@ export function KaogongJobsPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="岗位匹配"
+        pathItems={[
+          { label: '考公总览', to: '/station/kaogong' },
+          { label: '岗位匹配' },
+        ]}
         title="先做岗位筛选，再继续备考投入。"
         lead="岗位页展示的是匹配结果，而不是泛岗位列表，所以每一行都强调地区、岗位与适配理由。"
       />
@@ -66,6 +70,10 @@ export function KaogongScoreLinesPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="分数线账本"
+        pathItems={[
+          { label: '考公总览', to: '/station/kaogong' },
+          { label: '分数线账本' },
+        ]}
         title="把你关注的分数线排成一张连续账本。"
         lead="分数线页适合账本式比较，因为真正需要的是年份、岗位和涨跌关系。"
       />
@@ -93,6 +101,10 @@ export function KaogongCalendarPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="考试日历"
+        pathItems={[
+          { label: '考公总览', to: '/station/kaogong' },
+          { label: '考试日历' },
+        ]}
         title="每个考试节点都要带着下一步动作出现。"
         lead="日历页直接模拟 calendar 和 subscription 的使用场景，用时间墙承接考试节点和行动提醒。"
       />
@@ -117,6 +129,10 @@ export function KaogongInterviewsPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="模拟面试"
+        pathItems={[
+          { label: '考公总览', to: '/station/kaogong' },
+          { label: '模拟面试' },
+        ]}
         title="进房间训练，然后把反馈沉淀下来。"
         lead="面试页把房间和反馈放成双区布局，贴近 interviews / messages / feedback 的组合关系。"
       />

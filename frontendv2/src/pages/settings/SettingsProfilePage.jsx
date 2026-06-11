@@ -41,13 +41,16 @@ export default function SettingsProfilePage() {
     }
   }, [token, user])
 
+  const security = profile.security || {}
+
   return (
     <>
       <div className="v2-main-column">
         <PageIntro
           kicker="profile"
+          pathItems={[{ label: '个人设置' }]}
           title="个人信息"
-          lead="这里对应后端的 profile 与 dashboard 结构，优先呈现身份、目标方向与近期使用痕迹。"
+          lead="这里对应后端的 profile 与 dashboard 结构，优先呈现身份、目标方向、使用概览与最近登录痕迹。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -70,6 +73,29 @@ export default function SettingsProfilePage() {
             <p>评论 {dashboard.commentCount}</p>
             <p>练习 {dashboard.attemptCount}</p>
           </article>
+          <article className="v2-module-card">
+            <strong>最近登录</strong>
+            <p>{security.lastLoginAt || '暂无记录'}</p>
+            <p>{security.lastDevice || '未知设备'}</p>
+            <p>{security.lastLocation || '未知位置'}</p>
+          </article>
+        </section>
+
+        <section className="v2-feed-list" aria-label="资料维护提示">
+          <div className="v2-feed-item">
+            <div className="v2-feed-index">01</div>
+            <div className="v2-feed-body">
+              <strong>优先同步个人资料</strong>
+              <p>学校、专业、年级与方向是社区发帖、方向主站和推荐模块共同引用的基础信息。</p>
+            </div>
+          </div>
+          <div className="v2-feed-item">
+            <div className="v2-feed-index">02</div>
+            <div className="v2-feed-body">
+              <strong>再处理联系信息</strong>
+              <p>邮箱、手机与学号用于登录、找回密码和后续资料流转，修改时需要保持一致。</p>
+            </div>
+          </div>
         </section>
       </div>
 
@@ -80,6 +106,15 @@ export default function SettingsProfilePage() {
             <li>角色：{profile.role}</li>
             <li>状态：{profile.status}</li>
             <li>意向地区：{profile.intentRegion || '未设置'}</li>
+          </ul>
+        </section>
+
+        <section className="v2-side-card">
+          <p className="v2-kicker">安全提示</p>
+          <ul>
+            <li>若设备异常，先修改密码。</li>
+            <li>若登录地异常，优先核查账号共享。</li>
+            <li>忘记密码时回到登录页进入找回流程。</li>
           </ul>
         </section>
       </aside>

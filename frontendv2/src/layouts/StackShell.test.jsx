@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AdminShell from './AdminShell.jsx'
 import CommonShell from './CommonShell.jsx'
+import SettingsShell from './SettingsShell.jsx'
 
 const authState = {
   loading: false,
@@ -76,5 +77,22 @@ describe('stack shells', () => {
     expect(screen.getByRole('link', { name: '题库治理' })).toHaveAttribute('href', '/admin/question-banks')
     expect(screen.getByRole('link', { name: '就业运营' })).toHaveAttribute('href', '/admin/employment')
     expect(screen.queryByRole('link', { name: '院校比较' })).not.toBeInTheDocument()
+  })
+
+  it('shows a way back to the main site from settings', () => {
+    render(
+      <MemoryRouter initialEntries={['/settings/profile']}>
+        <Routes>
+          <Route element={<SettingsShell />}>
+            <Route
+              path="/settings/profile"
+              element={<div className="v2-main-column"><h1>个人信息</h1></div>}
+            />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('link', { name: '返回主站' })).toHaveAttribute('href', '/community')
   })
 })

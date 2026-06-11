@@ -35,6 +35,10 @@ export default function SettingsPracticePage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="practice history"
+        pathItems={[
+          { label: '个人设置', to: '/settings/profile' },
+          { label: '练习记录' },
+        ]}
         title="练习记录"
         lead="对应后端 myAttempts 分页结构，列表把正确率判断和题干摘要分开显示。"
       />

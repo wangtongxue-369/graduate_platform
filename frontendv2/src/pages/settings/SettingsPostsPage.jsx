@@ -36,6 +36,10 @@ export default function SettingsPostsPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="my posts"
+        pathItems={[
+          { label: '个人设置', to: '/settings/profile' },
+          { label: '我的发帖' },
+        ]}
         title="我的发帖"
         lead="对应后端 myPosts 分页结构，列表优先显示状态、分类与回到社区的路径。"
       />
