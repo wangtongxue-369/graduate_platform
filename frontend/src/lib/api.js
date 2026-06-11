@@ -597,6 +597,48 @@ export const studyAbroadApi = {
   },
 }
 
+export const adminStudyAbroadApi = {
+  schools(params = {}, token) {
+    const search = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') search.set(key, value)
+    })
+    return request(`/api/admin/studyabroad/schools?${search.toString()}`, { token })
+  },
+  createSchool(payload, token) {
+    return request('/api/admin/studyabroad/schools', { method: 'POST', body: payload, token })
+  },
+  updateSchool(id, payload, token) {
+    return request(`/api/admin/studyabroad/schools/${id}`, { method: 'PUT', body: payload, token })
+  },
+  deleteSchool(id, token) {
+    return request(`/api/admin/studyabroad/schools/${id}`, { method: 'DELETE', token })
+  },
+  admissionCases(params = {}, token) {
+    const search = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') search.set(key, value)
+    })
+    return request(`/api/admin/studyabroad/admission-cases?${search.toString()}`, { token })
+  },
+  deleteAdmissionCase(id, token) {
+    return request(`/api/admin/studyabroad/admission-cases/${id}`, { method: 'DELETE', token })
+  },
+  experiences(params = {}, token) {
+    const search = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') search.set(key, value)
+    })
+    return request(`/api/admin/studyabroad/experiences?${search.toString()}`, { token })
+  },
+  deleteExperience(id, token) {
+    return request(`/api/admin/studyabroad/experiences/${id}`, { method: 'DELETE', token })
+  },
+  dashboard(token) {
+    return request('/api/admin/studyabroad/dashboard', { token })
+  },
+}
+
 export const kaogongApi = {
   matchJobs(payload, token) {
     return request('/api/kaogong/jobs/match', { method: 'POST', body: payload, token })
