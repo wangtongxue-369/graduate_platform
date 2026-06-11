@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { employmentApi } from '@legacy/lib/api.js'
+import PreviewBanner from '@/components/PreviewBanner.jsx'
 import ReturnBar from '@/components/ReturnBar.jsx'
 import { findPreviewJobById } from '@/lib/employmentPreview.js'
 
@@ -59,7 +60,7 @@ export default function JobPostingDetailPage() {
 
   return (
     <section className="v1-task-page">
-      <ReturnBar to="/job/recommend" label="返回岗位推荐" hint="确认岗位要求后，再决定加入投递跟踪还是打开站外链接。" />
+      <ReturnBar items={[{ label: '就业站', to: '/station/job' }, { label: '岗位筛选台', to: '/job/recommend' }, { label: '岗位详情' }]} hint="确认岗位要求后，再决定加入投递跟踪还是打开站外链接。" />
       <header className="v1-task-head">
         <p className="v1-eyebrow">job / posting detail</p>
         <h1>{job?.title || job?.jobTitle || '岗位详情'}</h1>
@@ -67,7 +68,7 @@ export default function JobPostingDetailPage() {
       </header>
       <div className="v1-callout">提示：平台内不会自动投递；打开申请链接会跳转站外。</div>
       {isPreviewMode ? (
-        <div className="v1-message">当前为开发预览：岗位详情基于后端返回字段生成演示内容，正式申请链接与实时状态需连接后端。</div>
+        <PreviewBanner>当前为开发预览：岗位详情基于后端返回字段生成演示内容，正式申请链接与实时状态需连接后端。</PreviewBanner>
       ) : null}
 
       {loading ? (

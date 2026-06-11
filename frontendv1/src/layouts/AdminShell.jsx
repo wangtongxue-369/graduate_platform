@@ -5,7 +5,7 @@ export default function AdminShell() {
   return (
     <div className="v1-app v1-app--admin">
       <SiteHeader role="admin" />
-      <main className="v1-shell v1-shell--admin">
+      <main className="v1-shell v1-shell--admin" data-station="admin">
         <Outlet />
       </main>
     </div>

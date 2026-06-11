@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { employmentApi } from '@legacy/lib/api.js'
+import PreviewBanner from '@/components/PreviewBanner.jsx'
 import ReturnBar from '@/components/ReturnBar.jsx'
 import { createPreviewApplications, createPreviewResume } from '@/lib/employmentPreview.js'
 
@@ -267,14 +268,14 @@ export default function ApplicationTrackingPage() {
 
   return (
     <section className="v1-task-page">
-      <ReturnBar to="/station/job" label="返回就业工作站" hint="从详情页加入跟踪后，回到这里维护状态和下一步事项。" />
+      <ReturnBar items={[{ label: '就业站', to: '/station/job' }, { label: '投递轨道' }]} hint="从详情页加入跟踪后，回到这里维护状态和下一步事项。" />
       <header className="v1-task-head">
         <p className="v1-eyebrow">job / application tracking</p>
         <h1>投递跟踪</h1>
         <p>这里保存投递进度、下一步事项和简历附件状态；不保存单次投递使用过的附件快照。</p>
       </header>
       <div className="v1-callout">提示：从岗位详情加入跟踪会预填公司与岗位；你仍需手动维护状态和下一步事项。</div>
-      {isPreviewMode ? <div className="v1-message">当前为开发预览：你可以直接演示新增、编辑和删除记录，正式写入仍需真实账号与后端。</div> : null}
+      {isPreviewMode ? <PreviewBanner>当前为开发预览：你可以直接演示新增、编辑和删除记录，正式写入仍需真实账号与后端。</PreviewBanner> : null}
 
       <div className="v1-task-split">
         <div className="v1-form-stack">

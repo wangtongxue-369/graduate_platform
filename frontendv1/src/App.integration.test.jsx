@@ -21,7 +21,7 @@ describe('frontendv1 app integration', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: '先看清路，再决定要不要进入。' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '先看内容，再决定是否进入身份语境。' })).toBeInTheDocument()
   })
 
   it('lands job users on the student job station through /app', () => {
@@ -33,7 +33,7 @@ describe('frontendv1 app integration', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: '今天先把最该推进的 3 步做掉。' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '今日作战桌' })).toBeInTheDocument()
   })
 
   it('lands admins on the admin main station through /app', () => {
@@ -45,10 +45,10 @@ describe('frontendv1 app integration', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: '今天先处理最影响平台秩序的 4 条队列。' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '值班总台' })).toBeInTheDocument()
   })
 
-  it('lands studyabroad users on the holding station through /app instead of 404', () => {
+  it('lands studyabroad users on the studyabroad station through /app instead of a holding page', () => {
     authState = { user: { role: 'user', target: 'liuxue', name: '留学测试用户' }, token: 'dev-token', isAuthed: true, loading: false }
 
     render(
@@ -57,6 +57,6 @@ describe('frontendv1 app integration', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: '留学工作站会在下一阶段单独展开。' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '申请航线图' })).toBeInTheDocument()
   })
 })

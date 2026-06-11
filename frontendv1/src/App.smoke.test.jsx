@@ -15,6 +15,6 @@ describe('frontendv1 smoke routing', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: '先看清路，再决定要不要进入。' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '先看内容，再决定是否进入身份语境。' })).toBeInTheDocument()
   })
 })

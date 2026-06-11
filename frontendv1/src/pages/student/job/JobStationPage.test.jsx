@@ -20,9 +20,9 @@ describe('JobStationPage', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: '今天先把最该推进的 3 步做掉。' })).toBeInTheDocument()
-    expect(screen.getByText('进入简历页')).toBeInTheDocument()
-    expect(screen.getByText('进入推荐页')).toBeInTheDocument()
-    expect(screen.getByText('进入投递跟踪')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '今日作战桌' })).toBeInTheDocument()
+    expect(screen.getAllByText('简历卷宗').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('岗位筛选台').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('投递轨道').length).toBeGreaterThan(0)
   })
 })

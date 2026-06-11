@@ -11,9 +11,10 @@ describe('GuestMainPage', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: '先看清路，再决定要不要进入。' })).toBeInTheDocument()
-    expect(screen.getByText('社区')).toBeInTheDocument()
-    expect(screen.getByText('题库')).toBeInTheDocument()
-    expect(screen.getByText('登录后继续')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '先看内容，再决定是否进入身份语境。' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: '游客门厅阶段' })).toBeInTheDocument()
+    expect(screen.getAllByText('社区目录').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('题库目录').length).toBeGreaterThan(0)
+    expect(screen.getByRole('link', { name: '登录后继续' })).toBeInTheDocument()
   })
 })

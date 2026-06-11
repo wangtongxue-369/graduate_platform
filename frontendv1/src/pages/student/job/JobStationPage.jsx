@@ -1,79 +1,99 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
-import StatCard from '@/components/StatCard.jsx'
+import PreviewBanner from '@/components/PreviewBanner.jsx'
+import StageRail from '@/components/StageRail.jsx'
+import { stationPreview } from '@/lib/stationPreview.js'
 
-const steps = [
-  {
-    title: '先补齐简历中的项目经历与技能关键词',
-    desc: '推荐排序会读取在线简历字段，附件只保存与下载，不参与自动解析。',
-    to: '/job/resume',
-    cta: '进入简历页',
-  },
-  {
-    title: '再看推荐结果，只处理适合今天投递的岗位',
-    desc: '推荐页先筛，再看匹配原因，再进岗位详情，不和简历编辑页混在一起。',
-    to: '/job/recommend',
-    cta: '进入推荐页',
-  },
-  {
-    title: '最后维护投递进度，不让下一步事项断掉',
-    desc: '岗位详情只允许加入投递跟踪或跳站外申请，不误导为站内自动投递。',
-    to: '/job/applications',
-    cta: '进入投递跟踪',
-  },
+const railItems = [
+  { key: 'resume', label: '简历卷宗', hint: '先补齐在线简历与附件', to: '/job/resume', current: true },
+  { key: 'recommend', label: '岗位筛选台', hint: '再看推荐与招聘会', to: '/job/recommend' },
+  { key: 'tracking', label: '投递轨道', hint: '最后维护进度和下一步', to: '/job/applications' },
 ]
 
 export default function JobStationPage() {
   const { user } = useAuth()
+  const stats = stationPreview.job
 
   return (
-    <section className="v1-station v1-station--job">
-      <div className="v1-station-hero">
-        <div className="v1-station-copy">
-          <p className="v1-eyebrow">student / job target</p>
-          <h1>今天先把最该推进的 3 步做掉。</h1>
-          <p className="v1-lead">
-            {user?.name || '当前用户'} 进入主站后，不需要一次看完所有就业功能，只需要按“简历 → 推荐 → 跟踪”的
-            顺序继续推进。
-          </p>
+    <section className="v1-station-wrap">
+      <PreviewBanner />
+      <div className="v1-stage-layout v1-station-stage v1-station-stage--job">
+        <StageRail ariaLabel="就业主站阶段" items={railItems} />
+
+        <div className="v1-station-board">
+          <section className="v1-sheet v1-sheet--hero">
+            <p className="v1-kicker">job station</p>
+            <h1>今日作战桌</h1>
+            <p className="v1-lead">
+              {user?.name || '当前用户'} 进入主站后，只先推进一条求职主线：建档、筛岗、跟踪。公共模块还在，但不会压住当前主任务。
+            </p>
+          </section>
+
+          <div className="v1-metric-grid">
+            <article className="v1-metric-card">
+              <span>简历完成度</span>
+              <strong>{stats.resumeCompletion}</strong>
+            </article>
+            <article className="v1-metric-card">
+              <span>今日推荐</span>
+              <strong>{stats.recommendationCount}</strong>
+            </article>
+            <article className="v1-metric-card">
+              <span>待跟进投递</span>
+              <strong>{stats.followUpCount}</strong>
+            </article>
+          </div>
+
+          <section className="v1-ledger">
+            <div className="v1-section-head">
+              <p className="v1-kicker">主工作面</p>
+              <h2>先推进一个动作，再进下一层。</h2>
+            </div>
+            <div className="v1-ledger-rows">
+              <Link className="v1-ledger-row" to="/job/resume">
+                <div>
+                  <strong>简历卷宗</strong>
+                  <p>在线简历字段和附件盒分开展示，附件不参与自动解析。</p>
+                </div>
+                <span>进入</span>
+              </Link>
+              <Link className="v1-ledger-row" to="/job/recommend">
+                <div>
+                  <strong>岗位筛选台</strong>
+                  <p>先看推荐、匹配理由和站内提醒，再进岗位详情。</p>
+                </div>
+                <span>进入</span>
+              </Link>
+              <Link className="v1-ledger-row" to="/job/applications">
+                <div>
+                  <strong>投递轨道</strong>
+                  <p>维护投递状态、下一步事项和当前简历附件状态。</p>
+                </div>
+                <span>进入</span>
+              </Link>
+            </div>
+          </section>
         </div>
 
-        <div className="v1-station-stats">
-          <StatCard label="方向" value="就业" tone="accent" />
-          <StatCard label="今日主路径" value="3 步" />
-          <StatCard label="公共模块" value="社区 / 题库" />
-        </div>
-      </div>
+        <aside className="v1-side-drawer">
+          <section className="v1-drawer-card">
+            <p className="v1-kicker">提醒收件箱</p>
+            <div className="v1-note-list">
+              {stats.notifications.map((item) => (
+                <p key={item}>{item}</p>
+              ))}
+            </div>
+          </section>
 
-      <div className="v1-step-grid">
-        {steps.map((item, index) => (
-          <article className="v1-step-card" key={item.to}>
-            <span className="v1-step-index">0{index + 1}</span>
-            <h2>{item.title}</h2>
-            <p>{item.desc}</p>
-            <Link className="v1-btn v1-btn--primary" to={item.to}>
-              {item.cta}
-            </Link>
-          </article>
-        ))}
-      </div>
-
-      <div className="v1-subnav-panel">
-        <div>
-          <p className="v1-eyebrow">公共能力</p>
-          <h2>方向工作站之外，公共模块始终在。</h2>
-        </div>
-        <div className="v1-action-row">
-          <Link className="v1-btn" to="/community">
-            去社区
-          </Link>
-          <Link className="v1-btn" to="/practice">
-            去题库
-          </Link>
-          <Link className="v1-btn" to="/profile">
-            个人中心
-          </Link>
-        </div>
+          <section className="v1-drawer-card v1-drawer-card--muted">
+            <p className="v1-kicker">公共模块</p>
+            <div className="v1-action-column">
+              <Link className="v1-btn" to="/community">社区</Link>
+              <Link className="v1-btn" to="/practice">题库</Link>
+              <Link className="v1-btn" to="/profile">个人中心</Link>
+            </div>
+          </section>
+        </aside>
       </div>
     </section>
   )

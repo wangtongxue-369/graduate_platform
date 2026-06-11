@@ -13,17 +13,19 @@ vi.mock('@legacy/context/AuthContext.jsx', () => ({
 }))
 
 describe('AdminMainPage', () => {
-  it('shows real governance modules and does not invent a 留学独立后台', () => {
+  it('shows all real admin domains from the backend-driven spec', () => {
     render(
       <MemoryRouter>
         <AdminMainPage />
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: '今天先处理最影响平台秩序的 4 条队列。' })).toBeInTheDocument()
-    expect(screen.getByText('内容治理')).toBeInTheDocument()
-    expect(screen.getByText('用户治理')).toBeInTheDocument()
-    expect(screen.getByText('就业运营')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '值班总台' })).toBeInTheDocument()
+    expect(screen.getAllByText('社区治理').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('题库治理').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('考研治理').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('考公治理').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('就业运营').length).toBeGreaterThan(0)
     expect(screen.queryByText('留学运营台')).not.toBeInTheDocument()
   })
 })

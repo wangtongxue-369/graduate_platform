@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { employmentApi } from '@legacy/lib/api.js'
+import PreviewBanner from '@/components/PreviewBanner.jsx'
 import ReturnBar from '@/components/ReturnBar.jsx'
 import { createPreviewResume } from '@/lib/employmentPreview.js'
 
@@ -233,14 +234,14 @@ export default function ResumePage() {
 
   return (
     <section className="v1-task-page">
-      <ReturnBar to="/station/job" label="返回就业工作站" hint="完成附件操作后先回简历页，再从简历页返回工作站。" />
+      <ReturnBar items={[{ label: '就业站', to: '/station/job' }, { label: '简历卷宗' }]} hint="完成附件操作后先回简历页，再从简历页返回工作站。" />
       <header className="v1-task-head">
         <p className="v1-eyebrow">job / resume</p>
-        <h1>在线简历</h1>
+        <h1>简历卷宗</h1>
         <p>先维护在线字段，再上传附件。附件不参与自动解析，只用于保存与下载。</p>
       </header>
       <div className="v1-callout">提示：简历附件不参与自动解析，推荐排序只读取在线简历字段。</div>
-      {isPreviewMode ? <div className="v1-message">当前为开发预览：表单和附件操作只在本页临时演示，正式保存与下载需连接后端。</div> : null}
+      {isPreviewMode ? <PreviewBanner>当前为开发预览：表单和附件操作只在本页临时演示，正式保存与下载需连接后端。</PreviewBanner> : null}
 
       {loading ? (
         <div className="v1-file-panel">正在加载简历...</div>

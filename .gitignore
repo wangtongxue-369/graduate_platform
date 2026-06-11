@@ -56,3 +56,6 @@ progress.md
 CLAUDE.md
 /tools
 .srs_extract/ 
+/.superpowers
+*.png
+/docs

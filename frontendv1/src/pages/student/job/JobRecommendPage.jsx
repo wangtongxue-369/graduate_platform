@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { employmentApi } from '@legacy/lib/api.js'
+import PreviewBanner from '@/components/PreviewBanner.jsx'
 import ReturnBar from '@/components/ReturnBar.jsx'
 import {
   createPreviewNotificationState,
@@ -124,7 +125,7 @@ export default function JobRecommendPage() {
 
   return (
     <section className="v1-task-page">
-      <ReturnBar to="/station/job" label="返回就业工作站" hint="推荐页先筛选再进详情，岗位详情页再决定是否加入投递跟踪。" />
+      <ReturnBar items={[{ label: '就业站', to: '/station/job' }, { label: '岗位筛选台' }]} hint="推荐页先筛选再进详情，岗位详情页再决定是否加入投递跟踪。" />
       <header className="v1-task-head">
         <p className="v1-eyebrow">job / recommendation</p>
         <h1>岗位推荐</h1>
@@ -132,7 +133,7 @@ export default function JobRecommendPage() {
       </header>
       <div className="v1-callout">提示：平台内不会自动投递；打开申请链接会跳转站外。</div>
       {isPreviewMode ? (
-        <div className="v1-message">当前为开发预览：岗位、匹配原因和提醒基于后端字段结构提供演示数据。正式排序与提醒需连接后端。</div>
+        <PreviewBanner>当前为开发预览：岗位、匹配原因和提醒基于后端字段结构提供演示数据。正式排序与提醒需连接后端。</PreviewBanner>
       ) : null}
 
       <div className="v1-task-split">

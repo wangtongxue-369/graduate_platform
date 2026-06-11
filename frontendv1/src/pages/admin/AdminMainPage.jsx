@@ -1,42 +1,82 @@
 import { Link } from 'react-router-dom'
-import StatCard from '@/components/StatCard.jsx'
-
-const modules = [
-  { title: '内容治理', desc: '帖子审核、举报处理、评论举报、分类管理。', to: '/admin/review' },
-  { title: '用户治理', desc: '按方向与状态处理禁言、封禁、上传限制。', to: '/admin/users' },
-  { title: '就业运营', desc: '招聘会、岗位、提醒触发、简历摘要。', to: '/admin/employment' },
-  { title: '方向数据与题库治理', desc: '考研、考公、题库与题目治理。', to: '/admin/question-banks' },
-]
+import { useAuth } from '@legacy/context/AuthContext.jsx'
+import { adminDeskQueues, adminDomains, adminRecentActions } from '@/lib/adminStationPreview.js'
 
 export default function AdminMainPage() {
-  return (
-    <section className="v1-admin-main">
-      <div className="v1-admin-hero">
-        <div className="v1-station-copy">
-          <p className="v1-eyebrow">admin main station</p>
-          <h1>今天先处理最影响平台秩序的 4 条队列。</h1>
-          <p className="v1-lead">
-            管理员主站先分发治理优先级，再进入具体后台模块。留学没有独立管理员后台，不在这里伪造一个假总台。
-          </p>
-        </div>
-        <div className="v1-station-stats">
-          <StatCard label="待审核帖子" value="19" tone="accent" />
-          <StatCard label="待处理举报" value="7" />
-          <StatCard label="异常状态用户" value="14" />
-          <StatCard label="就业提醒任务" value="5" />
-        </div>
-      </div>
+  const { user } = useAuth()
 
-      <div className="v1-step-grid v1-step-grid--two">
-        {modules.map((item) => (
-          <article className="v1-step-card" key={item.to}>
-            <h2>{item.title}</h2>
-            <p>{item.desc}</p>
-            <Link className="v1-btn v1-btn--primary" to={item.to}>
-              进入模块
-            </Link>
-          </article>
-        ))}
+  return (
+    <section className="v1-admin-station-page">
+      <div className="v1-stack-page v1-stack-page--admin">
+        <aside className="v1-stack-sidebar">
+          <section className="v1-stack-profile">
+            <span className="v1-stack-avatar" aria-hidden="true">{(user?.name || '管').slice(0, 1)}</span>
+            <p className="v1-kicker">governance desk</p>
+            <h2>{user?.name || '管理员'}</h2>
+            <p>总台先处理真实待办，再把人带进对应治理域，不做空泛的大屏仪表板。</p>
+            <div className="v1-stack-meta-row">
+              {adminDeskQueues.slice(0, 3).map((queue) => (
+                <span key={queue.key}>{queue.label} {queue.count}</span>
+              ))}
+            </div>
+          </section>
+
+          <nav className="v1-stack-nav" aria-label="管理员值班总台阶段">
+            <div className="v1-stack-nav-link is-current">
+              <strong>值班总台</strong>
+              <span>先分诊，再进入对应治理台</span>
+            </div>
+            {adminDomains.map((domain) => (
+              <Link className="v1-stack-nav-link" key={domain.key} to={domain.to}>
+                <strong>{domain.label}</strong>
+                <span>{domain.summary}</span>
+              </Link>
+            ))}
+          </nav>
+        </aside>
+
+        <div className="v1-stack-content v1-admin-desk-main">
+          <header className="v1-sheet v1-sheet--hero">
+            <p className="v1-kicker">总台首页</p>
+            <h1>值班总台</h1>
+            <p className="v1-lead">首页只负责分诊：先看真实待办，再进入对应治理台。审核、治理和运营在下一层分开，不堆在同一块面板里。</p>
+          </header>
+
+          <section className="v1-admin-queue-band" aria-label="真实待办">
+            {adminDeskQueues.map((queue) => (
+              <Link className="v1-admin-queue-chip" key={queue.key} to={queue.to}>
+                <strong>{queue.label}</strong>
+                <span>{queue.count}</span>
+              </Link>
+            ))}
+          </section>
+
+          <section className="v1-admin-domain-grid" aria-label="治理域入口">
+            {adminDomains.map((domain) => (
+              <Link className="v1-admin-domain-card" key={domain.key} to={domain.to}>
+                <strong>{domain.label}</strong>
+                <p>{domain.summary}</p>
+              </Link>
+            ))}
+          </section>
+
+          <section className="v1-ledger" aria-label="最近处理">
+            <div className="v1-section-head">
+              <p className="v1-kicker">处理记录</p>
+              <h2>总台只保留有用的处理回声。</h2>
+            </div>
+            <div className="v1-ledger-rows">
+              {adminRecentActions.map((item) => (
+                <div className="v1-ledger-row" key={item}>
+                  <div>
+                    <strong>{item}</strong>
+                    <p>处理完成后可以继续回到队列，不需要在首页读说明书。</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
       </div>
     </section>
   )

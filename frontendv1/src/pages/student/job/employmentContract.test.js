@@ -11,13 +11,14 @@ const applicationsSource = readFileSync(resolve(currentDir, './ApplicationTracki
 
 describe('frontendv1 employment task pages', () => {
   it('keeps explicit attachment and return-path copy in the resume page', () => {
+    expect(resumeSource).toContain('简历卷宗')
     expect(resumeSource).toContain('附件不参与自动解析')
-    expect(resumeSource).toContain('返回就业工作站')
+    expect(resumeSource).toContain('就业站')
   })
 
   it('keeps explicit no-auto-apply copy in the recommendations page', () => {
     expect(recommendSource).toContain('平台内不会自动投递')
-    expect(recommendSource).toContain('返回就业工作站')
+    expect(recommendSource).toContain('岗位筛选台')
   })
 
   it('keeps explicit detail-page boundaries before users jump out or start tracking', () => {
@@ -28,7 +29,7 @@ describe('frontendv1 employment task pages', () => {
 
   it('keeps explicit return-path copy and separate file status in the applications page', () => {
     expect(applicationsSource).toContain('当前简历附件')
-    expect(applicationsSource).toContain('返回就业工作站')
+    expect(applicationsSource).toContain('投递轨道')
     expect(applicationsSource).not.toContain('record.resumeFile')
   })
 })
