@@ -653,6 +653,15 @@ html[data-theme="dark"] .v2-header {
   background: transparent;
 }
 
+.v2-header-cta:disabled,
+.v2-sidebar-button:disabled,
+.v2-primary-link:disabled,
+.v2-secondary-link:disabled,
+.v2-ghost-link:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
 .v2-theme-switch {
   display: inline-flex;
   gap: 4px;
@@ -1223,6 +1232,25 @@ html[data-theme="dark"] .v2-header {
   gap: 8px;
 }
 
+.v2-settings-form {
+  display: grid;
+  gap: 20px;
+}
+
+.v2-settings-section-head {
+  display: grid;
+  gap: 8px;
+}
+
+.v2-settings-section-head h3 {
+  margin: 0;
+  font-size: 1.36rem;
+}
+
+.v2-settings-section-head p {
+  margin: 0;
+}
+
 .v2-field span {
   color: var(--v2-soft);
 }
@@ -1235,6 +1263,19 @@ html[data-theme="dark"] .v2-header {
   border-radius: 14px;
   background: var(--v2-paper-strong);
   color: var(--v2-ink);
+}
+
+.v2-field input:disabled,
+.v2-field select:disabled,
+.v2-field textarea:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.v2-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .v2-filter-chip {
