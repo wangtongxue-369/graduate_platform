@@ -45,7 +45,7 @@ describe('page-level return paths', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('link', { name: '考研总览' })).toHaveAttribute('href', '/station/kaoyan')
+    expect(screen.getByRole('link', { name: '考研主站' })).toHaveAttribute('href', '/station/kaoyan')
   })
 
   it('shows a return path on admin child pages', () => {
