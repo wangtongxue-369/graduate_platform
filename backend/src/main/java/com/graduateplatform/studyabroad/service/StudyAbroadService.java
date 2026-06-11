@@ -32,11 +32,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 @Service
 public class StudyAbroadService {
@@ -444,6 +446,140 @@ public class StudyAbroadService {
         materialRepository.save(material);
     }
 
+    @Transactional(readOnly = true)
+    public Map<String, Object> adminGetSchoolProgramsPage(Map<String, String> params) {
+        Page<StudyAbroadSchoolProgram> pageResult = schoolProgramRepository.searchPage(
+            normalizeFilter(params.get("country")),
+            normalizeFilter(params.get("subjectArea")),
+            parseBooleanFilter(params.get("partnerOnly")),
+            normalizeFilter(params.get("keyword")),
+            PageRequest.of(parsePage(params.get("page")), parseSize(params.get("size")),
+                Sort.by(Sort.Direction.ASC, "schoolName"))
+        );
+        return pageMap(pageResult, pageResult.getContent().stream().map(this::toSchoolProgramMap).toList());
+    }
+
+    @Transactional
+    public Map<String, Object> adminCreateSchoolProgram(Map<String, Object> body) {
+        String country = requiredBodyText(body, "country", "国家/地区不能为空");
+        String schoolName = requiredBodyText(body, "schoolName", "院校名称不能为空");
+        String programName = requiredBodyText(body, "programName", "项目名称不能为空");
+        String degree = requiredBodyText(body, "degree", "学位不能为空");
+        String subjectArea = requiredBodyText(body, "subjectArea", "学科领域不能为空");
+        if (schoolProgramRepository.existsBySchoolNameAndProgramName(schoolName, programName)) {
+            throw new BusinessException("该院校项目已存在");
+        }
+        StudyAbroadSchoolProgram item = StudyAbroadSchoolProgram.builder()
+            .country(country)
+            .schoolName(schoolName)
+            .programName(programName)
+            .degree(degree)
+            .subjectArea(subjectArea)
+            .qsRank(bodyText(body, "qsRank", null))
+            .theRank(bodyText(body, "theRank", null))
+            .usNewsRank(bodyText(body, "usNewsRank", null))
+            .tuitionRange(bodyText(body, "tuitionRange", null))
+            .durationText(bodyText(body, "durationText", null))
+            .deadlineText(bodyText(body, "deadlineText", null))
+            .applicationRequirements(bodyText(body, "applicationRequirements", null))
+            .visaPolicy(bodyText(body, "visaPolicy", null))
+            .employmentPolicy(bodyText(body, "employmentPolicy", null))
+            .partnerProgram(bodyBoolean(body, "partnerProgram", false))
+            .partnerNote(bodyText(body, "partnerNote", null))
+            .riskTags(bodyText(body, "riskTags", null))
+            .riskSummary(bodyText(body, "riskSummary", null))
+            .sourceNote(bodyText(body, "sourceNote", null))
+            .policyUpdatedAt(bodyDate(body, "policyUpdatedAt"))
+            .build();
+        return toSchoolProgramMap(schoolProgramRepository.save(item));
+    }
+
+    @Transactional
+    public Map<String, Object> adminUpdateSchoolProgram(Long id, Map<String, Object> body) {
+        StudyAbroadSchoolProgram item = schoolProgramRepository.findById(id)
+            .orElseThrow(() -> new BusinessException("院校项目不存在"));
+        updateText(body, "country", item::setCountry);
+        updateText(body, "schoolName", item::setSchoolName);
+        updateText(body, "programName", item::setProgramName);
+        updateText(body, "degree", item::setDegree);
+        updateText(body, "subjectArea", item::setSubjectArea);
+        updateText(body, "qsRank", item::setQsRank);
+        updateText(body, "theRank", item::setTheRank);
+        updateText(body, "usNewsRank", item::setUsNewsRank);
+        updateText(body, "tuitionRange", item::setTuitionRange);
+        updateText(body, "durationText", item::setDurationText);
+        updateText(body, "deadlineText", item::setDeadlineText);
+        updateText(body, "applicationRequirements", item::setApplicationRequirements);
+        updateText(body, "visaPolicy", item::setVisaPolicy);
+        updateText(body, "employmentPolicy", item::setEmploymentPolicy);
+        updateText(body, "partnerNote", item::setPartnerNote);
+        updateText(body, "riskTags", item::setRiskTags);
+        updateText(body, "riskSummary", item::setRiskSummary);
+        updateText(body, "sourceNote", item::setSourceNote);
+        if (body.containsKey("partnerProgram")) {
+            item.setPartnerProgram(bodyBoolean(body, "partnerProgram", false));
+        }
+        if (body.containsKey("policyUpdatedAt")) {
+            item.setPolicyUpdatedAt(bodyDate(body, "policyUpdatedAt"));
+        }
+        return toSchoolProgramMap(schoolProgramRepository.save(item));
+    }
+
+    @Transactional
+    public void adminDeleteSchoolProgram(Long id) {
+        StudyAbroadSchoolProgram item = schoolProgramRepository.findById(id)
+            .orElseThrow(() -> new BusinessException("院校项目不存在"));
+        schoolProgramRepository.delete(item);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> adminGetAdmissionCasesPage(Map<String, String> params) {
+        Page<StudyAbroadAdmissionCase> pageResult = admissionCaseRepository.searchPage(
+            normalizeFilter(params.get("country")),
+            normalizeFilter(params.get("result")),
+            normalizeFilter(params.get("major")),
+            normalizeFilter(params.get("keyword")),
+            PageRequest.of(parsePage(params.get("page")), parseSize(params.get("size")),
+                Sort.by(Sort.Direction.DESC, "createdAt"))
+        );
+        return pageMap(pageResult, pageResult.getContent().stream().map(this::toAdmissionCaseMap).toList());
+    }
+
+    @Transactional
+    public void adminDeleteAdmissionCase(Long id) {
+        StudyAbroadAdmissionCase item = admissionCaseRepository.findById(id)
+            .orElseThrow(() -> new BusinessException("案例不存在"));
+        admissionCaseRepository.delete(item);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> adminGetExperiencesPage(Map<String, String> params) {
+        Page<StudyAbroadExperience> pageResult = experienceRepository.searchPage(
+            normalizeFilter(params.get("country")),
+            normalizeFilter(params.get("topic")),
+            normalizeFilter(params.get("keyword")),
+            PageRequest.of(parsePage(params.get("page")), parseSize(params.get("size")),
+                Sort.by(Sort.Direction.DESC, "createdAt"))
+        );
+        return pageMap(pageResult, pageResult.getContent().stream().map(this::toExperienceMap).toList());
+    }
+
+    @Transactional
+    public void adminDeleteExperience(Long id) {
+        StudyAbroadExperience item = experienceRepository.findById(id)
+            .orElseThrow(() -> new BusinessException("经验不存在"));
+        experienceRepository.delete(item);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getAdminDashboard() {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("totalSchools", schoolProgramRepository.count());
+        map.put("totalAdmissionCases", admissionCaseRepository.count());
+        map.put("totalExperiences", experienceRepository.count());
+        return map;
+    }
+
     private User ensureUser(Long userId) {
         if (userId == null) {
             throw new BusinessException("请先登录后使用留学管理功能");
@@ -500,6 +636,85 @@ public class StudyAbroadService {
         return value == null || value.isBlank() || "all".equalsIgnoreCase(value.trim())
             ? null
             : value.trim();
+    }
+
+    private Map<String, Object> pageMap(Page<?> pageResult, List<Map<String, Object>> content) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("content", content);
+        map.put("page", pageResult.getNumber());
+        map.put("size", pageResult.getSize());
+        map.put("totalElements", pageResult.getTotalElements());
+        map.put("totalPages", Math.max(1, pageResult.getTotalPages()));
+        return map;
+    }
+
+    private int parsePage(String value) {
+        try {
+            return Math.max(0, Integer.parseInt(normalize(value, "0")));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private int parseSize(String value) {
+        try {
+            return Math.max(1, Math.min(Integer.parseInt(normalize(value, "20")), 100));
+        } catch (NumberFormatException e) {
+            return 20;
+        }
+    }
+
+    private Boolean parseBooleanFilter(String value) {
+        if (value == null || value.isBlank() || "all".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
+        return Boolean.parseBoolean(value.trim());
+    }
+
+    private String requiredBodyText(Map<String, Object> body, String key, String message) {
+        String value = bodyText(body, key, null);
+        if (value == null || value.isBlank()) {
+            throw new BusinessException(message);
+        }
+        return value;
+    }
+
+    private String bodyText(Map<String, Object> body, String key, String fallback) {
+        Object value = body.get(key);
+        if (value == null) {
+            return fallback;
+        }
+        String text = String.valueOf(value).trim();
+        return text.isBlank() ? fallback : text;
+    }
+
+    private Boolean bodyBoolean(Map<String, Object> body, String key, Boolean fallback) {
+        Object value = body.get(key);
+        if (value == null) {
+            return fallback;
+        }
+        if (value instanceof Boolean booleanValue) {
+            return booleanValue;
+        }
+        return Boolean.parseBoolean(String.valueOf(value));
+    }
+
+    private LocalDate bodyDate(Map<String, Object> body, String key) {
+        String value = bodyText(body, key, null);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(value);
+        } catch (RuntimeException e) {
+            throw new BusinessException("日期格式应为 yyyy-MM-dd");
+        }
+    }
+
+    private void updateText(Map<String, Object> body, String key, Consumer<String> setter) {
+        if (body.containsKey(key)) {
+            setter.accept(bodyText(body, key, null));
+        }
     }
 
     private Map<String, Object> toExperienceMap(StudyAbroadExperience item) {

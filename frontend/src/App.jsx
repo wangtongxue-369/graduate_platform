@@ -68,6 +68,7 @@ import AdminMaterialReviewPage from './pages/admin/AdminMaterialReviewPage.jsx'
 import AdminQuestionBankPage from './pages/admin/AdminQuestionBankPage.jsx'
 import AdminQuestionsPage from './pages/admin/AdminQuestionsPage.jsx'
 import CategoryManagementPage from './pages/admin/CategoryManagementPage.jsx'
+import AdminStudyAbroadPage from './pages/admin/AdminStudyAbroadPage.jsx'
 
 export default function App() {
   return (
@@ -142,6 +143,7 @@ export default function App() {
       <Route path="/admin/question-banks" element={<AdminQuestionBankPage />} />
       <Route path="/admin/question-banks/:bankId/questions" element={<AdminQuestionsPage />} />
       <Route path="/admin/categories" element={<CategoryManagementPage />} />
+      <Route path="/admin/studyabroad" element={<AdminStudyAbroadPage />} />
     </Routes>
     </>
   )

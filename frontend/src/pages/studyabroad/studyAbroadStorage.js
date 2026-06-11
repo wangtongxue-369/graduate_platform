@@ -172,6 +172,8 @@ export const defaultExperienceItems = [
     summary: '从课程匹配出发，再连接项目经历和职业规划，避免把 PS 写成简历复述。',
     content: '我先列出目标项目的核心课程，再给每门课匹配一个自己的项目或实习经历。这样文章会更像“为什么我适合这个项目”，而不是简单罗列经历。',
     tags: ['PS', '课程匹配', '文书'],
+    createdAt: '2026-04-18T10:20:00',
+    updatedAt: '2026-04-18T10:20:00',
   },
   {
     id: 'us-shortlist',
@@ -183,6 +185,8 @@ export const defaultExperienceItems = [
     summary: '结合 GPA、语言成绩、科研实习和录取偏好，减少盲目海投。',
     content: '我用表格记录录取难度、课程匹配、学费、地区和就业结果。最终保留了 2 个冲刺、4 个匹配和 2 个保底项目。',
     tags: ['选校', 'CS', '定位'],
+    createdAt: '2026-05-03T15:40:00',
+    updatedAt: '2026-05-03T15:40:00',
   },
   {
     id: 'au-visa',
@@ -194,6 +198,8 @@ export const defaultExperienceItems = [
     summary: '提前准备护照、COE、资金证明和体检材料，避免签证节点被动。',
     content: '最有用的是在 offer 前先检查材料有效期。护照和资金证明都需要留出足够缓冲时间。',
     tags: ['签证', 'COE', '资金证明'],
+    createdAt: '2026-05-21T09:15:00',
+    updatedAt: '2026-05-21T09:15:00',
   },
   {
     id: 'sg-language',
@@ -205,6 +211,8 @@ export const defaultExperienceItems = [
     summary: '从申请截止日期倒推语言考试，并预留重考和送分时间。',
     content: '我把语言成绩当作时间线事项，而不是顺手做的小任务。第一次成绩出来前，我就提前预约了第二次考试位置。',
     tags: ['雅思', '托福', '时间线'],
+    createdAt: '2026-06-02T19:05:00',
+    updatedAt: '2026-06-02T19:05:00',
   },
 ]
 
