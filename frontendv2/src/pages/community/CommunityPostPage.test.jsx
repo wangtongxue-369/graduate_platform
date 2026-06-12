@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CommunityPostPage from './CommunityPostPage.jsx'
@@ -106,5 +106,50 @@ describe('CommunityPostPage', () => {
     await screen.findByText('Detail Post')
     const links = screen.getAllByRole('link')
     expect(links.some((link) => link.getAttribute('href') === '/community?category=job&sort=hot')).toBe(true)
+  })
+
+  it('shows the active reply target inside the composer', async () => {
+    commentsMock.mockResolvedValueOnce([
+      {
+        id: 11,
+        authorId: 5,
+        authorName: 'Commenter',
+        content: 'comment body',
+        editable: true,
+        replies: [],
+        replyCount: 0,
+        createdAt: '2026-06-12T11:00:00',
+        updatedAt: '2026-06-12T11:00:00',
+      },
+    ])
+
+    render(
+      <MemoryRouter initialEntries={['/community/9']}>
+        <Routes>
+          <Route path="/community/:postId" element={<CommunityPostPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: '回复' }))
+
+    expect(screen.getByText('回复目标')).toBeInTheDocument()
+    expect(screen.getByText('当前目标：Commenter')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '取消回复' })).toBeInTheDocument()
+  })
+
+  it('keeps post actions grouped in a dedicated panel', async () => {
+    render(
+      <MemoryRouter initialEntries={['/community/9']}>
+        <Routes>
+          <Route path="/community/:postId" element={<CommunityPostPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('帖子操作')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '点赞帖子' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '收藏帖子' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '举报帖子' })).toBeInTheDocument()
   })
 })

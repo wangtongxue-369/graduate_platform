@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import MarkdownContent from '@legacy/components/MarkdownContent.jsx'
 import { communityApi } from '@legacy/lib/api.js'
+import CommunityCommentComposer from '@/components/community/CommunityCommentComposer.jsx'
+import CommunityCommentThread from '@/components/community/CommunityCommentThread.jsx'
+import CommunityPostActions from '@/components/community/CommunityPostActions.jsx'
 import PageIntro from '@/components/PageIntro.jsx'
 import SubnavTabs from '@/components/SubnavTabs.jsx'
 import {
@@ -15,7 +18,6 @@ import {
   cloneCommentTree,
   countComments,
   findCommentInTree,
-  formatDateTime,
   formatFileSize,
   insertCommentIntoTree,
   normalizeCommunityComment,
@@ -38,92 +40,8 @@ function getCommentAuthorLabel(comment) {
   return '匿名用户'
 }
 
-function sameUserId(left, right) {
-  if (left == null || right == null) return false
-  return String(left) === String(right)
-}
-
-function CommentThread({
-  comments,
-  activeCommentId,
-  currentUserId,
-  isAdmin,
-  onReply,
-  onEdit,
-  onDelete,
-  onReport,
-}) {
-  if (!comments.length) {
-    return <div className="v2-empty-card">当前还没有评论，可以直接在评论区下方写下第一条。</div>
-  }
-
-  return (
-    <div className="v2-comment-thread">
-      {comments.map((comment) => {
-        const ownedByCurrentUser = sameUserId(comment.authorId, currentUserId)
-        const canReply = comment.editable
-        const canEdit = comment.editable && ownedByCurrentUser
-        const canDelete = comment.editable && (ownedByCurrentUser || isAdmin)
-        const canReport = comment.editable && currentUserId && !ownedByCurrentUser
-        const isActive = String(activeCommentId || '') === String(comment.id)
-
-        return (
-          <article className={`v2-comment-card ${isActive ? 'is-active' : ''}`} key={comment.id}>
-            <div className="v2-comment-card__head">
-              <div>
-                <strong>{getCommentAuthorLabel(comment)}</strong>
-                <span>{formatDateTime(comment.updatedAt || comment.createdAt)}</span>
-              </div>
-              <small>{comment.replyCount ? `${comment.replyCount} 条回复` : '可继续回复'}</small>
-            </div>
-
-            <p>{comment.content}</p>
-
-            <div className="v2-inline-actions">
-              {canReply ? (
-                <button className="v2-ghost-link" type="button" onClick={() => onReply(comment)}>
-                  回复
-                </button>
-              ) : null}
-              {canEdit ? (
-                <button className="v2-ghost-link" type="button" onClick={() => onEdit(comment)}>
-                  编辑
-                </button>
-              ) : null}
-              {canDelete ? (
-                <button className="v2-ghost-link v2-ghost-link--danger" type="button" onClick={() => onDelete(comment)}>
-                  删除
-                </button>
-              ) : null}
-              {canReport ? (
-                <button className="v2-ghost-link v2-ghost-link--danger" type="button" onClick={() => onReport(comment)}>
-                  举报
-                </button>
-              ) : null}
-            </div>
-
-            {comment.replies?.length ? (
-              <div className="v2-comment-card__replies">
-                <CommentThread
-                  comments={comment.replies}
-                  activeCommentId={activeCommentId}
-                  currentUserId={currentUserId}
-                  isAdmin={isAdmin}
-                  onReply={onReply}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onReport={onReport}
-                />
-              </div>
-            ) : null}
-          </article>
-        )
-      })}
-    </div>
-  )
-}
-
 export default function CommunityPostPage() {
+  const location = useLocation()
   const { postId } = useParams()
   const { user, token, isAuthed } = useAuth()
   const [post, setPost] = useState(null)
@@ -148,6 +66,7 @@ export default function CommunityPostPage() {
   const isForcedPreview = shouldForceCommunityPreview(token)
   const currentUserId = user?.id ?? null
   const isAdmin = String(user?.role || '').toLowerCase() === 'admin'
+  const returnTo = location.state?.returnTo || '/community'
 
   useEffect(() => {
     let active = true
@@ -506,11 +425,9 @@ export default function CommunityPostPage() {
   }
 
   const activeCommentId = composer.target?.id || reportPanel.target?.id
-  const composerTitle = composer.mode === 'edit'
-    ? '编辑评论'
-    : composer.mode === 'reply'
-      ? `回复 ${getCommentAuthorLabel(composer.target)}`
-      : '写评论'
+  const composerTargetPreview = composer.target
+    ? findCommentInTree(comments, composer.target.id)?.content?.slice(0, 36) || '评论'
+    : ''
 
   return (
     <>
@@ -525,7 +442,7 @@ export default function CommunityPostPage() {
           ]}
           actions={(
             <>
-              <Link className="v2-secondary-link" to="/community">返回社区目录</Link>
+              <Link className="v2-secondary-link" to={returnTo}>返回社区目录</Link>
               <Link className="v2-ghost-link" to="/community/notifications">查看通知</Link>
             </>
           )}
@@ -580,7 +497,7 @@ export default function CommunityPostPage() {
                 </div>
               </div>
 
-              <CommentThread
+              <CommunityCommentThread
                 comments={comments}
                 activeCommentId={activeCommentId}
                 currentUserId={currentUserId}
@@ -591,39 +508,19 @@ export default function CommunityPostPage() {
                 onReport={openCommentReport}
               />
 
-              <div className="v2-comment-editor">
-                <div className="v2-section-head">
-                  <div>
-                    <p className="v2-kicker">评论编辑器</p>
-                    <h3>{composerTitle}</h3>
-                  </div>
-                  {(composer.mode !== 'new' || composer.value) ? (
-                    <button className="v2-ghost-link" type="button" onClick={resetComposer}>重置</button>
-                  ) : null}
-                </div>
-
-                <label className="v2-field">
-                  <span>{composer.mode === 'edit' ? '修改内容' : '输入评论'}</span>
-                  <textarea
-                    rows="6"
-                    value={composer.value}
-                    placeholder={composer.mode === 'reply' ? '写下你要回复的内容' : '写下你的评论'}
-                    onChange={(event) => setComposer((current) => ({ ...current, value: event.target.value }))}
-                  />
-                </label>
-
-                {composer.target ? (
-                  <p className="v2-note-text">
-                    当前目标：{getCommentAuthorLabel(composer.target)} · {findCommentInTree(comments, composer.target.id)?.content?.slice(0, 36) || '评论'}
-                  </p>
-                ) : null}
-
-                <div className="v2-inline-actions">
-                  <button className="v2-primary-link" type="button" disabled={acting} onClick={handleSubmitComposer}>
-                    {composer.mode === 'edit' ? '保存修改' : composer.mode === 'reply' ? '提交回复' : '发布评论'}
-                  </button>
-                </div>
-              </div>
+              <CommunityCommentComposer
+                mode={composer.mode}
+                target={composer.target ? {
+                  ...composer.target,
+                  authorName: getCommentAuthorLabel(composer.target),
+                } : null}
+                targetPreview={composerTargetPreview}
+                value={composer.value}
+                acting={acting}
+                onChange={(value) => setComposer((current) => ({ ...current, value }))}
+                onReset={resetComposer}
+                onSubmit={handleSubmitComposer}
+              />
 
               {reportPanel.type === 'comment' ? (
                 <div className="v2-comment-editor v2-comment-editor--report">
@@ -666,28 +563,15 @@ export default function CommunityPostPage() {
       </div>
 
       <aside className="v2-side-column">
-        <section className="v2-side-card">
-          <p className="v2-kicker">互动摘要</p>
-          <div className="v2-summary-stack">
-            {interactionSummary.map((item) => (
-              <div className="v2-summary-mini" key={item.label}>
-                <strong>{item.value}</strong>
-                <span>{item.label}</span>
-              </div>
-            ))}
-          </div>
-          <div className="v2-side-action-stack">
-            <button className="v2-primary-link" type="button" disabled={acting} onClick={handleToggleLike}>
-              {post?.liked ? '取消点赞' : '点赞帖子'}
-            </button>
-            <button className="v2-secondary-link" type="button" disabled={acting} onClick={handleToggleFavorite}>
-              {post?.favorited ? '取消收藏' : '收藏帖子'}
-            </button>
-            <button className="v2-ghost-link v2-ghost-link--danger" type="button" disabled={acting} onClick={openPostReport}>
-              举报帖子
-            </button>
-          </div>
-        </section>
+        <CommunityPostActions
+          interactionSummary={interactionSummary}
+          liked={post?.liked}
+          favorited={post?.favorited}
+          acting={acting}
+          onToggleLike={handleToggleLike}
+          onToggleFavorite={handleToggleFavorite}
+          onReportPost={openPostReport}
+        />
 
         <section className="v2-side-card">
           <p className="v2-kicker">举报面板</p>
