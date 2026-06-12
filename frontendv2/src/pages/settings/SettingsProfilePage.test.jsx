@@ -115,9 +115,7 @@ describe('SettingsProfilePage', () => {
     fireEvent.change(screen.getByLabelText('年级'), {
       target: { value: '2025' },
     })
-    fireEvent.change(screen.getByLabelText('方向'), {
-      target: { value: 'job' },
-    })
+    fireEvent.click(screen.getByRole('button', { name: '就业' }))
     fireEvent.change(screen.getByLabelText('意向地区'), {
       target: { value: '杭州' },
     })
@@ -146,7 +144,7 @@ describe('SettingsProfilePage', () => {
 
     renderPage()
 
-    expect(await screen.findByText('当前显示的是个人设置预览数据，用来观察真实资料页布局。')).toBeInTheDocument()
+    expect(await screen.findByText('个人设置：预览数据')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '编辑资料' }))
     fireEvent.change(screen.getByLabelText('姓名'), {
@@ -158,7 +156,7 @@ describe('SettingsProfilePage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '保存资料' }))
 
-    await screen.findByText('预览资料已更新，当前仍是本地预览效果。')
+    await screen.findByText('个人设置：本地预览已更新')
 
     expect(userApiMocks.updateProfile).not.toHaveBeenCalled()
     expect(screen.getByText('预览用户')).toBeInTheDocument()

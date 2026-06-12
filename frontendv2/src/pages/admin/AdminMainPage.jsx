@@ -23,48 +23,35 @@ function matchesKeyword(queue, keyword) {
 
 export default function AdminMainPage() {
   return (
-    <>
-      <div className="v2-main-column">
-        <PageIntro
-          kicker="值班总台"
-          title="首页先分诊，再进入各管理模块处理队列。"
-          lead="管理员首页不再堆一整屏说明卡，而是先展示真实待处理工作，再切入社区、题库、考研、考公与就业治理。"
-        />
+    <div className="v2-main-column">
+      <PageIntro
+        kicker="值班总台"
+        title="首页先分诊，再进入各管理模块处理队列。"
+        lead="先看待处理工作，再切入具体治理模块。"
+      />
 
-        <section className="v2-card-grid v2-card-grid--dense">
-          {adminWorkspace.queues.map((item) => (
-            <article className="v2-module-card" key={item.label}>
-              <strong>{item.label}</strong>
-              <p>{item.count} 项待处理</p>
-              <p>{item.summary}</p>
-            </article>
-          ))}
-        </section>
+      <section className="v2-card-grid v2-card-grid--dense">
+        {adminWorkspace.queues.map((item) => (
+          <article className="v2-module-card" key={item.label}>
+            <strong>{item.label}</strong>
+            <p>{item.count} 项待处理</p>
+            <p>{item.summary}</p>
+          </article>
+        ))}
+      </section>
 
-        <section className="v2-feed-list" aria-label="最近处理">
-          {adminWorkspace.recentActions.map((item, index) => (
-            <div className="v2-feed-item" key={item}>
-              <div className="v2-feed-index">{String(index + 1).padStart(2, '0')}</div>
-              <div className="v2-feed-body">
-                <strong>{item}</strong>
-                <p>处理完成后回到治理队列，不把无关说明堆在首页。</p>
-              </div>
+      <section className="v2-feed-list" aria-label="最近处理">
+        {adminWorkspace.recentActions.map((item, index) => (
+          <div className="v2-feed-item" key={item}>
+            <div className="v2-feed-index">{String(index + 1).padStart(2, '0')}</div>
+            <div className="v2-feed-body">
+              <strong>{item}</strong>
+              <p>处理完当前队列后再切下一个模块。</p>
             </div>
-          ))}
-        </section>
-      </div>
-
-      <aside className="v2-side-column">
-        <section className="v2-side-card">
-          <p className="v2-kicker">当前重心</p>
-          <ul>
-            <li>先处理高举报量内容。</li>
-            <li>再回收错分与重复通知。</li>
-            <li>最后处理低优先级运营项。</li>
-          </ul>
-        </section>
-      </aside>
-    </>
+          </div>
+        ))}
+      </section>
+    </div>
   )
 }
 
@@ -72,12 +59,10 @@ function AdminDomainPage({ domainKey, title, lead }) {
   const domain = adminWorkspace.domains[domainKey]
   const [keyword, setKeyword] = useState('')
   const [priority, setPriority] = useState('all')
-  const pathItems = domainKey === 'community'
-    ? [{ label: '管理员主站' }]
-    : [
-      { label: '管理员主站', to: '/admin/community' },
-      { label: domain.heading },
-    ]
+  const pathItems = [
+    { label: '管理员主站', to: '/admin' },
+    { label: domain.heading },
+  ]
   const filteredQueues = useMemo(() => (
     domain.queues.filter((item) => matchesKeyword(item, keyword))
       .filter((item) => priority === 'all' || getQueuePriority(item.count) === priority)
@@ -140,22 +125,20 @@ function AdminDomainPage({ domainKey, title, lead }) {
 
             <label className="v2-field">
               <span>优先级</span>
-              <select value={priority} onChange={(event) => setPriority(event.target.value)}>
+              <div className="v2-segment-group" role="group" aria-label="优先级">
                 {priorityOptions.map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
+                  <button
+                    className={`v2-segment-button ${priority === item.value ? 'is-active' : ''}`}
+                    key={item.value}
+                    type="button"
+                    onClick={() => setPriority(item.value)}
+                  >
+                    {item.label}
+                  </button>
                 ))}
-              </select>
+              </div>
             </label>
           </form>
-        </section>
-
-        <section className="v2-side-card">
-          <p className="v2-kicker">治理提示</p>
-          <ul>
-            <li>先看高频与重复问题。</li>
-            <li>涉及状态变更的项目要保留处理原因。</li>
-            <li>处理完成后回到队列继续下一项。</li>
-          </ul>
         </section>
       </aside>
     </>
@@ -167,7 +150,7 @@ export function AdminCommunityPage() {
     <AdminDomainPage
       domainKey="community"
       title="把帖子、评论和举报拉回同一条治理链路。"
-      lead="社区治理更适合队列式工作台，先看待审、待处置与分类调整，再进入具体处理。"
+      lead="先看待审与待处置，再进入具体处理。"
     />
   )
 }
@@ -177,7 +160,7 @@ export function AdminQuestionBanksPage() {
     <AdminDomainPage
       domainKey="questionBanks"
       title="题库后台更像编辑台，而不是总览海报。"
-      lead="题库治理的重心是导入、快照和错题申诉，所以中心区优先呈现批次与版本。"
+      lead="重点放在导入、快照和错题申诉。"
     />
   )
 }
@@ -187,7 +170,7 @@ export function AdminKaoyanPage() {
     <AdminDomainPage
       domainKey="kaoyan"
       title="先保证资料质量，再放大考研内容规模。"
-      lead="考研治理围绕资料审核、分数线维护与导师入驻，布局会更偏管理台。"
+      lead="围绕资料审核、分数线维护与导师入驻。"
     />
   )
 }
@@ -197,7 +180,7 @@ export function AdminKaogongPage() {
     <AdminDomainPage
       domainKey="kaogong"
       title="岗位、节点和面试房间都要回到治理回路。"
-      lead="考公治理强调岗位更新、日历异常和房间反馈，所以页面结构优先承载流程。"
+      lead="重点看岗位更新、日历异常和房间反馈。"
     />
   )
 }
@@ -207,7 +190,7 @@ export function AdminEmploymentPage() {
     <AdminDomainPage
       domainKey="employment"
       title="先处理招聘会、岗位和通知，再谈运营效果。"
-      lead="就业运营页要承接招聘会、岗位清洗和通知触达三类后端能力，不再做空泛总览。"
+      lead="先处理招聘会、岗位清洗和通知触达。"
     />
   )
 }

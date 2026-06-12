@@ -55,7 +55,7 @@ describe('page-level return paths', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('link', { name: '管理员主站' })).toHaveAttribute('href', '/admin/community')
+    expect(screen.getByRole('link', { name: '管理员主站' })).toHaveAttribute('href', '/admin')
   })
 
   it('uses rightbar filters to control admin governance results', () => {

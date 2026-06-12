@@ -27,12 +27,6 @@ const sortOptions = [
   { value: 'hot', label: '热度优先' },
 ]
 
-const postGuides = [
-  '标题先写用途，再写适用阶段，别人更容易判断要不要点进来。',
-  '有附件时，正文前两行先说明先看什么、后看什么。',
-  '经验帖和资料帖分开写，能减少评论区反复追问。',
-]
-
 function parseTags(post) {
   if (Array.isArray(post?.tags)) return post.tags
   if (typeof post?.tags === 'string') {
@@ -118,7 +112,7 @@ export default function CommunityHubPage() {
           keyword: activeKeyword || undefined,
           sort: activeSort,
         }).map(normalizePost))
-        setNotice('当前展示的是模拟数据，用来预览社区真实有内容时的目录、详情入口和筛选状态。')
+        setNotice('社区：预览目录')
       }
 
       if (isForcedPreview) {
@@ -216,7 +210,7 @@ export default function CommunityHubPage() {
         <PageIntro
           kicker="社区首页"
           title="先看讨论目录，再决定要不要深入参与。"
-          lead="社区首页负责筛帖、预览和分流，帖子正文、评论和附件留到详情页展开，不把所有动作堆在一个入口。"
+          lead="先筛目录，再进正文。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -236,7 +230,7 @@ export default function CommunityHubPage() {
           <div className="v2-toolbar-row">
             <div className="v2-toolbar-copy">
               <strong>分类入口</strong>
-              <p>先按主题缩小范围，再进入帖子详情。</p>
+              <p>先缩小范围，再进帖子。</p>
             </div>
             <div className="v2-chip-group">
               <button
@@ -262,7 +256,7 @@ export default function CommunityHubPage() {
           <div className="v2-toolbar-row">
             <div className="v2-toolbar-copy">
               <strong>排序方式</strong>
-              <p>把最新内容和热帖拆开看，减少信息混杂。</p>
+              <p>最新和热帖分开看。</p>
             </div>
             <div className="v2-segment-group">
               {sortOptions.map((item) => (
@@ -315,33 +309,6 @@ export default function CommunityHubPage() {
           <div className="v2-article-card">当前筛选条件下还没有帖子，可以换个分类或关键词试试。</div>
         )}
 
-        {!loading && posts.length ? (
-          <section className="v2-card-grid" aria-label="社区辅助信息">
-            <article className="v2-article-card">
-              <p className="v2-kicker">最近讨论重点</p>
-              <div className="v2-check-list">
-                {discussionHighlights.map((item) => (
-                  <Link className="v2-check-row" key={item.id} to={`/community/${item.id}`}>
-                    <strong>{item.title}</strong>
-                    <span>{item.note}</span>
-                  </Link>
-                ))}
-              </div>
-            </article>
-
-            <article className="v2-article-card">
-              <p className="v2-kicker">发帖前提示</p>
-              <div className="v2-check-list">
-                {postGuides.map((item) => (
-                  <div className="v2-check-row" key={item}>
-                    <strong>写清路径</strong>
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </section>
-        ) : null}
       </div>
 
       <aside className="v2-side-column">
@@ -362,6 +329,20 @@ export default function CommunityHubPage() {
           </form>
         </section>
 
+        {!loading && posts.length ? (
+          <section className="v2-side-card">
+            <p className="v2-kicker">最近讨论重点</p>
+            <div className="v2-check-list">
+              {discussionHighlights.map((item) => (
+                <Link className="v2-check-row" key={item.id} to={`/community/${item.id}`}>
+                  <strong>{item.title}</strong>
+                  <span>{item.note}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         {hotTags.length ? (
           <section className="v2-side-card">
             <p className="v2-kicker">热词</p>
@@ -372,15 +353,6 @@ export default function CommunityHubPage() {
             </div>
           </section>
         ) : null}
-
-        <section className="v2-side-card">
-          <p className="v2-kicker">浏览提示</p>
-          <ul>
-            <li>先在列表看附件状态，再决定是否进入正文。</li>
-            <li>成员帖会明确标记，不把权限提示藏起来。</li>
-            <li>想继续互动时，再进入详情页看评论区和回复链。</li>
-          </ul>
-        </section>
       </aside>
     </>
   )

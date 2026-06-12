@@ -69,3 +69,16 @@ export function normalizeTagList(value) {
     .map((item) => item.trim())
     .filter(Boolean)
 }
+
+export function previewDataNotice(label) {
+  return `${label}：预览数据`
+}
+
+export function remoteDataNotice(label) {
+  return `${label}：已连接后端`
+}
+
+export function fallbackDataNotice(label, error) {
+  if (error?.message) return error.message
+  return `${label}读取失败，已切回预览数据。`
+}

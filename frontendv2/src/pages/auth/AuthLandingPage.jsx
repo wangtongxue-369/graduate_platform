@@ -26,7 +26,7 @@ export default function AuthLandingPage() {
     <AuthHeroShell>
       <section className="v2-auth-panel v2-glass-card">
         <div className="v2-auth-panel__head">
-          <p className="v2-kicker">identity gateway</p>
+          <p className="v2-kicker">身份入口</p>
           <h2>选择认证方式</h2>
           <p>{currentIntro.copy}</p>
         </div>

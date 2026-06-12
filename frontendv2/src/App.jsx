@@ -142,7 +142,7 @@ export default function App() {
             </AdminOnly>
           )}
         >
-          <Route path="/admin" element={<Navigate replace to="/admin/community" />} />
+          <Route path="/admin" element={<AdminMainPage />} />
           <Route path="/admin/community" element={<AdminCommunityPage />} />
           <Route path="/admin/question-banks" element={<AdminQuestionBanksPage />} />
           <Route path="/admin/kaoyan" element={<AdminKaoyanPage />} />

@@ -67,6 +67,18 @@ export function getAppNavigation(user) {
     ]
   }
 
+  if (!user) {
+    return [
+      {
+        title: '公共功能',
+        items: [
+          { label: '社区', to: '/community' },
+          { label: '题库', to: '/practice' },
+        ],
+      },
+    ]
+  }
+
   return [
     {
       title: '公共功能',

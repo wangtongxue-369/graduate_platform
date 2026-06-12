@@ -8,11 +8,103 @@ import {
   canUseRemoteToken,
   ensureArray,
   ensurePage,
-  firstNonEmpty,
+  fallbackDataNotice,
   formatCountText,
   formatDateLabel,
+  previewDataNotice,
+  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
+
+const admissionResultLabelMap = {
+  admit: '录取',
+  waitlist: '候补',
+  rejected: '未录取',
+}
+
+const applicationStatusOptions = [
+  { value: 'all', label: '全部' },
+  { value: 'planning', label: '规划中' },
+  { value: 'preparing', label: '准备中' },
+  { value: 'submitted', label: '已提交' },
+  { value: 'offer', label: '已获 offer' },
+  { value: 'rejected', label: '未录取' },
+]
+
+const applicationPriorityOptions = [
+  { value: 'all', label: '全部' },
+  { value: 'dream', label: '冲刺' },
+  { value: 'match', label: '匹配' },
+  { value: 'safe', label: '保底' },
+]
+
+const timelinePhaseOptions = [
+  { value: 'all', label: '全部' },
+  { value: 'Language test', label: '语言考试' },
+  { value: 'School selection', label: '选校定位' },
+  { value: 'Documents', label: '文书材料' },
+  { value: 'Submission', label: '网申提交' },
+  { value: 'Visa', label: '签证' },
+]
+
+const timelineStatusOptions = [
+  { value: 'all', label: '全部' },
+  { value: 'todo', label: '待开始' },
+  { value: 'doing', label: '进行中' },
+  { value: 'done', label: '已完成' },
+]
+
+const materialStageOptions = [
+  { value: 'all', label: '全部' },
+  { value: 'Identity', label: '身份材料' },
+  { value: 'Academic', label: '学术材料' },
+  { value: 'Language test', label: '语言考试' },
+  { value: 'Documents', label: '文书材料' },
+  { value: 'Visa', label: '签证' },
+]
+
+const materialCompletionOptions = [
+  { value: 'all', label: '全部' },
+  { value: 'done', label: '已完成' },
+  { value: 'todo', label: '待完成' },
+]
+
+function labelFromOptions(value, options, fallback = '待补充') {
+  return options.find((item) => item.value === value)?.label || value || fallback
+}
+
+function getAdmissionResultLabel(value) {
+  return admissionResultLabelMap[value] || value || '结果待补充'
+}
+
+function getApplicationStatusLabel(value) {
+  return labelFromOptions(value, applicationStatusOptions, '状态待补充')
+}
+
+function getApplicationPriorityLabel(value) {
+  return labelFromOptions(value, applicationPriorityOptions, '优先级待补充')
+}
+
+function getApplicationPriorityShortLabel(value) {
+  const shortLabelMap = {
+    dream: '冲',
+    match: '稳',
+    safe: '保',
+  }
+  return shortLabelMap[value] || '申'
+}
+
+function getTimelinePhaseLabel(value) {
+  return labelFromOptions(value, timelinePhaseOptions, '阶段待补充')
+}
+
+function getTimelineStatusLabel(value) {
+  return labelFromOptions(value, timelineStatusOptions, '状态待补充')
+}
+
+function getMaterialStageLabel(value) {
+  return labelFromOptions(value, materialStageOptions, '阶段待补充')
+}
 
 function createStudyAbroadPreviewOverview() {
   return {
@@ -230,7 +322,7 @@ export default function StudyAbroadStationPage() {
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [overview, setOverview] = useState(createStudyAbroadPreviewOverview())
-  const [notice, setNotice] = useState('当前显示的是留学主站预览数据，页面层级已经按后端流程拆好。')
+  const [notice, setNotice] = useState(previewDataNotice('留学主站'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -239,7 +331,7 @@ export default function StudyAbroadStationPage() {
     async function loadOverview() {
       if (!canUseRemote) {
         setOverview(createStudyAbroadPreviewOverview())
-        setNotice('当前显示的是留学主站预览数据，登录真实账号后会切换成后端项目、申请、时间线和材料数据。')
+        setNotice(previewDataNotice('留学主站'))
         return
       }
 
@@ -271,11 +363,11 @@ export default function StudyAbroadStationPage() {
           timeline: normalizeTimelineRows(timelineData).slice(0, 3),
           materials: normalizeMaterialRows(materialData).slice(0, 3),
         })
-        setNotice('已连接留学后端数据。主站会先展示项目、案例、申请、时间线和材料五条主线，再进入子页继续处理。')
+        setNotice(remoteDataNotice('留学主站'))
       } catch (error) {
         if (!active) return
         setOverview(createStudyAbroadPreviewOverview())
-        setNotice(error.message || '留学主站数据读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('留学主站', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -292,7 +384,7 @@ export default function StudyAbroadStationPage() {
       <PageIntro
         kicker="留学主站"
         title="把项目筛选、申请推进和材料状态收进同一张留学推进图里。"
-        lead="留学主站先展示项目目录、案例参考、申请跟踪、时间线和材料清单五条主线，再把每一步拆到对应子页里继续处理。"
+        lead="先看五条主线，再进对应子页。"
       />
 
       {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -361,7 +453,7 @@ export default function StudyAbroadStationPage() {
             {overview.applications.map((item) => (
               <div className="v2-preview-row" key={item.id}>
                 <strong>{item.school}</strong>
-                <span>{item.status}</span>
+                <span>{getApplicationStatusLabel(item.status)}</span>
                 <small>{item.note}</small>
               </div>
             ))}
@@ -380,7 +472,7 @@ export default function StudyAbroadStationPage() {
             {overview.timeline.map((item) => (
               <div className="v2-preview-row" key={item.id}>
                 <strong>{item.title}</strong>
-                <span>{item.phase}</span>
+                <span>{getTimelinePhaseLabel(item.phase)}</span>
                 <small>{item.note}</small>
               </div>
             ))}
@@ -422,7 +514,7 @@ export function StudyAbroadProgramsPage() {
     partnerOnly: false,
   })
   const [rows, setRows] = useState(createStudyAbroadProgramPreviewRows())
-  const [notice, setNotice] = useState('当前显示的是项目目录预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('项目目录'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -431,7 +523,7 @@ export function StudyAbroadProgramsPage() {
     async function loadPrograms() {
       if (!canUseRemote) {
         setRows(createStudyAbroadProgramPreviewRows())
-        setNotice('当前显示的是项目目录预览数据，登录真实账号后会切换成后端项目目录。')
+        setNotice(previewDataNotice('项目目录'))
         return
       }
 
@@ -451,11 +543,11 @@ export function StudyAbroadProgramsPage() {
         )
         if (!active) return
         setRows(normalizeProgramRows(data))
-        setNotice('当前内容来自项目目录接口。筛选器放在右栏，中间区域只保留项目比较结果。')
+        setNotice(remoteDataNotice('项目目录'))
       } catch (error) {
         if (!active) return
         setRows(createStudyAbroadProgramPreviewRows())
-        setNotice(error.message || '项目目录读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('项目目录', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -477,7 +569,7 @@ export function StudyAbroadProgramsPage() {
             { label: '项目书架' },
           ]}
           title="先比较项目，再决定主申、冲刺和保底的组合结构。"
-          lead="项目页中间只做项目比较。右栏收拢筛选条件，避免项目信息和控制器混在一起。"
+          lead="中间只做项目比较，右栏单独放筛选。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -556,24 +648,23 @@ export function StudyAbroadProgramsPage() {
             </label>
             <label className="v2-field">
               <span>合作项目</span>
-              <select
-                value={filters.partnerOnly ? 'true' : 'false'}
-                onChange={(event) => setFilters((current) => ({ ...current, partnerOnly: event.target.value === 'true' }))}
-              >
-                <option value="false">全部</option>
-                <option value="true">只看合作项目</option>
-              </select>
+              <div className="v2-segment-group" role="group" aria-label="合作项目">
+                {[
+                  { value: false, label: '全部' },
+                  { value: true, label: '只看合作' },
+                ].map((item) => (
+                  <button
+                    className={`v2-segment-button ${filters.partnerOnly === item.value ? 'is-active' : ''}`}
+                    key={String(item.value)}
+                    type="button"
+                    onClick={() => setFilters((current) => ({ ...current, partnerOnly: item.value }))}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </label>
           </form>
-        </section>
-
-        <section className="v2-side-card">
-          <p className="v2-kicker">查看建议</p>
-          <ul>
-            <li>先按国家和方向缩小范围，再比较学费、截止时间和风险标签。</li>
-            <li>项目页只负责“筛项目”，案例判断请回到案例页继续看。</li>
-            <li>确认目标后，再回主站进入申请跟踪或时间线页面。</li>
-          </ul>
         </section>
       </aside>
     </>
@@ -590,7 +681,7 @@ export function StudyAbroadCasesPage() {
     keyword: '',
   })
   const [rows, setRows] = useState(createStudyAbroadCasePreviewRows())
-  const [notice, setNotice] = useState('当前显示的是案例库预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('案例库'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -599,7 +690,7 @@ export function StudyAbroadCasesPage() {
     async function loadCases() {
       if (!canUseRemote) {
         setRows(createStudyAbroadCasePreviewRows())
-        setNotice('当前显示的是案例库预览数据，登录真实账号后会切换成后端案例。')
+        setNotice(previewDataNotice('案例库'))
         return
       }
 
@@ -619,11 +710,11 @@ export function StudyAbroadCasesPage() {
         )
         if (!active) return
         setRows(normalizeCaseRows(data))
-        setNotice('当前内容来自案例接口。筛选收在右栏，中间区域专门用来看相近背景样本。')
+        setNotice(remoteDataNotice('案例库'))
       } catch (error) {
         if (!active) return
         setRows(createStudyAbroadCasePreviewRows())
-        setNotice(error.message || '案例库读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('案例库', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -645,7 +736,7 @@ export function StudyAbroadCasesPage() {
             { label: '案例档案' },
           ]}
           title="先看相近背景案例，再判断自己的风险、空间和补强顺序。"
-          lead="案例页中间只保留样本本身。右栏负责筛选国家、结果和背景关键词，不把项目目录混进来。"
+          lead="中间只看样本，右栏负责国家、结果和关键词。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -660,7 +751,7 @@ export function StudyAbroadCasesPage() {
               <p>{item.studentMajor} / {item.gpa} / {item.languageScore}</p>
               <p>{item.summary}</p>
               <div className="v2-tag-row">
-                <span>{item.admissionResult}</span>
+                <span>{getAdmissionResultLabel(item.admissionResult)}</span>
                 {item.tags.map((tag) => <span key={tag}>{tag}</span>)}
               </div>
             </article>
@@ -713,14 +804,6 @@ export function StudyAbroadCasesPage() {
           </form>
         </section>
 
-        <section className="v2-side-card">
-          <p className="v2-kicker">判断顺序</p>
-          <ul>
-            <li>先按国家和结果过滤，再看本科专业与语言成绩。</li>
-            <li>案例页只负责参考判断，不直接替代申请策略。</li>
-            <li>确认方向后，请回到申请页或时间线页安排下一步。</li>
-          </ul>
-        </section>
       </aside>
     </>
   )
@@ -735,7 +818,7 @@ export function StudyAbroadApplicationsPage() {
     keyword: '',
   })
   const [rows, setRows] = useState(createStudyAbroadApplicationPreviewRows())
-  const [notice, setNotice] = useState('当前显示的是申请跟踪预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('申请跟踪'))
   const [loading, setLoading] = useState(false)
 
   const filteredRows = rows.filter((item) => {
@@ -753,7 +836,7 @@ export function StudyAbroadApplicationsPage() {
     async function loadApplications() {
       if (!canUseRemote) {
         setRows(createStudyAbroadApplicationPreviewRows())
-        setNotice('当前显示的是申请跟踪预览数据，登录真实账号后会切换成后端申请项目。')
+        setNotice(previewDataNotice('申请跟踪'))
         return
       }
 
@@ -766,11 +849,11 @@ export function StudyAbroadApplicationsPage() {
         )
         if (!active) return
         setRows(normalizeApplicationRows(data))
-        setNotice('当前内容来自申请项目接口。右栏只保留筛选器，主区专门看推进状态。')
+        setNotice(remoteDataNotice('申请跟踪'))
       } catch (error) {
         if (!active) return
         setRows(createStudyAbroadApplicationPreviewRows())
-        setNotice(error.message || '申请项目读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('申请跟踪', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -792,7 +875,7 @@ export function StudyAbroadApplicationsPage() {
             { label: '项目进度' },
           ]}
           title="每个项目都沿着一条清楚的申请线推进，不在这里混进案例和材料操作。"
-          lead="申请页的重点是状态、优先级和下一步说明。筛选器放在右栏，列表主体保持干净。"
+          lead="主区只看状态与下一步，筛选留在右栏。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -819,15 +902,16 @@ export function StudyAbroadApplicationsPage() {
         <section className="v2-feed-list" aria-label="申请项目列表">
           {filteredRows.map((item) => (
             <article className="v2-feed-item" key={item.id}>
-              <div className="v2-feed-index">{item.priority.slice(0, 2)}</div>
+              <div className="v2-feed-index">{getApplicationPriorityShortLabel(item.priority)}</div>
               <div className="v2-feed-body">
                 <strong>{item.school} / {item.program}</strong>
                 <p>{item.country} / {item.degree} / {item.intake}</p>
-                <p>{item.applicationRound} / {item.status}</p>
+                <p>{item.applicationRound} / {getApplicationStatusLabel(item.status)}</p>
                 <p>{item.note}</p>
               </div>
               <div className="v2-feed-side">
                 <span>{item.deadline ? formatDateLabel(item.deadline) : '待补充'}</span>
+                <span>{getApplicationPriorityLabel(item.priority)}</span>
               </div>
             </article>
           ))}
@@ -848,29 +932,33 @@ export function StudyAbroadApplicationsPage() {
           <form className="v2-filter-form" onSubmit={(event) => event.preventDefault()}>
             <label className="v2-field">
               <span>状态</span>
-              <select
-                value={filters.status}
-                onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
-              >
-                <option value="all">全部</option>
-                <option value="planning">规划中</option>
-                <option value="preparing">准备中</option>
-                <option value="submitted">已提交</option>
-                <option value="offer">已获 offer</option>
-                <option value="rejected">未录取</option>
-              </select>
+              <div className="v2-segment-group" role="group" aria-label="申请状态">
+                {applicationStatusOptions.map((item) => (
+                  <button
+                    className={`v2-segment-button ${filters.status === item.value ? 'is-active' : ''}`}
+                    key={item.value}
+                    type="button"
+                    onClick={() => setFilters((current) => ({ ...current, status: item.value }))}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </label>
             <label className="v2-field">
               <span>优先级</span>
-              <select
-                value={filters.priority}
-                onChange={(event) => setFilters((current) => ({ ...current, priority: event.target.value }))}
-              >
-                <option value="all">全部</option>
-                <option value="dream">冲刺</option>
-                <option value="match">匹配</option>
-                <option value="safe">保底</option>
-              </select>
+              <div className="v2-segment-group" role="group" aria-label="申请优先级">
+                {applicationPriorityOptions.map((item) => (
+                  <button
+                    className={`v2-segment-button ${filters.priority === item.value ? 'is-active' : ''}`}
+                    key={item.value}
+                    type="button"
+                    onClick={() => setFilters((current) => ({ ...current, priority: item.value }))}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </label>
             <label className="v2-field">
               <span>关键词</span>
@@ -881,15 +969,6 @@ export function StudyAbroadApplicationsPage() {
               />
             </label>
           </form>
-        </section>
-
-        <section className="v2-side-card">
-          <p className="v2-kicker">推进建议</p>
-          <ul>
-            <li>先筛到准备中和已提交项目，再看截止日期。</li>
-            <li>申请页只做推进，不负责材料细节和案例参考。</li>
-            <li>要补节点时请回到时间线页，要补文件时请进材料页。</li>
-          </ul>
         </section>
       </aside>
     </>
@@ -905,7 +984,7 @@ export function StudyAbroadTimelinePage() {
     keyword: '',
   })
   const [rows, setRows] = useState(createStudyAbroadTimelinePreviewRows())
-  const [notice, setNotice] = useState('当前显示的是时间线预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('时间线'))
   const [loading, setLoading] = useState(false)
 
   const filteredRows = rows.filter((item) => {
@@ -923,7 +1002,7 @@ export function StudyAbroadTimelinePage() {
     async function loadTimeline() {
       if (!canUseRemote) {
         setRows(createStudyAbroadTimelinePreviewRows())
-        setNotice('当前显示的是时间线预览数据，登录真实账号后会切换成后端时间线。')
+        setNotice(previewDataNotice('时间线'))
         return
       }
 
@@ -936,11 +1015,11 @@ export function StudyAbroadTimelinePage() {
         )
         if (!active) return
         setRows(normalizeTimelineRows(data))
-        setNotice('当前内容来自时间线接口。右栏只做阶段和状态筛选，中间区域保留完整时间轨。')
+        setNotice(remoteDataNotice('时间线'))
       } catch (error) {
         if (!active) return
         setRows(createStudyAbroadTimelinePreviewRows())
-        setNotice(error.message || '时间线读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('时间线', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -962,7 +1041,7 @@ export function StudyAbroadTimelinePage() {
             { label: '阶段轨道' },
           ]}
           title="每个申请节点都挂在一条时间轨道上，先看节奏，再决定去哪个操作页。"
-          lead="时间线页专门负责阶段与日期，不把材料和案例内容混在一起，便于直接肉眼判断整体节奏。"
+          lead="先看整体节奏，再决定回申请页还是材料页。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -976,7 +1055,7 @@ export function StudyAbroadTimelinePage() {
               </div>
               <div className="v2-timeline-body">
                 <strong>{item.title}</strong>
-                <p>{item.phase} / {item.status}</p>
+                <p>{getTimelinePhaseLabel(item.phase)} / {getTimelineStatusLabel(item.status)}</p>
                 <span>{item.note}</span>
                 <div className="v2-tag-row">
                   {item.applicationSchool ? <span>{item.applicationSchool}</span> : null}
@@ -1001,25 +1080,25 @@ export function StudyAbroadTimelinePage() {
                 value={filters.phase}
                 onChange={(event) => setFilters((current) => ({ ...current, phase: event.target.value }))}
               >
-                <option value="all">全部</option>
-                <option value="Language test">语言考试</option>
-                <option value="School selection">选校定位</option>
-                <option value="Documents">文书材料</option>
-                <option value="Submission">网申提交</option>
-                <option value="Visa">签证</option>
+                {timelinePhaseOptions.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
               </select>
             </label>
             <label className="v2-field">
               <span>状态</span>
-              <select
-                value={filters.status}
-                onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
-              >
-                <option value="all">全部</option>
-                <option value="todo">待开始</option>
-                <option value="doing">进行中</option>
-                <option value="done">已完成</option>
-              </select>
+              <div className="v2-segment-group" role="group" aria-label="时间线状态">
+                {timelineStatusOptions.map((item) => (
+                  <button
+                    className={`v2-segment-button ${filters.status === item.value ? 'is-active' : ''}`}
+                    key={item.value}
+                    type="button"
+                    onClick={() => setFilters((current) => ({ ...current, status: item.value }))}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </label>
             <label className="v2-field">
               <span>关键词</span>
@@ -1030,15 +1109,6 @@ export function StudyAbroadTimelinePage() {
               />
             </label>
           </form>
-        </section>
-
-        <section className="v2-side-card">
-          <p className="v2-kicker">阅读方式</p>
-          <ul>
-            <li>先按阶段缩小范围，再看进行中和待开始节点。</li>
-            <li>时间线只管节奏，补文件请去材料页，项目变更请回申请页。</li>
-            <li>如果要找相似经验，请回案例页看同背景样本。</li>
-          </ul>
         </section>
       </aside>
     </>
@@ -1055,7 +1125,7 @@ export function StudyAbroadMaterialsPage() {
     keyword: '',
   })
   const [rows, setRows] = useState(createStudyAbroadMaterialPreviewRows())
-  const [notice, setNotice] = useState('当前显示的是材料清单预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('材料清单'))
   const [loading, setLoading] = useState(false)
 
   const filteredRows = rows.filter((item) => {
@@ -1076,7 +1146,7 @@ export function StudyAbroadMaterialsPage() {
     async function loadMaterials() {
       if (!canUseRemote) {
         setRows(createStudyAbroadMaterialPreviewRows())
-        setNotice('当前显示的是材料清单预览数据，登录真实账号后会切换成后端材料与附件状态。')
+        setNotice(previewDataNotice('材料清单'))
         return
       }
 
@@ -1089,11 +1159,11 @@ export function StudyAbroadMaterialsPage() {
         )
         if (!active) return
         setRows(normalizeMaterialRows(data))
-        setNotice('当前内容来自材料接口。右栏保留筛选器，中间区域专门观察材料状态和附件数量。')
+        setNotice(remoteDataNotice('材料清单'))
       } catch (error) {
         if (!active) return
         setRows(createStudyAbroadMaterialPreviewRows())
-        setNotice(error.message || '材料清单读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('材料清单', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -1115,7 +1185,7 @@ export function StudyAbroadMaterialsPage() {
             { label: '材料状态' },
           ]}
           title="材料状态单独看，先判断缺口，再决定去哪里补。"
-          lead="材料页中间只保留条目状态和附件概览，不把上传表单和其它模块挤到一屏里，方便观察真实数据有无的差异。"
+          lead="这里只看状态和附件，筛选放右栏。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -1144,7 +1214,7 @@ export function StudyAbroadMaterialsPage() {
             {filteredRows.map((item) => (
               <div className="v2-check-row" key={item.id}>
                 <strong>{item.title}</strong>
-                <span>{item.country} / {item.stage} / {item.category}</span>
+                <span>{item.country} / {getMaterialStageLabel(item.stage)} / {item.category}</span>
                 <span>{item.completed ? '已完成' : '待完成'} / 附件 {item.attachments.length}</span>
                 <span>{item.deadline ? formatDateLabel(item.deadline) : '截止待补充'} / {item.note}</span>
               </div>
@@ -1176,24 +1246,25 @@ export function StudyAbroadMaterialsPage() {
                 value={filters.stage}
                 onChange={(event) => setFilters((current) => ({ ...current, stage: event.target.value }))}
               >
-                <option value="all">全部</option>
-                <option value="Identity">身份材料</option>
-                <option value="Academic">学术材料</option>
-                <option value="Language test">语言考试</option>
-                <option value="Documents">文书材料</option>
-                <option value="Visa">签证</option>
+                {materialStageOptions.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
               </select>
             </label>
             <label className="v2-field">
               <span>完成状态</span>
-              <select
-                value={filters.completed}
-                onChange={(event) => setFilters((current) => ({ ...current, completed: event.target.value }))}
-              >
-                <option value="all">全部</option>
-                <option value="done">已完成</option>
-                <option value="todo">待完成</option>
-              </select>
+              <div className="v2-segment-group" role="group" aria-label="完成状态">
+                {materialCompletionOptions.map((item) => (
+                  <button
+                    className={`v2-segment-button ${filters.completed === item.value ? 'is-active' : ''}`}
+                    key={item.value}
+                    type="button"
+                    onClick={() => setFilters((current) => ({ ...current, completed: item.value }))}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </label>
             <label className="v2-field">
               <span>关键词</span>
@@ -1204,15 +1275,6 @@ export function StudyAbroadMaterialsPage() {
               />
             </label>
           </form>
-        </section>
-
-        <section className="v2-side-card">
-          <p className="v2-kicker">使用提示</p>
-          <ul>
-            <li>先筛到待完成条目，再按国家和阶段查看缺口。</li>
-            <li>材料页只负责看状态，上传和细项编辑可以后续再下钻。</li>
-            <li>如果不确定是否该补，先回案例页或项目页重新判断。</li>
-          </ul>
         </section>
       </aside>
     </>

@@ -8,7 +8,7 @@ import { createSettingsPosts } from '@/lib/settingsPreview.js'
 export default function SettingsPostsPage() {
   const { token } = useAuth()
   const [posts, setPosts] = useState(createSettingsPosts())
-  const [notice, setNotice] = useState('当前显示的是发帖列表预览。')
+  const [notice, setNotice] = useState('发帖：预览数据')
 
   useEffect(() => {
     let active = true
@@ -41,7 +41,7 @@ export default function SettingsPostsPage() {
           { label: '我的发帖' },
         ]}
         title="我的发帖"
-        lead="对应后端 myPosts 分页结构，列表优先显示状态、分类与回到社区的路径。"
+        lead="列表优先显示状态、分类和回链。"
       />
 
       {notice ? <div className="v2-status-note">{notice}</div> : null}

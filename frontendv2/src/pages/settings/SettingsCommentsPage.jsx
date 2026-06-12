@@ -8,7 +8,7 @@ import { createSettingsComments } from '@/lib/settingsPreview.js'
 export default function SettingsCommentsPage() {
   const { token } = useAuth()
   const [comments, setComments] = useState(createSettingsComments())
-  const [notice, setNotice] = useState('当前显示的是评论记录预览。')
+  const [notice, setNotice] = useState('评论：预览数据')
 
   useEffect(() => {
     let active = true
@@ -41,7 +41,7 @@ export default function SettingsCommentsPage() {
           { label: '我的评论' },
         ]}
         title="我的评论"
-        lead="对应后端 myComments 分页结构，强调评论内容与原帖回链。"
+        lead="强调评论内容与原帖回链。"
       />
 
       {notice ? <div className="v2-status-note">{notice}</div> : null}

@@ -62,6 +62,10 @@ export default function HugoStackSidebar({ mode = 'app' }) {
   const avatarText = getAvatarText(user?.name)
 
   async function handleLogout() {
+    if (!user) {
+      navigate('/login')
+      return
+    }
     await logout()
     navigate('/', { replace: true })
   }
@@ -96,7 +100,7 @@ export default function HugoStackSidebar({ mode = 'app' }) {
             to={profilePath}
           >
             <span aria-hidden="true" className="v2-stack-profile__avatar">{avatarText}</span>
-            <div className="v2-stack-profile__copy">
+            <div className="v2-stack-profile__copy v2-stack-profile__copy--app">
               <p className="v2-kicker">graduate platform</p>
               <strong>{user?.name || '当前用户'}</strong>
               <span>{getShellTitle(user, mode)}</span>
@@ -153,7 +157,7 @@ export default function HugoStackSidebar({ mode = 'app' }) {
 
       <div className="v2-stack-sidebar__footer">
         <button className="v2-stack-logout" onClick={handleLogout} type="button">
-          退出登录
+          {user ? '退出登录' : '登录 / 注册'}
         </button>
       </div>
     </aside>

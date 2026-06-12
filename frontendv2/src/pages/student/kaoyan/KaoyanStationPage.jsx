@@ -14,10 +14,13 @@ import {
   canUseRemoteToken,
   ensureArray,
   ensurePage,
+  fallbackDataNotice,
   firstNonEmpty,
   formatCountText,
   formatDateLabel,
   formatDateTimeLabel,
+  previewDataNotice,
+  remoteDataNotice,
   formatRatioText,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
@@ -234,7 +237,7 @@ export default function KaoyanStationPage() {
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [overview, setOverview] = useState(createKaoyanPreviewOverview())
-  const [notice, setNotice] = useState('当前显示的是考研主站预览数据，页面结构已经按后端字段关系排好层次。')
+  const [notice, setNotice] = useState(previewDataNotice('考研主站'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -243,7 +246,7 @@ export default function KaoyanStationPage() {
     async function loadOverview() {
       if (!canUseRemote) {
         setOverview(createKaoyanPreviewOverview())
-        setNotice('当前显示的是考研主站预览数据，登录真实账号后会切换成后端数据。')
+        setNotice(previewDataNotice('考研主站'))
         return
       }
 
@@ -288,11 +291,11 @@ export default function KaoyanStationPage() {
           mentors: supportRows.mentors.slice(0, 2),
           rooms: supportRows.rooms.slice(0, 2),
         })
-        setNotice('已连接考研后端数据。主站会先展示院校、计划、资料和协同四条主线，再进入子页继续下钻。')
+        setNotice(remoteDataNotice('考研主站'))
       } catch (error) {
         if (!active) return
         setOverview(createKaoyanPreviewOverview())
-        setNotice(error.message || '考研主站数据读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('考研主站', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -308,8 +311,8 @@ export default function KaoyanStationPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="考研主站"
-        title="把择校、计划、资料和陪跑协同串成一条清晰的推进链。"
-        lead="这里不再把考研能力拆成平铺入口，而是先给出一张工作台总览，再从院校比较、学习计划、资料管理和支持协同逐层进入。"
+        title="把择校、计划、资料和协同收进一条考研工作链。"
+        lead="先看总览，再进子页。"
       />
 
       {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -431,7 +434,7 @@ export function KaoyanSchoolsPage() {
   })
   const [rows, setRows] = useState(createKaoyanSchoolPreviewRows())
   const [meta, setMeta] = useState({ schoolCount: rows.length, scoreCount: rows.length })
-  const [notice, setNotice] = useState('当前显示的是院校比较预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('院校比较'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -442,7 +445,7 @@ export function KaoyanSchoolsPage() {
         const previewRows = createKaoyanSchoolPreviewRows()
         setRows(previewRows)
         setMeta({ schoolCount: previewRows.length, scoreCount: previewRows.length })
-        setNotice('当前显示的是院校比较预览数据，登录真实账号后会切换成后端数据。')
+        setNotice(previewDataNotice('院校比较'))
         return
       }
 
@@ -473,13 +476,13 @@ export function KaoyanSchoolsPage() {
         const next = buildSchoolRows(schoolsData, scoreLinesData)
         setRows(next.rows)
         setMeta({ schoolCount: next.schoolCount, scoreCount: next.scoreCount })
-        setNotice('当前内容来自考研院校与分数线接口，右侧筛选会直接影响中间账本。')
+        setNotice(remoteDataNotice('院校比较'))
       } catch (error) {
         if (!active) return
         const previewRows = createKaoyanSchoolPreviewRows()
         setRows(previewRows)
         setMeta({ schoolCount: previewRows.length, scoreCount: previewRows.length })
-        setNotice(error.message || '院校比较数据读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('院校比较', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -500,8 +503,8 @@ export function KaoyanSchoolsPage() {
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '择校账本' },
           ]}
-          title="先把院校档案和分数线并到同一张账本，再决定目标梯度。"
-          lead="中间区域只做比较，不混入其他动作。筛选条件收进右栏，避免把择校过程摊成一整屏零散表单。"
+          title="院校档案和分数线合并成一张账本。"
+          lead="主区只看比较结果。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -589,14 +592,22 @@ export function KaoyanSchoolsPage() {
             </label>
             <label className="v2-field">
               <span>985 院校</span>
-              <select
-                value={filters.is985}
-                onChange={(event) => setFilters((current) => ({ ...current, is985: event.target.value }))}
-              >
-                <option value="">全部</option>
-                <option value="true">只看 985</option>
-                <option value="false">排除 985</option>
-              </select>
+              <div className="v2-segment-group">
+                {[
+                  { value: '', label: '全部' },
+                  { value: 'true', label: '只看 985' },
+                  { value: 'false', label: '排除 985' },
+                ].map((item) => (
+                  <button
+                    key={item.value || 'all'}
+                    className={`v2-segment-button ${filters.is985 === item.value ? 'is-active' : ''}`}
+                    type="button"
+                    onClick={() => setFilters((current) => ({ ...current, is985: item.value }))}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </label>
             <label className="v2-field">
               <span>关键词</span>
@@ -610,14 +621,6 @@ export function KaoyanSchoolsPage() {
           </form>
         </section>
 
-        <section className="v2-side-card">
-          <p className="v2-kicker">使用提示</p>
-          <ul>
-            <li>先用地区和门类缩小范围，再看分数线和报录比。</li>
-            <li>右侧筛选只控制账本，不会把其他考研模块混到这里。</li>
-            <li>返回主站后，再进入计划或资料页继续下一步动作。</li>
-          </ul>
-        </section>
       </aside>
     </>
   )
@@ -627,7 +630,7 @@ export function KaoyanPlansPage() {
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [plans, setPlans] = useState(createKaoyanPlanPreviewRows())
-  const [notice, setNotice] = useState('当前显示的是学习计划预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('学习计划'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -636,7 +639,7 @@ export function KaoyanPlansPage() {
     async function loadPlans() {
       if (!canUseRemote) {
         setPlans(createKaoyanPlanPreviewRows())
-        setNotice('当前显示的是学习计划预览数据，登录真实账号后会切换成后端计划。')
+        setNotice(previewDataNotice('学习计划'))
         return
       }
 
@@ -650,11 +653,11 @@ export function KaoyanPlansPage() {
         if (!active) return
         const nextPlans = normalizePlanRows(data)
         setPlans(nextPlans)
-        setNotice('当前内容来自考研学习计划接口。这里专门承接长期计划，不混入其他筛选器。')
+        setNotice(remoteDataNotice('学习计划'))
       } catch (error) {
         if (!active) return
         setPlans(createKaoyanPlanPreviewRows())
-        setNotice(error.message || '学习计划读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('学习计划', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -674,8 +677,8 @@ export function KaoyanPlansPage() {
           { label: '考研主站', to: '/station/kaoyan' },
           { label: '计划轨道' },
         ]}
-        title="把长期计划拆成清楚的时间段，每一段只承载一个推进目标。"
-        lead="这个页面不放右栏，把空间全部留给时间轨道，让用户专注看阶段、周期和当前推进说明。"
+        title="把长期计划拆成清楚的时间段。"
+        lead="主区直接看时间轨。"
       />
 
       {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -738,7 +741,7 @@ export function KaoyanMaterialsPage() {
     materialType: '',
   })
   const [rows, setRows] = useState(createKaoyanMaterialPreviewRows())
-  const [notice, setNotice] = useState('当前显示的是资料页预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('资料页'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -747,7 +750,7 @@ export function KaoyanMaterialsPage() {
     async function loadMaterials() {
       if (!canUseRemote) {
         setRows(createKaoyanMaterialPreviewRows())
-        setNotice('当前显示的是资料页预览数据，登录真实账号后会切换成后端资料。')
+        setNotice(previewDataNotice('资料页'))
         return
       }
 
@@ -767,11 +770,11 @@ export function KaoyanMaterialsPage() {
         )
         if (!active) return
         setRows(normalizeMaterialRows(data))
-        setNotice('当前内容来自资料分页接口。右栏只负责筛选，下载和详情动作会留到更深一层页面。')
+        setNotice(remoteDataNotice('资料页'))
       } catch (error) {
         if (!active) return
         setRows(createKaoyanMaterialPreviewRows())
-        setNotice(error.message || '资料页数据读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('资料页', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -792,8 +795,8 @@ export function KaoyanMaterialsPage() {
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '资料货架' },
           ]}
-          title="资料先按用途和状态分层，再决定是否继续下载或换源。"
-          lead="中间区域只展示资料结构和状态，不把上传、审核和个人收藏全摊在同一页，方便先观察真实数据展示效果。"
+          title="资料先按用途和状态分层。"
+          lead="主区只保留资料结果。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -865,14 +868,6 @@ export function KaoyanMaterialsPage() {
           </form>
         </section>
 
-        <section className="v2-side-card">
-          <p className="v2-kicker">查看建议</p>
-          <ul>
-            <li>先用科目和年份过滤，再比对资料说明和附件数量。</li>
-            <li>资料页只负责“看清有什么”，下载动作应进入更深一层。</li>
-            <li>回到主站后，可以继续进入协同页找导师或自习室。</li>
-          </ul>
-        </section>
       </aside>
     </>
   )
@@ -887,7 +882,7 @@ export function KaoyanSupportPage() {
     expertise: '',
   })
   const [support, setSupport] = useState(createKaoyanSupportPreview())
-  const [notice, setNotice] = useState('当前显示的是协同页预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('协同页'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -896,7 +891,7 @@ export function KaoyanSupportPage() {
     async function loadSupport() {
       if (!canUseRemote) {
         setSupport(createKaoyanSupportPreview())
-        setNotice('当前显示的是协同页预览数据，登录真实账号后会切换成后端数据。')
+        setNotice(previewDataNotice('协同页'))
         return
       }
 
@@ -923,11 +918,11 @@ export function KaoyanSupportPage() {
         )
         if (!active) return
         setSupport(normalizeSupportRows(mentorsData, roomsData, unreadData))
-        setNotice('当前内容来自导师分页、自习室列表和未读会话接口。右栏筛选只影响当前协同页。')
+        setNotice(remoteDataNotice('协同页'))
       } catch (error) {
         if (!active) return
         setSupport(createKaoyanSupportPreview())
-        setNotice(error.message || '陪跑协同数据读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('协同页', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -948,8 +943,8 @@ export function KaoyanSupportPage() {
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '支持协同' },
           ]}
-          title="把导师咨询和自习室收进同一页，先看支持资源，再决定进入哪条协同链。"
-          lead="这个页面把人与空间放在一起展示，因为它们都服务于推进复习，而不是彼此割裂的两个目录。"
+          title="导师与自习室统一放在协同页。"
+          lead="先选支持资源，再继续下钻。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}

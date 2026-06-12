@@ -8,10 +8,13 @@ import {
   canUseRemoteToken,
   ensureArray,
   ensurePage,
+  fallbackDataNotice,
   firstNonEmpty,
   formatCountText,
   formatDateLabel,
   formatDateTimeLabel,
+  previewDataNotice,
+  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -24,6 +27,17 @@ const defaultJobCriteria = {
   politicalStatus: '',
   jobCategory: '',
   unitType: '',
+}
+
+const interviewStatusOptions = [
+  { value: '', label: '全部' },
+  { value: 'OPEN', label: '开放中' },
+  { value: 'IN_PROGRESS', label: '进行中' },
+  { value: 'COMPLETED', label: '已结束' },
+]
+
+function getInterviewStatusLabel(value) {
+  return interviewStatusOptions.find((item) => item.value === value)?.label || value || '待补充'
 }
 
 function createKaogongPreviewOverview() {
@@ -192,7 +206,7 @@ export default function KaogongStationPage() {
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [overview, setOverview] = useState(createKaogongPreviewOverview())
-  const [notice, setNotice] = useState('当前显示的是考公主站预览数据，页面结构已按后端链路拆成四个下钻入口。')
+  const [notice, setNotice] = useState(previewDataNotice('考公主站'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -201,7 +215,7 @@ export default function KaogongStationPage() {
     async function loadOverview() {
       if (!canUseRemote) {
         setOverview(createKaogongPreviewOverview())
-        setNotice('当前显示的是考公主站预览数据，登录真实账号后会切换成后端数据。')
+        setNotice(previewDataNotice('考公主站'))
         return
       }
 
@@ -244,11 +258,11 @@ export default function KaogongStationPage() {
           rooms: interviews.rooms.slice(0, 2),
           feedback: interviews.feedback.slice(0, 2),
         })
-        setNotice('已连接考公后端数据。主站会先展示岗位、分数线、日历和面试四条主链，再进入子页继续处理。')
+        setNotice(remoteDataNotice('考公主站'))
       } catch (error) {
         if (!active) return
         setOverview(createKaogongPreviewOverview())
-        setNotice(error.message || '考公主站数据读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('考公主站', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -353,7 +367,7 @@ export default function KaogongStationPage() {
             {overview.rooms.map((item) => (
               <div className="v2-preview-row" key={item.id || item.name}>
                 <strong>{item.title || item.name}</strong>
-                <span>{item.status}</span>
+                <span>{getInterviewStatusLabel(item.status)}</span>
                 <small>{item.description || item.note}</small>
               </div>
             ))}
@@ -376,7 +390,7 @@ export function KaogongJobsPage() {
   const canUseRemote = canUseRemoteToken(token)
   const [filters, setFilters] = useState(defaultJobCriteria)
   const [rows, setRows] = useState(createKaogongJobPreviewRows())
-  const [notice, setNotice] = useState('当前显示的是岗位匹配预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('岗位匹配'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -385,7 +399,7 @@ export function KaogongJobsPage() {
     async function loadJobs() {
       if (!canUseRemote) {
         setRows(createKaogongJobPreviewRows())
-        setNotice('当前显示的是岗位匹配预览数据，登录真实账号后会切换成后端匹配结果。')
+        setNotice(previewDataNotice('岗位匹配'))
         return
       }
 
@@ -398,11 +412,11 @@ export function KaogongJobsPage() {
         )
         if (!active) return
         setRows(normalizeKaogongJobRows(data))
-        setNotice('当前内容来自岗位匹配接口。右侧条件只负责缩小范围，不打断中间结果阅读。')
+        setNotice(remoteDataNotice('岗位匹配'))
       } catch (error) {
         if (!active) return
         setRows(createKaogongJobPreviewRows())
-        setNotice(error.message || '岗位匹配读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('岗位匹配', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -424,7 +438,7 @@ export function KaogongJobsPage() {
             { label: '岗位结果' },
           ]}
           title="先把可报岗位筛出来，再决定后续备考优先级。"
-          lead="页面中间只展示匹配结果，右侧条件单独收口。这样岗位判断时不会被长表单和其他模块打断。"
+          lead="中间只看结果，右栏单独收筛选。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -525,14 +539,6 @@ export function KaogongJobsPage() {
           </form>
         </section>
 
-        <section className="v2-side-card">
-          <p className="v2-kicker">判断顺序</p>
-          <ul>
-            <li>先看硬条件是否匹配，再看地区和岗位类别。</li>
-            <li>匹配分只是入口，不替代后续分数线和节奏判断。</li>
-            <li>确认方向后，再返回主站进入日历或面试页继续处理。</li>
-          </ul>
-        </section>
       </aside>
     </>
   )
@@ -550,7 +556,7 @@ export function KaogongScoreLinesPage() {
   })
   const [rows, setRows] = useState(createKaogongScorePreviewRows())
   const [favoriteCount, setFavoriteCount] = useState(0)
-  const [notice, setNotice] = useState('当前显示的是分数线预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('分数线'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -561,7 +567,7 @@ export function KaogongScoreLinesPage() {
         const previewRows = createKaogongScorePreviewRows()
         setRows(previewRows)
         setFavoriteCount(0)
-        setNotice('当前显示的是分数线预览数据，登录真实账号后会切换成后端分数线。')
+        setNotice(previewDataNotice('分数线'))
         return
       }
 
@@ -578,12 +584,12 @@ export function KaogongScoreLinesPage() {
         if (!active) return
         setRows(normalizeKaogongScoreRows(scoreData))
         setFavoriteCount(ensureArray(favoriteData).length)
-        setNotice('当前内容来自分数线分页接口。右栏只负责筛选，结果区专门做横向比较。')
+        setNotice(remoteDataNotice('分数线'))
       } catch (error) {
         if (!active) return
         setRows(createKaogongScorePreviewRows())
         setFavoriteCount(0)
-        setNotice(error.message || '分数线读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('分数线', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -605,7 +611,7 @@ export function KaogongScoreLinesPage() {
             { label: '进面账本' },
           ]}
           title="把历年进面分数线排成一张连续账本，方便做纵向比较。"
-          lead="这里专门看分数线，不混入岗位条件和日历提醒。需要筛选时去右栏，结果对比留在中间。"
+          lead="这里只看进面线，筛选留在右栏。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -698,14 +704,6 @@ export function KaogongScoreLinesPage() {
           </form>
         </section>
 
-        <section className="v2-side-card">
-          <p className="v2-kicker">阅读建议</p>
-          <ul>
-            <li>先按地区和年份筛出候选，再看岗位类别和单位类型。</li>
-            <li>如果某条线持续偏高，就回到岗位页重新判断投入优先级。</li>
-            <li>节奏判断请回到主站后再进入考试日历页。</li>
-          </ul>
-        </section>
       </aside>
     </>
   )
@@ -724,7 +722,7 @@ export function KaogongCalendarPage() {
     subscriptions: [],
     notifications: [],
   })
-  const [notice, setNotice] = useState('当前显示的是考试日历预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('考试日历'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -737,7 +735,7 @@ export function KaogongCalendarPage() {
           subscriptions: [],
           notifications: [],
         })
-        setNotice('当前显示的是考试日历预览数据，登录真实账号后会切换成后端时间节点与提醒。')
+        setNotice(previewDataNotice('考试日历'))
         return
       }
 
@@ -756,7 +754,7 @@ export function KaogongCalendarPage() {
         if (!active) return
 
         setCalendar(normalizeKaogongCalendarRows(groupsData, subscriptionsData, notificationsData))
-        setNotice('当前内容来自考试分组、订阅与提醒接口。筛选器被单独收进右栏，时间线留在中间阅读。')
+        setNotice(remoteDataNotice('考试日历'))
       } catch (error) {
         if (!active) return
         setCalendar({
@@ -764,7 +762,7 @@ export function KaogongCalendarPage() {
           subscriptions: [],
           notifications: [],
         })
-        setNotice(error.message || '考试日历读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('考试日历', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -786,7 +784,7 @@ export function KaogongCalendarPage() {
             { label: '日历时间墙' },
           ]}
           title="让每一个考试节点都带着下一步动作出现，而不是分散在多个页面里。"
-          lead="这里同时承接考试分组、我的订阅和站内提醒。筛选单独在右栏，时间墙和提醒结果留在中间。"
+          lead="分组、订阅和提醒分开排布，时间墙留在中间。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -892,14 +890,6 @@ export function KaogongCalendarPage() {
           </form>
         </section>
 
-        <section className="v2-side-card">
-          <p className="v2-kicker">查看顺序</p>
-          <ul>
-            <li>先筛到目标考试，再看每个节点的日期和动作。</li>
-            <li>订阅和提醒放在中间下方，避免和时间墙互相打断。</li>
-            <li>节奏明确后，再回主站进入面试或分数线页面继续判断。</li>
-          </ul>
-        </section>
       </aside>
     </>
   )
@@ -914,7 +904,7 @@ export function KaogongInterviewsPage() {
     status: '',
   })
   const [interviews, setInterviews] = useState(createKaogongInterviewPreview())
-  const [notice, setNotice] = useState('当前显示的是模拟面试预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('模拟面试'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -923,7 +913,7 @@ export function KaogongInterviewsPage() {
     async function loadInterviews() {
       if (!canUseRemote) {
         setInterviews(createKaogongInterviewPreview())
-        setNotice('当前显示的是模拟面试预览数据，登录真实账号后会切换成后端房间和反馈。')
+        setNotice(previewDataNotice('模拟面试'))
         return
       }
 
@@ -943,11 +933,11 @@ export function KaogongInterviewsPage() {
         if (!active) return
 
         setInterviews(normalizeKaogongInterviewRows({ content: rooms }, feedbackSource))
-        setNotice('当前内容来自面试房间与反馈接口。房间列表和复盘评价拆成两个面板，方便逐层进入。')
+        setNotice(remoteDataNotice('模拟面试'))
       } catch (error) {
         if (!active) return
         setInterviews(createKaogongInterviewPreview())
-        setNotice(error.message || '模拟面试读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('模拟面试', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -957,7 +947,7 @@ export function KaogongInterviewsPage() {
     return () => {
       active = false
     }
-  }, [canUseRemote, filters.jobDirection, filters.status, filters.title])
+  }, [canUseRemote, filters.jobDirection, filters.status, filters.title, token])
 
   return (
     <>
@@ -969,7 +959,7 @@ export function KaogongInterviewsPage() {
             { label: '房间与复盘' },
           ]}
           title="房间讨论和复盘评价分层展示，先判断是否进入，再看细节。"
-          lead="这个页面把可加入房间和已有复盘拆成双栏内容，但仍保持在同一个功能页里，避免路线断裂。"
+          lead="房间和复盘拆成双面板，先决定进哪间，再看反馈。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -989,7 +979,7 @@ export function KaogongInterviewsPage() {
           <article className="v2-summary-card">
             <span>筛选方向</span>
             <strong>{filters.jobDirection || '全部方向'}</strong>
-            <p>{filters.status || '全部状态'}</p>
+            <p>{filters.status ? getInterviewStatusLabel(filters.status) : '全部状态'}</p>
           </article>
         </section>
 
@@ -1001,7 +991,7 @@ export function KaogongInterviewsPage() {
                 <div className="v2-check-row" key={item.id}>
                   <strong>{item.title}</strong>
                   <span>{item.jobDirection}</span>
-                  <span>{item.participantCount} 人 / {item.status}</span>
+                  <span>{item.participantCount} 人 / {getInterviewStatusLabel(item.status)}</span>
                   <span>{item.ownerName} / {formatDateTimeLabel(item.scheduledAt)}</span>
                 </div>
               ))}
@@ -1048,26 +1038,20 @@ export function KaogongInterviewsPage() {
             </label>
             <label className="v2-field">
               <span>房间状态</span>
-              <select
-                value={filters.status}
-                onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
-              >
-                <option value="">全部</option>
-                <option value="OPEN">开放中</option>
-                <option value="IN_PROGRESS">进行中</option>
-                <option value="COMPLETED">已结束</option>
-              </select>
+              <div className="v2-segment-group" role="group" aria-label="房间状态">
+                {interviewStatusOptions.map((item) => (
+                  <button
+                    className={`v2-segment-button ${filters.status === item.value ? 'is-active' : ''}`}
+                    key={item.value || 'all'}
+                    type="button"
+                    onClick={() => setFilters((current) => ({ ...current, status: item.value }))}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </label>
           </form>
-        </section>
-
-        <section className="v2-side-card">
-          <p className="v2-kicker">进入逻辑</p>
-          <ul>
-            <li>先看房间状态和方向，再决定要不要进入房间详情。</li>
-            <li>复盘评价只做摘要，避免和讨论内容混在同一层。</li>
-            <li>若需要切换节奏判断，可沿路径回到考试日历页。</li>
-          </ul>
         </section>
       </aside>
     </>

@@ -7,7 +7,7 @@ import { createSettingsAttempts } from '@/lib/settingsPreview.js'
 export default function SettingsPracticePage() {
   const { token } = useAuth()
   const [attempts, setAttempts] = useState(createSettingsAttempts())
-  const [notice, setNotice] = useState('当前显示的是练习记录预览。')
+  const [notice, setNotice] = useState('练习：预览数据')
 
   useEffect(() => {
     let active = true
@@ -40,7 +40,7 @@ export default function SettingsPracticePage() {
           { label: '练习记录' },
         ]}
         title="练习记录"
-        lead="对应后端 myAttempts 分页结构，列表把正确率判断和题干摘要分开显示。"
+        lead="列表把结果判断和题干摘要分开显示。"
       />
 
       {notice ? <div className="v2-status-note">{notice}</div> : null}

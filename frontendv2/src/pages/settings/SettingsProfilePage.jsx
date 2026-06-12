@@ -3,6 +3,7 @@ import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { userApi } from '@legacy/lib/api.js'
 import PageIntro from '@/components/PageIntro.jsx'
 import { createSettingsDashboard, createSettingsProfile } from '@/lib/settingsPreview.js'
+import { previewDataNotice } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
 const targetOptions = [
@@ -82,7 +83,7 @@ export default function SettingsProfilePage() {
         setForm(createEditableProfileForm(previewProfile))
         setDashboard(createSettingsDashboard())
         setFeedbackTone('note')
-        setFeedback('当前显示的是个人设置预览数据，用来观察真实资料页布局。')
+        setFeedback(previewDataNotice('个人设置'))
         return
       }
 
@@ -156,7 +157,7 @@ export default function SettingsProfilePage() {
       setEditing(false)
       setSaving(false)
       setFeedbackTone('note')
-      setFeedback('预览资料已更新，当前仍是本地预览效果。')
+      setFeedback('个人设置：本地预览已更新')
       return
     }
 
@@ -183,10 +184,10 @@ export default function SettingsProfilePage() {
   return (
     <div className="v2-main-column">
       <PageIntro
-        kicker="profile"
+        kicker="个人设置"
         pathItems={[{ label: '个人设置' }]}
         title="个人信息"
-        lead="资料页按“先识别身份，再补充方向与履历”的顺序展开。可修改字段单独收进编辑区，联系方式继续保留为账户识别信息。"
+        lead="先看身份与方向，再进入编辑区修改资料。"
         actions={(
           !editing ? (
             <button className="v2-primary-link" onClick={startEditing} type="button">
@@ -224,9 +225,9 @@ export default function SettingsProfilePage() {
         <section className="v2-split-board">
           <form className="v2-article-card v2-settings-form" id="settings-profile-form" onSubmit={handleSubmit}>
             <div className="v2-settings-section-head">
-              <p className="v2-kicker">editable profile</p>
+              <p className="v2-kicker">可编辑字段</p>
               <h3>可同步到后端的资料</h3>
-              <p>这部分会调用 `/api/users/me/profile` 保存，并在社区、方向主站和推荐模块里同步展示。</p>
+              <p>保存后会同步到社区、方向主站和推荐模块。</p>
             </div>
 
             <div className="v2-card-grid">
@@ -264,14 +265,18 @@ export default function SettingsProfilePage() {
               </label>
               <label className="v2-field">
                 <span>方向</span>
-                <select
-                  onChange={(event) => handleFieldChange('target', event.target.value)}
-                  value={form.target}
-                >
+                <div className="v2-segment-group" role="group" aria-label="方向">
                   {targetOptions.map((item) => (
-                    <option key={item.value} value={item.value}>{item.label}</option>
+                    <button
+                      className={`v2-segment-button ${form.target === item.value ? 'is-active' : ''}`}
+                      key={item.value}
+                      type="button"
+                      onClick={() => handleFieldChange('target', item.value)}
+                    >
+                      {item.label}
+                    </button>
                   ))}
-                </select>
+                </div>
               </label>
               <label className="v2-field">
                 <span>意向地区</span>
@@ -295,9 +300,9 @@ export default function SettingsProfilePage() {
 
           <article className="v2-article-card">
             <div className="v2-settings-section-head">
-              <p className="v2-kicker">account binding</p>
+              <p className="v2-kicker">账户识别</p>
               <h3>账户识别信息</h3>
-              <p>邮箱、手机和学号当前由账户体系维护，后端暂未开放在这个页面直接修改。</p>
+              <p>邮箱、手机和学号暂时保持只读。</p>
             </div>
 
             <div className="v2-preview-row">
@@ -322,9 +327,9 @@ export default function SettingsProfilePage() {
         <section className="v2-split-board">
           <article className="v2-article-card">
             <div className="v2-settings-section-head">
-              <p className="v2-kicker">identity</p>
+              <p className="v2-kicker">资料摘要</p>
               <h3>资料摘要</h3>
-              <p>先确认你在平台上的身份描述，再进入发帖、题库和方向模块。</p>
+              <p>先确认身份和方向，再返回各功能页继续使用。</p>
             </div>
 
             <div className="v2-preview-row">
@@ -343,9 +348,9 @@ export default function SettingsProfilePage() {
 
           <article className="v2-article-card">
             <div className="v2-settings-section-head">
-              <p className="v2-kicker">account</p>
+              <p className="v2-kicker">账户识别</p>
               <h3>账户识别信息</h3>
-              <p>这一组字段承担登录识别与后续流程衔接，目前保持只读展示。</p>
+              <p>这组字段承担登录识别与流程衔接。</p>
             </div>
 
             <div className="v2-preview-row">
@@ -364,44 +369,25 @@ export default function SettingsProfilePage() {
         </section>
       )}
 
-      <section className="v2-split-board">
-        <article className="v2-article-card">
-          <div className="v2-settings-section-head">
-            <p className="v2-kicker">security trace</p>
-            <h3>最近登录痕迹</h3>
-            <p>如果你怀疑账号异常，先核对这里的设备和地点，再进入安全中心继续处理。</p>
-          </div>
+      <section className="v2-article-card">
+        <div className="v2-settings-section-head">
+          <p className="v2-kicker">安全记录</p>
+          <h3>最近登录痕迹</h3>
+          <p>发现异常时，再进入安全中心继续处理。</p>
+        </div>
 
-          <div className="v2-preview-row">
-            <strong>最近登录时间</strong>
-            <small>{security.lastLoginAt || '暂无记录'}</small>
-          </div>
-          <div className="v2-preview-row">
-            <strong>最近设备</strong>
-            <small>{security.lastDevice || '未知设备'}</small>
-          </div>
-          <div className="v2-preview-row">
-            <strong>最近位置</strong>
-            <small>{security.lastLocation || '未知位置'}</small>
-          </div>
-        </article>
-
-        <article className="v2-article-card">
-          <div className="v2-settings-section-head">
-            <p className="v2-kicker">usage note</p>
-            <h3>资料使用提示</h3>
-            <p>这里不堆叠全部功能，只把与资料页直接相关的两类提示保留下来。</p>
-          </div>
-
-          <div className="v2-preview-row">
-            <strong>先补基础资料</strong>
-            <small>学校、专业、年级与方向会直接影响社区展示、方向模块入口和部分推荐内容。</small>
-          </div>
-          <div className="v2-preview-row">
-            <strong>再处理安全问题</strong>
-            <small>若最近登录设备或地区异常，先去安全中心检查，再决定是否继续完善资料。</small>
-          </div>
-        </article>
+        <div className="v2-preview-row">
+          <strong>最近登录时间</strong>
+          <small>{security.lastLoginAt || '暂无记录'}</small>
+        </div>
+        <div className="v2-preview-row">
+          <strong>最近设备</strong>
+          <small>{security.lastDevice || '未知设备'}</small>
+        </div>
+        <div className="v2-preview-row">
+          <strong>最近位置</strong>
+          <small>{security.lastLocation || '未知位置'}</small>
+        </div>
       </section>
     </div>
   )

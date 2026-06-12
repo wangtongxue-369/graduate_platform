@@ -72,7 +72,7 @@ export default function RoleAuthDialog({
     >
       <div className="v2-role-auth-head">
         <div>
-          <p className="v2-kicker">identity gateway</p>
+          <p className="v2-kicker">身份入口</p>
           <h1 id="v2-role-auth-title">{title}</h1>
           <p className="v2-lead">{description}</p>
         </div>

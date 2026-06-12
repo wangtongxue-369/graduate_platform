@@ -8,10 +8,13 @@ import {
   canUseRemoteToken,
   ensureArray,
   ensurePage,
+  fallbackDataNotice,
   firstNonEmpty,
   formatBytes,
   formatDateLabel,
   formatDateTimeLabel,
+  previewDataNotice,
+  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -185,7 +188,7 @@ export default function JobStationPage() {
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [overview, setOverview] = useState(createJobPreviewOverview())
-  const [notice, setNotice] = useState('当前显示的是就业主站预览数据，页面层级已经按后端模块拆好。')
+  const [notice, setNotice] = useState(previewDataNotice('就业主站'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -194,7 +197,7 @@ export default function JobStationPage() {
     async function loadOverview() {
       if (!canUseRemote) {
         setOverview(createJobPreviewOverview())
-        setNotice('当前显示的是就业主站预览数据，登录真实账号后会切换成后端简历、推荐、投递和招聘会数据。')
+        setNotice(previewDataNotice('就业主站'))
         return
       }
 
@@ -224,11 +227,11 @@ export default function JobStationPage() {
           applications: normalizeApplicationRows(applicationData).slice(0, 3),
           fairs: normalizeFairRows(fairData).slice(0, 3),
         })
-        setNotice('已连接就业后端数据。主站先展示简历、推荐、投递和招聘会四条主线，再进入子页继续处理。')
+        setNotice(remoteDataNotice('就业主站'))
       } catch (error) {
         if (!active) return
         setOverview(createJobPreviewOverview())
-        setNotice(error.message || '就业主站数据读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('就业主站', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -245,7 +248,7 @@ export default function JobStationPage() {
       <PageIntro
         kicker="就业主站"
         title="把简历、推荐、投递和招聘会收进同一张求职推进台。"
-        lead="求职主站不再是一组松散入口，而是先展示最关键的四条推进链，再从对应子页逐层继续深入。"
+        lead="先看总览，再进子页。"
       />
 
       {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -346,7 +349,7 @@ export function JobResumePage() {
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [resume, setResume] = useState(createJobResumePreview())
-  const [notice, setNotice] = useState('当前显示的是简历预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('简历'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -355,7 +358,7 @@ export function JobResumePage() {
     async function loadResume() {
       if (!canUseRemote) {
         setResume(createJobResumePreview())
-        setNotice('当前显示的是简历预览数据，登录真实账号后会切换成后端简历。')
+        setNotice(previewDataNotice('简历'))
         return
       }
 
@@ -368,11 +371,11 @@ export function JobResumePage() {
         )
         if (!active) return
         setResume(normalizeResume(data))
-        setNotice('当前内容来自简历接口。这个页面不放右栏，把空间全部留给简历结构展示。')
+        setNotice(remoteDataNotice('简历'))
       } catch (error) {
         if (!active) return
         setResume(createJobResumePreview())
-        setNotice(error.message || '简历数据读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('简历', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -393,7 +396,7 @@ export function JobResumePage() {
           { label: '简历档案' },
         ]}
         title="先确认求职目标和附件状态，再进入更细的简历编辑动作。"
-        lead="简历页不需要筛选，所以不保留右栏，把横向空间全部交给正文和结构信息。"
+        lead="这个页面不保留右栏。"
       />
 
       {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -464,7 +467,7 @@ export function JobRecommendationsPage() {
   })
   const [rows, setRows] = useState(createJobRecommendationPreviewRows())
   const [notifications, setNotifications] = useState({ items: [], unreadCount: 0 })
-  const [notice, setNotice] = useState('当前显示的是岗位推荐预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('岗位推荐'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -474,7 +477,7 @@ export function JobRecommendationsPage() {
       if (!canUseRemote) {
         setRows(createJobRecommendationPreviewRows())
         setNotifications({ items: [], unreadCount: 0 })
-        setNotice('当前显示的是岗位推荐预览数据，登录真实账号后会切换成后端推荐结果。')
+        setNotice(previewDataNotice('岗位推荐'))
         return
       }
 
@@ -491,12 +494,12 @@ export function JobRecommendationsPage() {
         if (!active) return
         setRows(normalizeRecommendationRows(recommendationData))
         setNotifications(normalizeNotifications(notificationData))
-        setNotice('当前内容来自岗位推荐接口。推荐结果留在中间，筛选器和提醒收进右栏。')
+        setNotice(remoteDataNotice('岗位推荐'))
       } catch (error) {
         if (!active) return
         setRows(createJobRecommendationPreviewRows())
         setNotifications({ items: [], unreadCount: 0 })
-        setNotice(error.message || '岗位推荐读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('岗位推荐', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -518,7 +521,7 @@ export function JobRecommendationsPage() {
             { label: '推荐结果' },
           ]}
           title="先读懂匹配理由，再决定是否进入投递链。"
-          lead="推荐页专门做“候选岗位判断”。右侧保留筛选和提醒，中间区域只看推荐列表，避免求职动作混在一起。"
+          lead="主区看结果，右栏保留筛选和提醒。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -617,13 +620,21 @@ export function JobRecommendationsPage() {
             </label>
             <label className="v2-field">
               <span>只看可投递</span>
-              <select
-                value={filters.onlyApplyable ? 'true' : 'false'}
-                onChange={(event) => setFilters((current) => ({ ...current, onlyApplyable: event.target.value === 'true' }))}
-              >
-                <option value="false">全部</option>
-                <option value="true">只看可投递</option>
-              </select>
+              <div className="v2-segment-group">
+                {[
+                  { value: false, label: '全部' },
+                  { value: true, label: '只看可投递' },
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    className={`v2-segment-button ${filters.onlyApplyable === item.value ? 'is-active' : ''}`}
+                    type="button"
+                    onClick={() => setFilters((current) => ({ ...current, onlyApplyable: item.value }))}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </label>
           </form>
         </section>
@@ -655,7 +666,7 @@ export function JobApplicationsPage() {
   })
   const [rows, setRows] = useState(createJobApplicationPreviewRows())
   const [resume, setResume] = useState(createJobResumePreview())
-  const [notice, setNotice] = useState('当前显示的是投递跟踪预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('投递跟踪'))
   const [loading, setLoading] = useState(false)
 
   const filteredRows = rows.filter((item) => {
@@ -673,7 +684,7 @@ export function JobApplicationsPage() {
       if (!canUseRemote) {
         setRows(createJobApplicationPreviewRows())
         setResume(createJobResumePreview())
-        setNotice('当前显示的是投递跟踪预览数据，登录真实账号后会切换成后端投递记录。')
+        setNotice(previewDataNotice('投递跟踪'))
         return
       }
 
@@ -690,12 +701,12 @@ export function JobApplicationsPage() {
         if (!active) return
         setRows(normalizeApplicationRows(applicationData))
         setResume(normalizeResume(resumeData))
-        setNotice('当前内容来自投递记录和简历接口。右栏只保留状态筛选和下一步提示。')
+        setNotice(remoteDataNotice('投递跟踪'))
       } catch (error) {
         if (!active) return
         setRows(createJobApplicationPreviewRows())
         setResume(createJobResumePreview())
-        setNotice(error.message || '投递记录读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('投递跟踪', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -717,7 +728,7 @@ export function JobApplicationsPage() {
             { label: '投递进度' },
           ]}
           title="把每条投递挂到清楚的推进线上，下一步动作一眼能看见。"
-          lead="这个页面以过程为主，不把招聘会或推荐结果混在一起。右栏只保留必要筛选，主区专门看推进状态。"
+          lead="主区专门看推进状态。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -768,17 +779,25 @@ export function JobApplicationsPage() {
           <form className="v2-filter-form" onSubmit={(event) => event.preventDefault()}>
             <label className="v2-field">
               <span>投递状态</span>
-              <select
-                value={filters.status}
-                onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
-              >
-                <option value="all">全部</option>
-                <option value="TODO">待处理</option>
-                <option value="APPLIED">已投递</option>
-                <option value="INTERVIEW">面试中</option>
-                <option value="OFFER">已录用</option>
-                <option value="REJECTED">未通过</option>
-              </select>
+              <div className="v2-segment-group">
+                {[
+                  { value: 'all', label: '全部' },
+                  { value: 'TODO', label: '待处理' },
+                  { value: 'APPLIED', label: '已投递' },
+                  { value: 'INTERVIEW', label: '面试中' },
+                  { value: 'OFFER', label: '已录用' },
+                  { value: 'REJECTED', label: '未通过' },
+                ].map((item) => (
+                  <button
+                    key={item.value}
+                    className={`v2-segment-button ${filters.status === item.value ? 'is-active' : ''}`}
+                    type="button"
+                    onClick={() => setFilters((current) => ({ ...current, status: item.value }))}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </label>
             <label className="v2-field">
               <span>关键词</span>
@@ -792,14 +811,6 @@ export function JobApplicationsPage() {
           </form>
         </section>
 
-        <section className="v2-side-card">
-          <p className="v2-kicker">下一步提示</p>
-          <ul>
-            <li>先筛到面试中和待处理记录，再看下一步时间。</li>
-            <li>如果当前简历附件未就绪，建议先回到简历页处理。</li>
-            <li>需要找新岗位时，可沿路径返回主站进入推荐页。</li>
-          </ul>
-        </section>
       </aside>
     </>
   )
@@ -822,7 +833,7 @@ export function JobFairsPage() {
     salaryRange: '',
     companyTypes: '',
   })
-  const [notice, setNotice] = useState('当前显示的是招聘会预览数据。')
+  const [notice, setNotice] = useState(previewDataNotice('招聘会'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -838,7 +849,7 @@ export function JobFairsPage() {
           salaryRange: '15k-25k',
           companyTypes: '民企, 外企',
         })
-        setNotice('当前显示的是招聘会预览数据，登录真实账号后会切换成后端招聘会与偏好数据。')
+        setNotice(previewDataNotice('招聘会'))
         return
       }
 
@@ -861,11 +872,11 @@ export function JobFairsPage() {
           salaryRange: preferenceData?.salaryRange || '',
           companyTypes: preferenceData?.companyTypes || '',
         })
-        setNotice('当前内容来自招聘会和求职偏好接口。筛选器放在右栏，中间只保留会场目录。')
+        setNotice(remoteDataNotice('招聘会'))
       } catch (error) {
         if (!active) return
         setRows(createJobFairPreviewRows())
-        setNotice(error.message || '招聘会读取失败，当前回退到预览数据。')
+        setNotice(fallbackDataNotice('招聘会', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -887,7 +898,7 @@ export function JobFairsPage() {
             { label: '会场目录' },
           ]}
           title="先按城市和行业筛会场，再决定是现场参加还是继续线上投递。"
-          lead="招聘会页只做会场浏览和状态判断。筛选与偏好放到右栏，不和列表主体混在一起。"
+          lead="主区只保留会场目录。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -971,24 +982,23 @@ export function JobFairsPage() {
             </label>
             <label className="v2-field">
               <span>包含已结束</span>
-              <select
-                value={filters.includeExpired ? 'true' : 'false'}
-                onChange={(event) => setFilters((current) => ({ ...current, includeExpired: event.target.value === 'true' }))}
-              >
-                <option value="false">只看未结束</option>
-                <option value="true">显示全部</option>
-              </select>
+              <div className="v2-segment-group">
+                {[
+                  { value: false, label: '只看未结束' },
+                  { value: true, label: '显示全部' },
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    className={`v2-segment-button ${filters.includeExpired === item.value ? 'is-active' : ''}`}
+                    type="button"
+                    onClick={() => setFilters((current) => ({ ...current, includeExpired: item.value }))}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </label>
           </form>
-        </section>
-
-        <section className="v2-side-card">
-          <p className="v2-kicker">偏好参照</p>
-          <ul>
-            <li>先按偏好城市和行业筛选，再判断是否值得去现场。</li>
-            <li>会场状态和报名状态分开显示，避免信息挤在同一行。</li>
-            <li>如果现场不合适，可回到主站继续看岗位推荐或投递记录。</li>
-          </ul>
         </section>
       </aside>
     </>
