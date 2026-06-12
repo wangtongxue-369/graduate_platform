@@ -509,19 +509,109 @@ html[data-theme="dark"] .v2-glass-card {
 }
 
 .v2-stack-sidebar__footer {
+  position: relative;
   margin-top: auto;
   padding-top: 2px;
 }
 
-.v2-stack-logout {
+.v2-stack-settings-trigger {
   width: 100%;
   min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: 1px solid var(--v2-line);
   border-radius: 14px;
   background: var(--v2-paper);
   color: var(--v2-ink);
   cursor: pointer;
   font-size: 0.9rem;
+}
+
+.v2-stack-settings-trigger__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.v2-stack-settings-popover {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 12px);
+  z-index: 50;
+  width: min(360px, calc(100vw - 48px));
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 28px;
+  box-shadow: 0 28px 64px rgba(20, 34, 52, 0.18);
+}
+
+.v2-stack-settings-popover::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  bottom: -9px;
+  width: 18px;
+  height: 18px;
+  border-right: 1px solid var(--v2-line);
+  border-bottom: 1px solid var(--v2-line);
+  background: var(--v2-glass);
+  transform: rotate(45deg);
+  backdrop-filter: blur(20px);
+}
+
+.v2-stack-settings-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+
+.v2-stack-settings-head h2 {
+  margin: 4px 0 0;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-size: clamp(1.22rem, 1.5vw, 1.55rem);
+}
+
+.v2-stack-settings-body {
+  display: grid;
+  gap: 10px;
+}
+
+.v2-stack-settings-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--v2-line);
+  border-radius: 18px;
+  background: var(--v2-paper);
+}
+
+.v2-stack-settings-account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.v2-stack-settings-account__meta {
+  display: grid;
+  gap: 4px;
+}
+
+.v2-stack-settings-account__meta strong {
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+}
+
+.v2-stack-settings-account__meta span {
+  color: var(--v2-soft-strong);
+  font-size: 0.9rem;
+}
+
+.v2-stack-settings-action {
+  min-width: 124px;
 }
 
 .v2-stack-frame {
@@ -545,7 +635,14 @@ html[data-theme="dark"] .v2-glass-card {
   height: 100%;
   overflow-y: auto;
   padding-right: 8px;
-  scrollbar-gutter: stable;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.v2-stack-frame > .v2-main-column::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .v2-stack-frame > .v2-side-column {

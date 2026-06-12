@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import {
@@ -52,6 +52,8 @@ export default function HugoStackSidebar({ mode = 'app' }) {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const [languageMode, setLanguageMode] = useState(readLanguageMode)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const sidebarRef = useRef(null)
 
   const groups = useMemo(() => (
     mode === 'settings' ? getSettingsNavigation() : getAppNavigation(user)
@@ -61,7 +63,32 @@ export default function HugoStackSidebar({ mode = 'app' }) {
   const homePath = getRoleLandingPath(user)
   const avatarText = getAvatarText(user?.name)
 
+  useEffect(() => {
+    if (!settingsOpen) return undefined
+
+    function handlePointerDown(event) {
+      if (!sidebarRef.current?.contains(event.target)) {
+        setSettingsOpen(false)
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setSettingsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [settingsOpen])
+
   async function handleLogout() {
+    setSettingsOpen(false)
     if (!user) {
       navigate('/login')
       return
@@ -76,7 +103,7 @@ export default function HugoStackSidebar({ mode = 'app' }) {
   }
 
   return (
-    <aside className="v2-stack-sidebar">
+    <aside className="v2-stack-sidebar" ref={sidebarRef}>
       <div className="v2-stack-sidebar__column">
         {mode === 'settings' ? (
           <div className="v2-stack-profile v2-glass-card">
@@ -127,38 +154,72 @@ export default function HugoStackSidebar({ mode = 'app' }) {
             </section>
           ))}
         </div>
-
-        <section className="v2-stack-menu v2-glass-card">
-          <p className="v2-stack-menu__title">偏好控件</p>
-          <div className="v2-stack-preferences">
-            <div className="v2-stack-preferences__block">
-              <span>语言</span>
-              <div className="v2-language-switch" role="group" aria-label="语言切换">
-                {languageOptions.map((item) => (
-                  <button
-                    className={`v2-language-switch__btn ${languageMode === item.value ? 'is-active' : ''}`}
-                    key={item.value}
-                    onClick={() => handleLanguageChange(item.value)}
-                    type="button"
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="v2-stack-preferences__block">
-              <span>主题</span>
-              <ThemeSwitch />
-            </div>
-          </div>
-        </section>
       </div>
 
       <div className="v2-stack-sidebar__footer">
-        <button className="v2-stack-logout" onClick={handleLogout} type="button">
-          {user ? '退出登录' : '登录 / 注册'}
+        <button
+          aria-expanded={settingsOpen}
+          aria-label="打开偏好与账户设置"
+          className="v2-stack-settings-trigger"
+          onClick={() => setSettingsOpen((open) => !open)}
+          type="button"
+        >
+          <span aria-hidden="true" className="v2-stack-settings-trigger__icon">⚙</span>
+          <span>设置</span>
         </button>
+
+        {settingsOpen ? (
+          <section
+            aria-label="偏好与账户设置"
+            className="v2-stack-settings-popover v2-glass-card"
+          >
+            <div className="v2-stack-settings-head">
+              <div>
+                <p className="v2-kicker">workspace settings</p>
+                <h2>偏好与账户设置</h2>
+              </div>
+              <button className="v2-role-auth-close" onClick={() => setSettingsOpen(false)} type="button">
+                关闭
+              </button>
+            </div>
+
+            <div className="v2-stack-settings-body">
+              <section className="v2-stack-settings-card">
+                <p className="v2-stack-menu__title">语言</p>
+                <div className="v2-language-switch" role="group" aria-label="语言切换">
+                  {languageOptions.map((item) => (
+                    <button
+                      className={`v2-language-switch__btn ${languageMode === item.value ? 'is-active' : ''}`}
+                      key={item.value}
+                      onClick={() => handleLanguageChange(item.value)}
+                      type="button"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <section className="v2-stack-settings-card">
+                <p className="v2-stack-menu__title">主题</p>
+                <ThemeSwitch />
+              </section>
+
+              <section className="v2-stack-settings-card">
+                <p className="v2-stack-menu__title">账户</p>
+                <div className="v2-stack-settings-account">
+                  <div className="v2-stack-settings-account__meta">
+                    <strong>{user?.name || '游客状态'}</strong>
+                    <span>{user ? getShellTitle(user, mode) : '先登录后进入对应主站'}</span>
+                  </div>
+                  <button className="v2-primary-link v2-stack-settings-action" onClick={handleLogout} type="button">
+                    {user ? '退出登录' : '登录 / 注册'}
+                  </button>
+                </div>
+              </section>
+            </div>
+          </section>
+        ) : null}
       </div>
     </aside>
   )
