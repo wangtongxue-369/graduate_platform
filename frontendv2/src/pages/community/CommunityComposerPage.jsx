@@ -86,6 +86,16 @@ export default function CommunityComposerPage() {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
+  const identitySummary = !isAuthed
+    ? '游客浏览，登录后才能真正提交。'
+    : !canSubmitForReal
+      ? '演示身份，可先检查结构，但不会真正提交。'
+      : '真实登录，可直接提交审核。'
+  const preSubmitNotice = !canSubmitForReal
+    ? (isAuthed
+        ? '当前是演示身份，可以先查看发布结构，但不会真正提交到后端。'
+        : '游客当前可以先查看发布结构，登录后再提交到后端。')
+    : ''
 
   function updateField(name, value) {
     setMessage('')
@@ -174,6 +184,7 @@ export default function CommunityComposerPage() {
 
         <SubnavTabs items={communityTabs} />
 
+        {preSubmitNotice ? <div className="v2-status-note">{preSubmitNotice}</div> : null}
         {message ? <div className="v2-status-note">{message}</div> : null}
         {error ? <div className="v2-status-error">{error}</div> : null}
 
@@ -341,8 +352,16 @@ export default function CommunityComposerPage() {
         </section>
 
         <section className="v2-side-card">
-          <p className="v2-kicker">当前摘要</p>
+          <p className="v2-kicker">提交前确认</p>
           <div className="v2-check-list">
+            <div className="v2-check-row">
+              <strong>当前身份</strong>
+              <span>{identitySummary}</span>
+            </div>
+            <div className="v2-check-row">
+              <strong>标题预览</strong>
+              <span>{form.title.trim() || '未填写'}</span>
+            </div>
             <div className="v2-check-row">
               <strong>分类</strong>
               <span>{selectedCategory?.name || '未选择'}</span>

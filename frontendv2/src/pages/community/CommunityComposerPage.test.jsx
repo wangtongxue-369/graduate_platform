@@ -54,31 +54,38 @@ describe('CommunityComposerPage', () => {
   })
 
   it('shows the current summary card and updates tag count', async () => {
-    const { container } = render(
+    render(
       <MemoryRouter initialEntries={['/community/new']}>
         <CommunityComposerPage />
       </MemoryRouter>,
     )
 
     await screen.findByRole('combobox')
-    const textInputs = container.querySelectorAll('input[type="text"]')
-    fireEvent.change(textInputs[1], { target: { value: 'tag-a, tag-b' } })
+    fireEvent.change(screen.getByLabelText('帖子标题'), { target: { value: 'Roadmap Draft' } })
+    fireEvent.change(screen.getByLabelText('标签'), { target: { value: 'tag-a, tag-b' } })
+    fireEvent.change(screen.getByLabelText('上传附件'), {
+      target: {
+        files: [new File(['outline'], 'roadmap.txt', { type: 'text/plain' })],
+      },
+    })
 
-    expect(screen.getAllByText('Job').length).toBeGreaterThan(0)
+    expect(screen.getByText('提交前确认')).toBeInTheDocument()
+    expect(screen.getByText('Roadmap Draft')).toBeInTheDocument()
     expect(screen.getByText('2 个')).toBeInTheDocument()
+    expect(screen.getByText('1 个')).toBeInTheDocument()
   })
 
   it('shows an early status note for guests before they try to submit', async () => {
     authState.isAuthed = false
     authState.token = null
 
-    const { container } = render(
+    render(
       <MemoryRouter initialEntries={['/community/new']}>
         <CommunityComposerPage />
       </MemoryRouter>,
     )
 
-    await screen.findAllByRole('button')
-    expect(container.querySelector('.v2-status-note')).not.toBeNull()
+    expect(await screen.findByText('当前身份')).toBeInTheDocument()
+    expect(screen.getByText('游客浏览，登录后才能真正提交。')).toBeInTheDocument()
   })
 })
