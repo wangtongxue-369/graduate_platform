@@ -11,6 +11,7 @@ const devUsers = {
   kaogong: { id: 'dev-2', name: '考公测试用户', target: 'kaogong', email: 'kaogong@test.local', role: 'user', status: 'normal' },
   job: { id: 'dev-3', name: '就业测试用户', target: 'job', email: 'job@test.local', role: 'user', status: 'normal' },
   liuxue: { id: 'dev-4', name: '留学测试用户', target: 'liuxue', email: 'liuxue@test.local', role: 'user', status: 'normal' },
+  admin: { id: 'dev-0', name: '管理员测试用户', target: 'job', email: 'admin@test.local', role: 'admin', status: 'normal' },
 }
 
 export function AuthProvider({ children }) {
