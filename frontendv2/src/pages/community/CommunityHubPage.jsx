@@ -1,88 +1,62 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { communityApi } from '@legacy/lib/api.js'
 import PageIntro from '@/components/PageIntro.jsx'
+import SubnavTabs from '@/components/SubnavTabs.jsx'
 import {
   canUseCommunityPreview,
   createCommunityPreviewCategories,
-  createCommunityPreviewComments,
   createCommunityPreviewPosts,
-  findCommunityPreviewPostById,
   shouldForceCommunityPreview,
 } from '@/lib/communityPreview.js'
+import {
+  buildSearchParams,
+  communityAttachmentOptions,
+  communitySortOptions,
+  createPlainPreview,
+  extractPagePayload,
+  fallbackCommunityCategories,
+  formatTimeLabel,
+  normalizeCommunityCategory,
+  normalizeCommunityPost,
+} from '@/lib/communityUi.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
-const fallbackCategories = [
-  { id: 'kaoyan', code: 'kaoyan', name: '考研' },
-  { id: 'kaogong', code: 'kaogong', name: '考公考编' },
-  { id: 'job', code: 'job', name: '就业' },
-  { id: 'liuxue', code: 'liuxue', name: '留学' },
-  { id: 'experience', code: 'experience', name: '经验复盘' },
-  { id: 'resource', code: 'resource', name: '资料互助' },
+const communityTabs = [
+  { label: '社区目录', to: '/community', end: true, note: '浏览与筛选' },
+  { label: '发布帖子', to: '/community/new', note: '提交正文与附件' },
+  { label: '消息通知', to: '/community/notifications', note: '查看互动提醒' },
 ]
 
-const sortOptions = [
-  { value: 'latest', label: '最新发布' },
-  { value: 'hot', label: '热度优先' },
-]
+const pageSize = 8
 
-function parseTags(post) {
-  if (Array.isArray(post?.tags)) return post.tags
-  if (typeof post?.tags === 'string') {
-    return post.tags.split(',').map((item) => item.trim()).filter(Boolean)
-  }
-  return []
+function toAttachmentFilterValue(value) {
+  if (value === 'yes') return true
+  if (value === 'no') return false
+  return undefined
 }
 
-function normalizePost(post) {
+function buildPreviewPage(items, page) {
+  const safePage = Number(page || 0)
+  const start = safePage * pageSize
+  const end = start + pageSize
+  const content = items.slice(start, end)
+
   return {
-    ...post,
-    tags: parseTags(post),
-    attachmentCount: Number(post.attachmentCount ?? 0),
-    viewCount: Number(post.viewCount ?? post.views ?? 0),
-    commentCount: Number(post.commentCount ?? 0),
-    likeCount: Number(post.likeCount ?? 0),
-    favoriteCount: Number(post.favoriteCount ?? post.collectCount ?? 0),
+    content,
+    page: safePage,
+    size: pageSize,
+    totalPages: Math.max(1, Math.ceil(items.length / pageSize)),
+    totalElements: items.length,
   }
-}
-
-function createPlainPreview(content) {
-  return String(content || '')
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '$1')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1')
-    .replace(/[*_~`>#-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function formatTimeLabel(value) {
-  if (!value) return '刚刚更新'
-  const normalized = String(value).replace('T', ' ')
-  return normalized.slice(5, 16)
-}
-
-function buildParams(currentParams, patch) {
-  const next = new URLSearchParams(currentParams)
-
-  Object.entries(patch).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === '') {
-      next.delete(key)
-      return
-    }
-    next.set(key, String(value))
-  })
-
-  return next
 }
 
 export default function CommunityHubPage() {
-  const { token } = useAuth()
+  const { isAuthed, token } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [categories, setCategories] = useState(fallbackCategories)
-  const [posts, setPosts] = useState([])
+  const [categories, setCategories] = useState(fallbackCommunityCategories)
+  const [pageState, setPageState] = useState(() => extractPagePayload([]))
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -91,6 +65,9 @@ export default function CommunityHubPage() {
   const activeCategory = searchParams.get('category') || ''
   const activeSort = searchParams.get('sort') || 'latest'
   const activeKeyword = searchParams.get('keyword') || ''
+  const activeTag = searchParams.get('tag') || ''
+  const activeAttachment = searchParams.get('hasAttachment') || 'all'
+  const activePage = Number(searchParams.get('page') || 0)
   const isForcedPreview = shouldForceCommunityPreview(token)
 
   useEffect(() => {
@@ -105,18 +82,24 @@ export default function CommunityHubPage() {
       setError('')
       setNotice('')
 
-      function applyPreview() {
-        setCategories(createCommunityPreviewCategories())
-        setPosts(createCommunityPreviewPosts({
+      function applyPreview(previewMessage) {
+        const previewCategories = createCommunityPreviewCategories().map(normalizeCommunityCategory)
+        const previewItems = createCommunityPreviewPosts({
           category: activeCategory || undefined,
           keyword: activeKeyword || undefined,
           sort: activeSort,
-        }).map(normalizePost))
-        setNotice('社区：预览目录')
+          tag: activeTag || undefined,
+          hasAttachment: toAttachmentFilterValue(activeAttachment),
+        }).map((item) => normalizeCommunityPost(item))
+
+        if (!active) return
+        setCategories(previewCategories.length ? previewCategories : fallbackCommunityCategories)
+        setPageState(buildPreviewPage(previewItems, activePage))
+        setNotice(previewMessage)
       }
 
       if (isForcedPreview) {
-        applyPreview()
+        applyPreview('当前使用演示社区数据，适合观察布局与交互层次。')
         setLoading(false)
         return
       }
@@ -129,22 +112,29 @@ export default function CommunityHubPage() {
               category: activeCategory || undefined,
               keyword: activeKeyword || undefined,
               sort: activeSort,
+              tag: activeTag || undefined,
+              hasAttachment: toAttachmentFilterValue(activeAttachment),
+              page: activePage,
+              size: pageSize,
             }, token),
           ]),
           8000,
-          '社区请求超时，请检查后端服务是否可用。',
+          '社区目录请求超时，请检查后端服务是否正常启动。',
         )
 
         if (!active) return
-        setCategories(categoryData?.length ? categoryData : fallbackCategories)
-        setPosts((postData?.content || postData || []).map(normalizePost))
+        setCategories((categoryData || []).map(normalizeCommunityCategory))
+        setPageState({
+          ...extractPagePayload(postData),
+          content: extractPagePayload(postData).content.map((item) => normalizeCommunityPost(item)),
+        })
       } catch (requestError) {
         if (!active) return
         if (canUseCommunityPreview()) {
-          applyPreview()
+          applyPreview('后端未返回社区目录，已自动切换到演示数据。')
         } else {
-          setCategories(fallbackCategories)
-          setError(requestError.message || '社区内容加载失败，请稍后再试。')
+          setCategories(fallbackCommunityCategories)
+          setError(requestError.message || '社区目录加载失败，请稍后再试。')
         }
       } finally {
         if (active) setLoading(false)
@@ -155,63 +145,99 @@ export default function CommunityHubPage() {
     return () => {
       active = false
     }
-  }, [activeCategory, activeKeyword, activeSort, isForcedPreview, token])
+  }, [
+    activeAttachment,
+    activeCategory,
+    activeKeyword,
+    activePage,
+    activeSort,
+    activeTag,
+    isForcedPreview,
+    token,
+  ])
 
-  const hotTags = useMemo(() => {
-    const tagSet = new Set()
-    posts.forEach((post) => post.tags.forEach((tag) => tagSet.add(tag)))
-    return Array.from(tagSet).slice(0, 8)
-  }, [posts])
+  const posts = pageState.content
 
   const summaryCards = useMemo(() => {
-    const attachmentCount = posts.reduce((sum, post) => sum + post.attachmentCount, 0)
-    const publicCount = posts.filter((post) => post.visibility !== 'members').length
-    const heat = posts.reduce((sum, post) => sum + post.commentCount + post.likeCount, 0)
+    const attachmentCount = posts.filter((post) => post.hasAttachment).length
+    const discussionHeat = posts.reduce((sum, post) => sum + post.commentCount + post.likeCount, 0)
 
     return [
       {
-        label: '当前帖子',
-        value: String(posts.length).padStart(2, '0'),
-        note: activeCategory ? '已按分类缩小范围' : '保持公共目录视角',
+        label: '当前结果',
+        value: String(pageState.totalElements).padStart(2, '0'),
+        note: activeCategory ? '已缩小到单个分类' : '正在浏览全站社区目录',
       },
       {
-        label: '可预览附件',
+        label: '附件帖子',
         value: String(attachmentCount).padStart(2, '0'),
-        note: '进入帖子前先看到资料状态',
+        note: '适合资料互助与经验沉淀',
       },
       {
-        label: '公开讨论量',
-        value: `${publicCount}/${posts.length || 0}`,
-        note: `互动热度 ${heat}`,
+        label: '互动热度',
+        value: String(discussionHeat).padStart(2, '0'),
+        note: '按评论与点赞综合估算',
       },
     ]
-  }, [activeCategory, posts])
+  }, [activeCategory, pageState.totalElements, posts])
 
-  const discussionHighlights = useMemo(() => (
-    posts.slice(0, 3).map((post) => ({
+  const hotTags = useMemo(() => {
+    const tagMap = new Map()
+    posts.forEach((post) => {
+      post.tags.forEach((tag) => {
+        tagMap.set(tag, (tagMap.get(tag) || 0) + 1)
+      })
+    })
+    return Array.from(tagMap.entries())
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, 10)
+      .map(([tag]) => tag)
+  }, [posts])
+
+  const highlights = useMemo(() => (
+    posts.slice(0, 4).map((post) => ({
       id: post.id,
       title: post.title,
-      note: `${post.category?.name || '社区'} / 评论 ${post.commentCount} / 点赞 ${post.likeCount}`,
+      note: `${post.category?.name || '社区'} · 评论 ${post.commentCount} · 点赞 ${post.likeCount}`,
     }))
   ), [posts])
 
   function updateQuery(patch) {
-    setSearchParams(buildParams(searchParams, patch))
+    const nextParams = buildSearchParams(searchParams, patch)
+    if (!Object.prototype.hasOwnProperty.call(patch, 'page')) {
+      nextParams.set('page', '0')
+    }
+    setSearchParams(nextParams)
   }
 
   function handleSearch(event) {
     event.preventDefault()
-    updateQuery({ keyword: keywordInput.trim() })
+    updateQuery({ keyword: keywordInput.trim(), page: 0 })
+  }
+
+  function changePage(nextPage) {
+    if (nextPage < 0 || nextPage >= pageState.totalPages) return
+    updateQuery({ page: nextPage })
   }
 
   return (
     <>
       <div className="v2-main-column">
         <PageIntro
-          kicker="社区首页"
-          title="先看讨论目录，再决定要不要深入参与。"
-          lead="先筛目录，再进正文。"
+          kicker="社区"
+          title="先筛目录，再进入单篇帖子处理内容。"
+          lead={isAuthed
+            ? '登录后可直接从目录进入发帖、通知与评论互动。'
+            : '游客只浏览公开社区内容，登录后再进入发帖与互动流程。'}
+          actions={(
+            <>
+              <Link className="v2-primary-link" to="/community/new">发布帖子</Link>
+              <Link className="v2-secondary-link" to="/community/notifications">消息通知</Link>
+            </>
+          )}
         />
+
+        <SubnavTabs items={communityTabs} />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         {error ? <div className="v2-status-error">{error}</div> : null}
@@ -230,13 +256,13 @@ export default function CommunityHubPage() {
           <div className="v2-toolbar-row">
             <div className="v2-toolbar-copy">
               <strong>分类入口</strong>
-              <p>先缩小范围，再进帖子。</p>
+              <p>先缩小范围，再进入具体帖子。</p>
             </div>
             <div className="v2-chip-group">
               <button
                 className={`v2-filter-chip ${activeCategory === '' ? 'is-active' : ''}`}
                 type="button"
-                onClick={() => updateQuery({ category: '' })}
+                onClick={() => updateQuery({ category: '', page: 0 })}
               >
                 全部
               </button>
@@ -245,7 +271,7 @@ export default function CommunityHubPage() {
                   key={item.id || item.code}
                   className={`v2-filter-chip ${activeCategory === item.code ? 'is-active' : ''}`}
                   type="button"
-                  onClick={() => updateQuery({ category: item.code })}
+                  onClick={() => updateQuery({ category: item.code, page: 0 })}
                 >
                   {item.name}
                 </button>
@@ -256,15 +282,15 @@ export default function CommunityHubPage() {
           <div className="v2-toolbar-row">
             <div className="v2-toolbar-copy">
               <strong>排序方式</strong>
-              <p>最新和热帖分开看。</p>
+              <p>最新和热度分开看，避免把结果堆成一团。</p>
             </div>
             <div className="v2-segment-group">
-              {sortOptions.map((item) => (
+              {communitySortOptions.map((item) => (
                 <button
                   key={item.value}
                   className={`v2-segment-button ${activeSort === item.value ? 'is-active' : ''}`}
                   type="button"
-                  onClick={() => updateQuery({ sort: item.value })}
+                  onClick={() => updateQuery({ sort: item.value, page: 0 })}
                 >
                   {item.label}
                 </button>
@@ -292,9 +318,9 @@ export default function CommunityHubPage() {
                       {post.tags.slice(0, 4).map((tag) => (
                         <span key={`${post.id}-${tag}`}>#{tag}</span>
                       ))}
-                      {post.attachmentCount ? <span>附件 {post.attachmentCount}</span> : null}
+                      {post.hasAttachment ? <span>附件 {post.attachmentCount}</span> : null}
                     </div>
-                    <span className="v2-inline-link">查看正文</span>
+                    <span className="v2-inline-link">进入帖子</span>
                   </div>
                 </div>
                 <div className="v2-feed-side">
@@ -306,34 +332,71 @@ export default function CommunityHubPage() {
             ))}
           </section>
         ) : (
-          <div className="v2-article-card">当前筛选条件下还没有帖子，可以换个分类或关键词试试。</div>
+          <div className="v2-article-card">当前筛选条件下还没有帖子，可以换个分类或关键词再试。</div>
         )}
 
+        <section className="v2-pagination-row" aria-label="社区列表分页">
+          <button
+            className="v2-secondary-link"
+            type="button"
+            disabled={loading || activePage <= 0}
+            onClick={() => changePage(activePage - 1)}
+          >
+            上一页
+          </button>
+          <span className="v2-pagination-note">
+            第 {Math.min(activePage + 1, Math.max(pageState.totalPages, 1))} / {Math.max(pageState.totalPages, 1)} 页
+          </span>
+          <button
+            className="v2-secondary-link"
+            type="button"
+            disabled={loading || activePage >= pageState.totalPages - 1}
+            onClick={() => changePage(activePage + 1)}
+          >
+            下一页
+          </button>
+        </section>
       </div>
 
       <aside className="v2-side-column">
         <section className="v2-side-card">
-          <p className="v2-kicker">检索帖子</p>
+          <p className="v2-kicker">目录筛选</p>
           <form className="v2-filter-form" onSubmit={handleSearch}>
             <label className="v2-field">
               <span>关键词</span>
               <input
                 type="text"
                 value={keywordInput}
-                placeholder="搜标题、正文或标签"
+                placeholder="搜索标题、正文或标签"
                 onChange={(event) => setKeywordInput(event.target.value)}
               />
+            </label>
+
+            <label className="v2-field">
+              <span>附件筛选</span>
+              <div className="v2-segment-group" role="group" aria-label="附件筛选">
+                {communityAttachmentOptions.map((item) => (
+                  <button
+                    key={item.value}
+                    className={`v2-segment-button ${activeAttachment === item.value ? 'is-active' : ''}`}
+                    type="button"
+                    onClick={() => updateQuery({ hasAttachment: item.value, page: 0 })}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </label>
 
             <button className="v2-sidebar-button" type="submit">更新目录</button>
           </form>
         </section>
 
-        {!loading && posts.length ? (
+        {highlights.length ? (
           <section className="v2-side-card">
             <p className="v2-kicker">最近讨论重点</p>
             <div className="v2-check-list">
-              {discussionHighlights.map((item) => (
+              {highlights.map((item) => (
                 <Link className="v2-check-row" key={item.id} to={`/community/${item.id}`}>
                   <strong>{item.title}</strong>
                   <span>{item.note}</span>
@@ -345,170 +408,40 @@ export default function CommunityHubPage() {
 
         {hotTags.length ? (
           <section className="v2-side-card">
-            <p className="v2-kicker">热词</p>
+            <p className="v2-kicker">常见标签</p>
             <div className="v2-tag-row">
               {hotTags.map((tag) => (
-                <span key={tag}>#{tag}</span>
+                <button
+                  key={tag}
+                  type="button"
+                  className={`v2-filter-chip ${activeTag === tag ? 'is-active' : ''}`}
+                  onClick={() => updateQuery({ tag: activeTag === tag ? '' : tag, page: 0 })}
+                >
+                  #{tag}
+                </button>
               ))}
             </div>
           </section>
         ) : null}
+
+        <section className="v2-side-card">
+          <p className="v2-kicker">进入方式</p>
+          <div className="v2-check-list">
+            <div className="v2-check-row">
+              <strong>先看目录</strong>
+              <span>缩小分类和关键词范围，再进入单帖。</span>
+            </div>
+            <div className="v2-check-row">
+              <strong>再看详情</strong>
+              <span>评论、附件、举报都在帖子详情页完成。</span>
+            </div>
+            <div className="v2-check-row">
+              <strong>最后处理互动</strong>
+              <span>通知页只保留消息处理，不和目录混放。</span>
+            </div>
+          </div>
+        </section>
       </aside>
     </>
-  )
-}
-
-function renderContentSections(content) {
-  return String(content || '')
-    .split(/\n{2,}/)
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .map((item, index) => (
-      <p className="v2-content-block" key={`${index}-${item.slice(0, 12)}`}>
-        {item.replace(/^#+\s*/, '')}
-      </p>
-    ))
-}
-
-function renderCommentRows(comments = []) {
-  return comments.map((comment) => (
-    <div className="v2-comment-block" key={comment.id}>
-      <div className="v2-comment-head">
-        <strong>{comment.authorName || '匿名用户'}</strong>
-        <span>{formatTimeLabel(comment.createdAt)}</span>
-      </div>
-      <p>{comment.content}</p>
-      {comment.replies?.length ? (
-        <div className="v2-comment-replies">
-          {comment.replies.map((reply) => (
-            <div className="v2-comment-reply" key={reply.id}>
-              <strong>{reply.authorName || '匿名用户'}</strong>
-              <p>{reply.content}</p>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  ))
-}
-
-export function CommunityPostPage() {
-  const { postId } = useParams()
-  const { token } = useAuth()
-  const [post, setPost] = useState(null)
-  const [comments, setComments] = useState([])
-  const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
-  const [loading, setLoading] = useState(true)
-  const isForcedPreview = shouldForceCommunityPreview(token)
-
-  useEffect(() => {
-    let active = true
-
-    async function load() {
-      setLoading(true)
-      setError('')
-      setNotice('')
-
-      function applyPreview() {
-        const previewPost = findCommunityPreviewPostById(postId)
-        if (!previewPost) {
-          setError('没有找到这篇预览帖子。')
-          setLoading(false)
-          return
-        }
-        setPost(normalizePost(previewPost))
-        setComments(createCommunityPreviewComments(postId))
-        setNotice('当前详情页使用模拟帖子数据，方便观察正文、附件与评论区的真实展示状态。')
-        setLoading(false)
-      }
-
-      if (isForcedPreview) {
-        applyPreview()
-        return
-      }
-
-      try {
-        const [postData, commentData] = await withRequestTimeout(
-          Promise.all([
-            communityApi.postDetail(postId, token),
-            communityApi.comments(postId, token),
-          ]),
-          8000,
-          '帖子详情请求超时，请检查后端服务是否可用。',
-        )
-
-        if (!active) return
-        setPost(normalizePost(postData))
-        setComments(commentData || [])
-      } catch (requestError) {
-        if (!active) return
-        if (canUseCommunityPreview()) {
-          applyPreview()
-          return
-        }
-        setError(requestError.message || '帖子详情加载失败。')
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-
-    load()
-    return () => {
-      active = false
-    }
-  }, [isForcedPreview, postId, token])
-
-  return (
-    <div className="v2-main-column">
-      {loading ? <div className="v2-article-card">正在读取帖子详情...</div> : null}
-      {notice ? <div className="v2-status-note">{notice}</div> : null}
-      {error ? <div className="v2-status-error">{error}</div> : null}
-
-      {post ? (
-        <>
-          <section className="v2-article-card">
-            <div className="v2-article-meta">
-              <Link className="v2-inline-link" to="/community">返回社区目录</Link>
-              <span>{post.category?.name || '社区'}</span>
-              <span>{post.visibility === 'members' ? '成员可见' : '公开可见'}</span>
-            </div>
-            <h1 className="v2-article-title">{post.title}</h1>
-            <div className="v2-article-meta">
-              <span>浏览 {post.viewCount}</span>
-              <span>评论 {post.commentCount}</span>
-              <span>点赞 {post.likeCount}</span>
-              <span>收藏 {post.favoriteCount}</span>
-            </div>
-            <div className="v2-content-stack">
-              {renderContentSections(post.content)}
-            </div>
-          </section>
-
-          {post.attachments?.length ? (
-            <section className="v2-feed-list" aria-label="帖子附件">
-              {post.attachments.map((item) => (
-                <div className="v2-feed-item" key={item.id}>
-                  <div className="v2-feed-index">AT</div>
-                  <div className="v2-feed-body">
-                    <strong>{item.originalName}</strong>
-                    <p>{item.fileType} / 下载 {item.downloadCount} / {Math.round(item.fileSize / 1024)} KB</p>
-                  </div>
-                  <span className="v2-feed-action">附件</span>
-                </div>
-              ))}
-            </section>
-          ) : null}
-
-          <section className="v2-article-card">
-            <p className="v2-kicker">评论区</p>
-            <h3>讨论回复</h3>
-            <div className="v2-comment-list">
-              {comments.length ? renderCommentRows(comments) : <p>当前还没有评论。</p>}
-            </div>
-          </section>
-        </>
-      ) : null}
-    </div>
   )
 }

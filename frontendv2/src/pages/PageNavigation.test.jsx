@@ -1,10 +1,10 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { PracticeBankPreviewPage } from '@/pages/practice/PracticeDirectoryPage.jsx'
 import { KaoyanSchoolsPage } from '@/pages/student/kaoyan/KaoyanStationPage.jsx'
 import { AdminKaoyanPage } from '@/pages/admin/AdminMainPage.jsx'
-import { AdminCommunityPage } from '@/pages/admin/AdminMainPage.jsx'
+import { AdminCommunityReviewsPage } from '@/pages/admin/AdminCommunityPages.jsx'
 import SettingsSecurityPage from '@/pages/settings/SettingsSecurityPage.jsx'
 
 vi.mock('@legacy/context/AuthContext.jsx', () => ({
@@ -12,16 +12,26 @@ vi.mock('@legacy/context/AuthContext.jsx', () => ({
     user: {
       id: 1,
       name: '考研测试用户',
-      role: 'user',
+      role: 'admin',
       target: 'kaoyan',
     },
     token: 'dev-token',
+    isAuthed: true,
   }),
 }))
 
 vi.mock('@legacy/lib/api.js', () => ({
+  adminApi: {
+    reviewList: vi.fn(),
+  },
   userApi: {
     profile: vi.fn(),
+  },
+}))
+
+vi.mock('@legacy/components/MarkdownContent.jsx', () => ({
+  default: function MarkdownContentMock({ content }) {
+    return <div>{content}</div>
   },
 }))
 
@@ -58,19 +68,14 @@ describe('page-level return paths', () => {
     expect(screen.getByRole('link', { name: '管理员主站' })).toHaveAttribute('href', '/admin')
   })
 
-  it('uses rightbar filters to control admin governance results', () => {
+  it('keeps community governance pages inside the admin community route tree', () => {
     render(
       <MemoryRouter>
-        <AdminCommunityPage />
+        <AdminCommunityReviewsPage />
       </MemoryRouter>,
     )
 
-    fireEvent.change(screen.getByLabelText('检索队列'), {
-      target: { value: '评论' },
-    })
-
-    expect(screen.getAllByText('待核评论').length).toBeGreaterThan(0)
-    expect(screen.queryAllByText('待审帖子')).toHaveLength(0)
+    expect(screen.getByRole('link', { name: '返回治理总览' })).toHaveAttribute('href', '/admin/community')
   })
 
   it('shows a return path on settings child pages', () => {

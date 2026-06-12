@@ -14,17 +14,26 @@ vi.mock('@legacy/context/AuthContext.jsx', () => ({
   useAuth: () => authState,
 }))
 
-vi.mock('@/pages/guest/GuestMainPage.jsx', () => ({
-  default: function GuestMainPageMock() {
-    return <h1>旧游客页</h1>
-  },
-}))
-
 vi.mock('@/pages/community/CommunityHubPage.jsx', () => ({
   default: function CommunityHubPageMock() {
     return <h1>社区首页</h1>
   },
-  CommunityPostPage: function CommunityPostPageMock() {
+}))
+
+vi.mock('@/pages/community/CommunityComposerPage.jsx', () => ({
+  default: function CommunityComposerPageMock() {
+    return <h1>发布帖子</h1>
+  },
+}))
+
+vi.mock('@/pages/community/CommunityNotificationsPage.jsx', () => ({
+  default: function CommunityNotificationsPageMock() {
+    return <h1>社区通知</h1>
+  },
+}))
+
+vi.mock('@/pages/community/CommunityPostPage.jsx', () => ({
+  default: function CommunityPostPageMock() {
     return <h1>帖子详情</h1>
   },
 }))
@@ -38,18 +47,9 @@ vi.mock('@/pages/practice/PracticeDirectoryPage.jsx', () => ({
   },
 }))
 
-vi.mock('@/pages/auth/RoleAuthRoutePage.jsx', () => ({
-  default: function RoleAuthRoutePageMock() {
-    return <h1>身份选择</h1>
-  },
-}))
-
 vi.mock('@/pages/admin/AdminMainPage.jsx', () => ({
   default: function AdminMainPageMock() {
     return <h1>管理员总台</h1>
-  },
-  AdminCommunityPage: function AdminCommunityPageMock() {
-    return <h1>社区治理</h1>
   },
   AdminEmploymentPage: function AdminEmploymentPageMock() {
     return <h1>就业运营</h1>
@@ -62,6 +62,33 @@ vi.mock('@/pages/admin/AdminMainPage.jsx', () => ({
   },
   AdminQuestionBanksPage: function AdminQuestionBanksPageMock() {
     return <h1>题库治理</h1>
+  },
+}))
+
+vi.mock('@/pages/admin/AdminCommunityPages.jsx', () => ({
+  AdminCommunityPage: function AdminCommunityPageMock() {
+    return <h1>社区治理</h1>
+  },
+  AdminCommunityReviewsPage: function AdminCommunityReviewsPageMock() {
+    return <h1>帖子审核</h1>
+  },
+  AdminCommunityPostReportsPage: function AdminCommunityPostReportsPageMock() {
+    return <h1>帖子举报</h1>
+  },
+  AdminCommunityCommentReportsPage: function AdminCommunityCommentReportsPageMock() {
+    return <h1>评论举报</h1>
+  },
+  AdminCommunityCategoriesPage: function AdminCommunityCategoriesPageMock() {
+    return <h1>分类管理</h1>
+  },
+  AdminCommunityUsersPage: function AdminCommunityUsersPageMock() {
+    return <h1>用户状态</h1>
+  },
+}))
+
+vi.mock('@/pages/auth/AuthLandingPage.jsx', () => ({
+  default: function AuthLandingPageMock() {
+    return <h1>登录或注册后进入平台</h1>
   },
 }))
 
@@ -140,14 +167,6 @@ vi.mock('@/pages/student/studyabroad/StudyAbroadStationPage.jsx', () => ({
   },
 }))
 
-function renderApp(initialEntries) {
-  return render(
-    <MemoryRouter initialEntries={initialEntries}>
-      <App />
-    </MemoryRouter>,
-  )
-}
-
 vi.mock('@/pages/settings/SettingsProfilePage.jsx', () => ({
   default: function SettingsProfilePageMock() {
     return <h1>个人信息</h1>
@@ -178,6 +197,14 @@ vi.mock('@/pages/settings/SettingsSecurityPage.jsx', () => ({
   },
 }))
 
+function renderApp(initialEntries) {
+  return render(
+    <MemoryRouter initialEntries={initialEntries}>
+      <App />
+    </MemoryRouter>,
+  )
+}
+
 describe('frontendv2 route gating', () => {
   beforeEach(() => {
     authState.loading = false
@@ -185,18 +212,18 @@ describe('frontendv2 route gating', () => {
     authState.user = null
   })
 
-  it('unauthenticated users see auth landing at root', () => {
+  it('shows auth landing at the root for guests', () => {
     renderApp(['/'])
 
     expect(screen.getByRole('heading', { name: '登录或注册后进入平台' })).toBeInTheDocument()
   })
 
-  it('authenticated users can enter personal settings routes', () => {
+  it('allows authenticated users to enter the new community child routes', () => {
     authState.isAuthed = true
-    authState.user = { id: 1, name: '考研测试用户', role: 'user', target: 'kaoyan' }
+    authState.user = { id: 1, name: '测试用户', role: 'user', target: 'kaoyan' }
 
-    renderApp(['/settings/profile'])
+    renderApp(['/community/new'])
 
-    expect(screen.getByRole('heading', { name: '个人信息' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '发布帖子' })).toBeInTheDocument()
   })
 })

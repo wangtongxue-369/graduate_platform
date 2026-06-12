@@ -2,7 +2,18 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import AdminMainPage from '@/pages/admin/AdminMainPage.jsx'
 import AuthLandingPage from '@/pages/auth/AuthLandingPage.jsx'
-import CommunityHubPage, { CommunityPostPage } from '@/pages/community/CommunityHubPage.jsx'
+import {
+  AdminCommunityCategoriesPage,
+  AdminCommunityCommentReportsPage,
+  AdminCommunityPage,
+  AdminCommunityPostReportsPage,
+  AdminCommunityReviewsPage,
+  AdminCommunityUsersPage,
+} from '@/pages/admin/AdminCommunityPages.jsx'
+import CommunityComposerPage from '@/pages/community/CommunityComposerPage.jsx'
+import CommunityHubPage from '@/pages/community/CommunityHubPage.jsx'
+import CommunityNotificationsPage from '@/pages/community/CommunityNotificationsPage.jsx'
+import CommunityPostPage from '@/pages/community/CommunityPostPage.jsx'
 import PracticeDirectoryPage, { PracticeBankPreviewPage } from '@/pages/practice/PracticeDirectoryPage.jsx'
 import PublicShell from '@/layouts/PublicShell.jsx'
 import CommonShell from '@/layouts/CommonShell.jsx'
@@ -35,7 +46,6 @@ import StudyAbroadStationPage, {
   StudyAbroadTimelinePage,
 } from '@/pages/student/studyabroad/StudyAbroadStationPage.jsx'
 import {
-  AdminCommunityPage,
   AdminEmploymentPage,
   AdminKaogongPage,
   AdminKaoyanPage,
@@ -100,6 +110,8 @@ export default function App() {
 
         <Route element={<CommonShell />}>
           <Route path="/community" element={<CommunityHubPage />} />
+          <Route path="/community/new" element={<CommunityComposerPage />} />
+          <Route path="/community/notifications" element={<CommunityNotificationsPage />} />
           <Route path="/community/:postId" element={<CommunityPostPage />} />
           <Route path="/practice" element={<PracticeDirectoryPage />} />
           <Route path="/practice/banks/:bankId" element={<PracticeBankPreviewPage />} />
@@ -144,6 +156,11 @@ export default function App() {
         >
           <Route path="/admin" element={<AdminMainPage />} />
           <Route path="/admin/community" element={<AdminCommunityPage />} />
+          <Route path="/admin/community/reviews" element={<AdminCommunityReviewsPage />} />
+          <Route path="/admin/community/reports/posts" element={<AdminCommunityPostReportsPage />} />
+          <Route path="/admin/community/reports/comments" element={<AdminCommunityCommentReportsPage />} />
+          <Route path="/admin/community/categories" element={<AdminCommunityCategoriesPage />} />
+          <Route path="/admin/community/users" element={<AdminCommunityUsersPage />} />
           <Route path="/admin/question-banks" element={<AdminQuestionBanksPage />} />
           <Route path="/admin/kaoyan" element={<AdminKaoyanPage />} />
           <Route path="/admin/kaogong" element={<AdminKaogongPage />} />
