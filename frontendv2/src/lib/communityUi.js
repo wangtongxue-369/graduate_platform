@@ -303,6 +303,11 @@ export function buildSearchParams(currentParams, patch) {
   return next
 }
 
+export function buildCommunityReturnTo(pathname, search = '') {
+  const safePathname = pathname || '/community'
+  return search ? `${safePathname}${search}` : safePathname
+}
+
 export function createPreviewNotificationItems(posts = []) {
   return posts.slice(0, 6).map((post, index) => ({
     id: `preview-${post.id}-${index}`,

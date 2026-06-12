@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { communityApi } from '@legacy/lib/api.js'
+import CommunityFilterPanel from '@/components/community/CommunityFilterPanel.jsx'
+import CommunityPostCard from '@/components/community/CommunityPostCard.jsx'
 import PageIntro from '@/components/PageIntro.jsx'
 import SubnavTabs from '@/components/SubnavTabs.jsx'
 import {
@@ -11,13 +13,11 @@ import {
   shouldForceCommunityPreview,
 } from '@/lib/communityPreview.js'
 import {
+  buildCommunityReturnTo,
   buildSearchParams,
-  communityAttachmentOptions,
   communitySortOptions,
-  createPlainPreview,
   extractPagePayload,
   fallbackCommunityCategories,
-  formatTimeLabel,
   normalizeCommunityCategory,
   normalizeCommunityPost,
 } from '@/lib/communityUi.js'
@@ -54,6 +54,7 @@ function buildPreviewPage(items, page) {
 
 export default function CommunityHubPage() {
   const { isAuthed, token } = useAuth()
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [categories, setCategories] = useState(fallbackCommunityCategories)
   const [pageState, setPageState] = useState(() => extractPagePayload([]))
@@ -69,6 +70,7 @@ export default function CommunityHubPage() {
   const activeAttachment = searchParams.get('hasAttachment') || 'all'
   const activePage = Number(searchParams.get('page') || 0)
   const isForcedPreview = shouldForceCommunityPreview(token)
+  const returnTo = buildCommunityReturnTo(location.pathname, location.search)
 
   useEffect(() => {
     setKeywordInput(activeKeyword)
@@ -220,6 +222,18 @@ export default function CommunityHubPage() {
     updateQuery({ page: nextPage })
   }
 
+  function resetFilters() {
+    setKeywordInput('')
+    setSearchParams(buildSearchParams(searchParams, {
+      category: '',
+      keyword: '',
+      tag: '',
+      hasAttachment: '',
+      sort: 'latest',
+      page: 0,
+    }))
+  }
+
   return (
     <>
       <div className="v2-main-column">
@@ -304,35 +318,21 @@ export default function CommunityHubPage() {
         ) : posts.length ? (
           <section className="v2-feed-list" aria-label="社区帖子列表">
             {posts.map((post) => (
-              <Link className="v2-feed-item v2-feed-item--article" key={post.id} to={`/community/${post.id}`}>
-                <div className="v2-feed-body">
-                  <div className="v2-article-meta">
-                    <span>{post.category?.name || '社区'}</span>
-                    <span>{post.visibility === 'members' ? '成员可见' : '公开可见'}</span>
-                    <span>{formatTimeLabel(post.updatedAt || post.createdAt)}</span>
-                  </div>
-                  <strong>{post.title}</strong>
-                  <p>{createPlainPreview(post.content).slice(0, 140) || '暂无摘要内容。'}</p>
-                  <div className="v2-feed-foot">
-                    <div className="v2-tag-row">
-                      {post.tags.slice(0, 4).map((tag) => (
-                        <span key={`${post.id}-${tag}`}>#{tag}</span>
-                      ))}
-                      {post.hasAttachment ? <span>附件 {post.attachmentCount}</span> : null}
-                    </div>
-                    <span className="v2-inline-link">进入帖子</span>
-                  </div>
-                </div>
-                <div className="v2-feed-side">
-                  <span>浏览 {post.viewCount}</span>
-                  <span>评论 {post.commentCount}</span>
-                  <span>点赞 {post.likeCount}</span>
-                </div>
-              </Link>
+              <CommunityPostCard key={post.id} post={post} returnTo={returnTo} />
             ))}
           </section>
         ) : (
-          <div className="v2-article-card">当前筛选条件下还没有帖子，可以换个分类或关键词再试。</div>
+          <div className="v2-article-card">
+            <p>当前筛选条件下还没有帖子，可以换个分类或关键词再试。</p>
+            <button
+              className="v2-secondary-link"
+              type="button"
+              aria-label="reset-filters"
+              onClick={resetFilters}
+            >
+              重置筛选
+            </button>
+          </div>
         )}
 
         <section className="v2-pagination-row" aria-label="社区列表分页">
@@ -359,45 +359,20 @@ export default function CommunityHubPage() {
       </div>
 
       <aside className="v2-side-column">
-        <section className="v2-side-card">
-          <p className="v2-kicker">目录筛选</p>
-          <form className="v2-filter-form" onSubmit={handleSearch}>
-            <label className="v2-field">
-              <span>关键词</span>
-              <input
-                type="text"
-                value={keywordInput}
-                placeholder="搜索标题、正文或标签"
-                onChange={(event) => setKeywordInput(event.target.value)}
-              />
-            </label>
-
-            <label className="v2-field">
-              <span>附件筛选</span>
-              <div className="v2-segment-group" role="group" aria-label="附件筛选">
-                {communityAttachmentOptions.map((item) => (
-                  <button
-                    key={item.value}
-                    className={`v2-segment-button ${activeAttachment === item.value ? 'is-active' : ''}`}
-                    type="button"
-                    onClick={() => updateQuery({ hasAttachment: item.value, page: 0 })}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </label>
-
-            <button className="v2-sidebar-button" type="submit">更新目录</button>
-          </form>
-        </section>
+        <CommunityFilterPanel
+          keywordInput={keywordInput}
+          activeAttachment={activeAttachment}
+          onKeywordChange={setKeywordInput}
+          onSubmit={handleSearch}
+          onAttachmentChange={(value) => updateQuery({ hasAttachment: value, page: 0 })}
+        />
 
         {highlights.length ? (
           <section className="v2-side-card">
             <p className="v2-kicker">最近讨论重点</p>
             <div className="v2-check-list">
               {highlights.map((item) => (
-                <Link className="v2-check-row" key={item.id} to={`/community/${item.id}`}>
+                <Link className="v2-check-row" key={item.id} to={`/community/${item.id}`} state={{ returnTo }}>
                   <strong>{item.title}</strong>
                   <span>{item.note}</span>
                 </Link>
