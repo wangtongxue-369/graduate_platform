@@ -31,6 +31,7 @@ export default function CommunityNotificationsPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const isForcedPreview = shouldForceCommunityPreview(token)
+  const returnTo = '/community/notifications'
 
   useEffect(() => {
     let active = true
@@ -188,7 +189,7 @@ export default function CommunityNotificationsPage() {
                 </div>
                 <div className="v2-feed-side">
                   {item.link ? (
-                    <Link className="v2-secondary-link" to={item.link}>
+                    <Link className="v2-secondary-link" to={item.link} state={{ returnTo }}>
                       打开原帖
                     </Link>
                   ) : null}

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CommunityNotificationsPage from './CommunityNotificationsPage.jsx'
 
@@ -47,6 +47,11 @@ vi.mock('@/lib/communityPreview.js', () => ({
 vi.mock('@/lib/withRequestTimeout.js', () => ({
   withRequestTimeout: (promise) => promise,
 }))
+
+function DetailStateProbe() {
+  const location = useLocation()
+  return <div>{location.state?.returnTo || 'missing-return-to'}</div>
+}
 
 describe('CommunityNotificationsPage', () => {
   beforeEach(() => {
@@ -98,5 +103,21 @@ describe('CommunityNotificationsPage', () => {
     fireEvent.click(filterButtons[1])
 
     expect(screen.getByText('Unread Notification')).toBeInTheDocument()
+  })
+
+  it('passes the notifications return path into the source post link', async () => {
+    render(
+      <MemoryRouter initialEntries={['/community/notifications']}>
+        <Routes>
+          <Route path="/community/notifications" element={<CommunityNotificationsPage />} />
+          <Route path="/community/:postId" element={<DetailStateProbe />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    const postLinks = await screen.findAllByRole('link', { name: '打开原帖' })
+    fireEvent.click(postLinks[0])
+
+    expect(await screen.findByText('/community/notifications')).toBeInTheDocument()
   })
 })
