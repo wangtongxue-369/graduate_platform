@@ -26,7 +26,6 @@ const emptyForm = {
   country: 'UK',
   topic: 'Application',
   authorName: '',
-  readTime: '5 min',
   summary: '',
   content: '',
   tags: '',
@@ -39,6 +38,13 @@ function normalizeTags(tags) {
     .split(',')
     .map((tag) => tag.trim())
     .filter(Boolean)
+}
+
+function formatPublishedAt(value) {
+  if (!value) return '发布时间待补充'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
+  return `发布于 ${date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })}`
 }
 
 export default function ExperiencePage() {
@@ -178,7 +184,6 @@ export default function ExperiencePage() {
       country: item.country || 'UK',
       topic: item.topic || 'Application',
       authorName: item.authorName || '',
-      readTime: item.readTime || '5 min',
       summary: item.summary || '',
       content: item.content || '',
       tags: normalizeTags(item.tags).join(', '),
@@ -224,6 +229,10 @@ export default function ExperiencePage() {
           ...payload,
           id: editingId || createLocalId('experience'),
           tags: normalizeTags(payload.tags),
+          createdAt: editingId
+            ? experiences.find((item) => item.id === editingId)?.createdAt || new Date().toISOString()
+            : new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         }
         const next = editingId
           ? experiences.map((item) => (item.id === editingId ? saved : item))
@@ -356,10 +365,6 @@ export default function ExperiencePage() {
                 </select>
               </label>
               <label className="field">
-                <span>阅读时长</span>
-                <input value={form.readTime} onChange={(event) => updateForm('readTime', event.target.value)} />
-              </label>
-              <label className="field">
                 <span>标签</span>
                 <input value={form.tags} placeholder="PS, visa, IELTS" onChange={(event) => updateForm('tags', event.target.value)} />
               </label>
@@ -399,7 +404,7 @@ export default function ExperiencePage() {
                 <div className="detail-meta">
                   <span>{topicLabelMap[item.topic] || item.topic}</span>
                   <span>{item.authorName}</span>
-                  <span>{item.readTime}</span>
+                  <span>{formatPublishedAt(item.createdAt)}</span>
                 </div>
                 <p className="muted">{item.summary}</p>
                 <div className="tag-row">
@@ -471,7 +476,7 @@ export default function ExperiencePage() {
                 <h2 id="experience-modal-title">{selectedExperience.title}</h2>
                 <div className="detail-meta">
                   <span>{selectedExperience.authorName}</span>
-                  <span>{selectedExperience.readTime}</span>
+                  <span>{formatPublishedAt(selectedExperience.createdAt)}</span>
                 </div>
               </div>
               <button className="btn outline small" type="button" onClick={() => setSelectedExperienceId(null)}>关闭</button>

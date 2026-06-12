@@ -14,6 +14,7 @@ const shortcutLinks = [
   { to: '/admin/employment', label: '就业管理', variant: 'btn outline' },
   { to: '/admin/kaogong-data', label: '考公数据维护', variant: 'btn outline' },
   { to: '/admin/kaoyan-data', label: '考研数据维护', variant: 'btn outline' },
+  { to: '/admin/studyabroad', label: '留学管理', variant: 'btn outline' },
   { to: '/admin/material-review', label: '资料审核', variant: 'btn outline' },
 ]
 
@@ -59,6 +60,13 @@ const capabilityCards = [
     description: '维护岗位、进面分数线和考试节点，支持筛选、后端分页与新增数据。',
     to: '/admin/kaogong-data',
     cta: '维护考公数据',
+  },
+  {
+    title: '留学数据管理',
+    code: 'SA',
+    description: '维护留学院校项目库，管理录取案例和经验分享内容。',
+    to: '/admin/studyabroad',
+    cta: '管理留学数据',
   },
   {
     title: '题库管理',
