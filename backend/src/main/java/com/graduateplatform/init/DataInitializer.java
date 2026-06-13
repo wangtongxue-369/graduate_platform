@@ -143,233 +143,229 @@ public class DataInitializer implements CommandLineRunner {
         updateLegacyEmploymentSeedData();
         cleanupDuplicateCareerFairs();
 
-        java.time.LocalDateTime fairStart = java.time.LocalDateTime.now().plusDays(7).withHour(14).withMinute(0).withSecond(0).withNano(0);
-        boolean hasInternetFair = careerFairRepository.existsByTitleAndCompanyName("Internet Campus Career Fair", "Future Tech")
-            || careerFairRepository.existsByTitleAndCompanyName("互联网校园招聘宣讲会", "未来科技");
-        if (!hasInternetFair) {
+        java.time.LocalDateTime fairStart = java.time.LocalDateTime.now().plusDays(3).withHour(15).withMinute(0).withSecond(0).withNano(0);
+        boolean hasTencentFair = careerFairRepository.existsByTitleAndCompanyName("腾讯2026应届生招聘宣讲会", "腾讯");
+        if (!hasTencentFair) {
             careerFairRepository.save(CareerFair.builder()
-                .title("互联网校园招聘宣讲会")
-                .companyName("未来科技")
-                .city("上海")
+                .title("腾讯2026应届生招聘宣讲会")
+                .companyName("腾讯")
+                .city("线上")
                 .industry("互联网")
-                .targetRoles("后端,前端,产品")
-                .location("学生中心 A101")
+                .targetRoles("技术研发,产品,设计,市场,职能")
+                .location("腾讯校招官网")
                 .startTime(fairStart)
-                .endTime(fairStart.plusHours(2))
-                .applyDeadline(fairStart.plusDays(3))
-                .applyUrl("https://jobs.example.com/future-tech")
-                .description("面向应届毕业生介绍校园招聘岗位、培养计划和线上申请流程。")
+                .endTime(fairStart.plusHours(1).plusMinutes(30))
+                .applyDeadline(fairStart.plusDays(2).withHour(23).withMinute(59))
+                .applyUrl("https://join.qq.com/index.html")
+                .description("腾讯校招官网发布的2026应届生招聘入口，可查看校招岗位、招聘流程并在线投递。")
                 .active(true)
                 .build());
         }
 
-        boolean hasManufacturingFair = careerFairRepository.existsByTitleAndCompanyName("Smart Manufacturing Fair", "Harbor Equipment Group")
-            || careerFairRepository.existsByTitleAndCompanyName("智能制造专场招聘会", "港湾装备集团");
-        if (!hasManufacturingFair) {
+        boolean hasTelecomFair = careerFairRepository.existsByTitleAndCompanyName("中国电信2026校园招聘宣讲会", "中国电信");
+        if (!hasTelecomFair) {
             careerFairRepository.save(CareerFair.builder()
-                .title("智能制造专场招聘会")
-                .companyName("港湾装备集团")
-                .city("苏州")
-                .industry("智能制造")
-                .targetRoles("质量工程,嵌入式,供应链")
-                .location("就业指导中心 2 楼")
-                .startTime(fairStart.plusDays(3))
-                .endTime(fairStart.plusDays(3).plusHours(3))
-                .applyDeadline(fairStart.plusDays(6))
-                .applyUrl("https://jobs.example.com/manufacturing")
-                .description("联合多部门发布智能制造岗位，说明招聘流程、岗位要求和网申安排。")
+                .title("中国电信2026校园招聘宣讲会")
+                .companyName("中国电信")
+                .city("线上")
+                .industry("通信运营商")
+                .targetRoles("云网技术,软件研发,数据分析,市场运营")
+                .location("中国电信招聘官网")
+                .startTime(fairStart.plusDays(1))
+                .endTime(fairStart.plusDays(1).plusHours(1))
+                .applyDeadline(fairStart.plusDays(3).withHour(18).withMinute(0))
+                .applyUrl("https://job.chinatelecom.com.cn/wt/TELE/web/index")
+                .description("中国电信官方招聘平台，提供校园招聘岗位、宣讲问答、招聘进度和在线投递入口。")
                 .active(true)
                 .build());
         }
 
         java.time.LocalDateTime aiFairStart = java.time.LocalDateTime.now().plusDays(5).withHour(14).withMinute(0).withSecond(0).withNano(0);
-        boolean hasAiFair = careerFairRepository.existsByTitleAndCompanyName("人工智能算法专场宣讲会", "星河智能科技");
-        if (!hasAiFair) {
+        boolean hasCcbFair = careerFairRepository.existsByTitleAndCompanyName("中国建设银行2026校园招聘宣讲会", "中国建设银行");
+        if (!hasCcbFair) {
             careerFairRepository.save(CareerFair.builder()
-                .title("人工智能算法专场宣讲会")
-                .companyName("星河智能科技")
-                .city("上海")
-                .industry("人工智能")
-                .targetRoles("算法工程师,机器学习工程师,数据挖掘工程师")
-                .location("学生中心 B201")
+                .title("中国建设银行2026校园招聘宣讲会")
+                .companyName("中国建设银行")
+                .city("线上")
+                .industry("金融")
+                .targetRoles("金融科技,柜面服务,客户经理,管理培训生")
+                .location("中国建设银行招聘官网")
                 .startTime(aiFairStart)
                 .endTime(aiFairStart.plusHours(2))
                 .applyDeadline(aiFairStart.plusDays(3).withHour(23).withMinute(59))
-                .applyUrl("https://jobs.example.com/galaxy-ai")
-                .description("面向计算机、软件工程、人工智能等相关专业毕业生，介绍算法研发、模型训练、数据分析等岗位需求和校招流程。")
+                .applyUrl("https://job1.ccb.com/cn/job/plan_index.html?planType=XY")
+                .description("中国建设银行官方校园招聘首页，提供校招公告、校园宣讲会、岗位计划和在线申请入口。")
                 .active(true)
                 .build());
         }
 
         java.time.LocalDateTime fintechFairStart = java.time.LocalDateTime.now().plusDays(9).withHour(10).withMinute(0).withSecond(0).withNano(0);
-        boolean hasFintechFair = careerFairRepository.existsByTitleAndCompanyName("金融科技校招宣讲会", "海通数科");
-        if (!hasFintechFair) {
+        boolean hasPingAnFair = careerFairRepository.existsByTitleAndCompanyName("中国平安2026校园招聘宣讲会", "中国平安");
+        if (!hasPingAnFair) {
             careerFairRepository.save(CareerFair.builder()
-                .title("金融科技校招宣讲会")
-                .companyName("海通数科")
-                .city("上海")
+                .title("中国平安2026校园招聘宣讲会")
+                .companyName("中国平安")
+                .city("线上")
                 .industry("金融科技")
-                .targetRoles("Java开发工程师,测试开发工程师,数据分析师")
-                .location("经管楼 305")
+                .targetRoles("科技研发,产品运营,数据分析,金融业务")
+                .location("中国平安校园招聘官网")
                 .startTime(fintechFairStart)
                 .endTime(fintechFairStart.plusHours(2))
                 .applyDeadline(fintechFairStart.plusDays(3).withHour(18).withMinute(0))
-                .applyUrl("https://jobs.example.com/haitong-fintech")
-                .description("围绕银行、证券和支付场景发布技术类校招岗位，说明笔试、面试和实习转正安排。")
+                .applyUrl("https://campus.pingan.com/")
+                .description("中国平安校园招聘官网，提供校园招聘宣讲会、岗位搜索、投递进度和在线申请入口。")
                 .active(true)
                 .build());
         }
 
         java.time.LocalDateTime donghaiFairStart = java.time.LocalDateTime.now().plusDays(14).withHour(15).withMinute(0).withSecond(0).withNano(0);
-        boolean hasDonghaiFair = careerFairRepository.existsByTitleAndCompanyName("智能制造管培生招聘会", "东海精工集团");
-        if (!hasDonghaiFair) {
+        boolean hasLenovoFair = careerFairRepository.existsByTitleAndCompanyName("联想2026校园招聘宣讲会", "联想");
+        if (!hasLenovoFair) {
             careerFairRepository.save(CareerFair.builder()
-                .title("智能制造管培生招聘会")
-                .companyName("东海精工集团")
-                .city("苏州")
-                .industry("智能制造")
-                .targetRoles("生产管培生,质量工程师,供应链计划专员")
-                .location("就业指导中心 1 楼报告厅")
+                .title("联想2026校园招聘宣讲会")
+                .companyName("联想")
+                .city("线上")
+                .industry("智能终端与企业科技")
+                .targetRoles("软件研发,硬件研发,供应链,产品经理")
+                .location("联想校园招聘官网")
                 .startTime(donghaiFairStart)
                 .endTime(donghaiFairStart.plusHours(2).plusMinutes(30))
                 .applyDeadline(donghaiFairStart.plusDays(3).withHour(20).withMinute(0))
-                .applyUrl("https://jobs.example.com/donghai-manufacturing")
-                .description("面向工科和管理类毕业生介绍制造业校招培养体系，覆盖生产运营、质量管理和供应链方向。")
+                .applyUrl("https://talent.lenovo.com.cn/campus")
+                .description("联想校园招聘官网，提供中国校园招聘项目、岗位信息、招聘流程和在线投递入口。")
                 .active(true)
                 .build());
         }
 
-        boolean hasBackendJob = jobPostingRepository.existsByTitleAndCompanyName("Java Backend Engineer", "Future Tech")
-            || jobPostingRepository.existsByTitleAndCompanyName("Java 后端工程师", "未来科技");
+        boolean hasBackendJob = jobPostingRepository.existsByTitleAndCompanyName("软件开发-后台开发方向", "腾讯");
         if (!hasBackendJob) {
             jobPostingRepository.save(JobPosting.builder()
-                .title("Java 后端工程师")
-                .companyName("未来科技")
-                .city("上海")
+                .title("软件开发-后台开发方向")
+                .companyName("腾讯")
+                .city("深圳/北京/上海/广州/成都/武汉/杭州")
                 .industry("互联网")
                 .companyType("民企")
                 .roleType("后端")
-                .salaryRange("18k-25k")
+                .salaryRange("面议")
                 .educationRequirement("本科及以上")
                 .majorKeywords("计算机科学,软件工程,信息系统")
-                .skillTags("Java,Spring Boot,MySQL,Redis")
-                .description("参与校园招聘产品的后端服务建设，负责接口开发、数据处理与系统稳定性优化。")
-                .applyUrl("https://jobs.example.com/java-backend")
+                .skillTags("Java,C++,Go,分布式系统,数据库")
+                .description("腾讯校招软件开发后台方向，面向服务端研发、分布式系统、业务后台和基础架构等岗位，可在腾讯校招官网完成岗位投递。")
+                .applyUrl("https://join.qq.com/post.html?query=2_75%2Cp_2")
                 .active(true)
                 .build());
         }
 
-        boolean hasOperationsJob = jobPostingRepository.existsByTitleAndCompanyName("Product Operations Trainee", "Harbor Equipment Group")
-            || jobPostingRepository.existsByTitleAndCompanyName("产品运营管培生", "港湾装备集团");
+        boolean hasOperationsJob = jobPostingRepository.existsByTitleAndCompanyName("产品运营校招生", "字节跳动");
         if (!hasOperationsJob) {
             jobPostingRepository.save(JobPosting.builder()
-                .title("产品运营管培生")
-                .companyName("港湾装备集团")
-                .city("苏州")
-                .industry("智能制造")
-                .companyType("国企")
+                .title("产品运营校招生")
+                .companyName("字节跳动")
+                .city("北京/上海/深圳/杭州")
+                .industry("互联网")
+                .companyType("民企")
                 .roleType("产品运营")
-                .salaryRange("10k-15k")
+                .salaryRange("面议")
                 .educationRequirement("本科及以上")
-                .majorKeywords("管理学,自动化,计算机科学")
-                .skillTags("数据分析,沟通协调,项目管理")
-                .description("负责产品运营数据分析、流程协同和项目跟进，参与制造业校招生管培培养计划。")
-                .applyUrl("https://jobs.example.com/product-operation")
+                .majorKeywords("管理学,新闻传播,计算机科学,数据科学")
+                .skillTags("数据分析,用户运营,内容运营,项目管理")
+                .description("字节跳动校园招聘产品运营方向，覆盖内容、用户、商业化和增长运营等场景，可在字节跳动校招职位页搜索并投递。")
+                .applyUrl("https://jobs.bytedance.com/campus/m/position")
                 .active(true)
                 .build());
         }
 
-        boolean hasFrontendJob = jobPostingRepository.existsByTitleAndCompanyName("前端开发工程师", "未来科技");
+        boolean hasFrontendJob = jobPostingRepository.existsByTitleAndCompanyName("前端开发工程师", "阿里巴巴");
         if (!hasFrontendJob) {
             jobPostingRepository.save(JobPosting.builder()
                 .title("前端开发工程师")
-                .companyName("未来科技")
-                .city("上海")
+                .companyName("阿里巴巴")
+                .city("杭州/北京/上海/深圳")
                 .industry("互联网")
                 .companyType("民企")
                 .roleType("前端")
-                .salaryRange("16k-22k")
+                .salaryRange("面议")
                 .educationRequirement("本科及以上")
                 .majorKeywords("计算机科学,软件工程,数字媒体技术")
                 .skillTags("Vue,React,JavaScript,TypeScript")
-                .description("参与校园招聘平台 Web 前端建设，负责页面开发、组件封装、接口联调和交互体验优化。")
-                .applyUrl("https://jobs.example.com/frontend-engineer")
+                .description("阿里巴巴校园招聘研发类前端方向，参与业务平台、用户产品和技术中台的 Web 端研发，可在阿里巴巴校招官网投递。")
+                .applyUrl("https://campus-talent.alibaba.com/")
                 .active(true)
                 .build());
         }
 
-        boolean hasDataAnalystJob = jobPostingRepository.existsByTitleAndCompanyName("数据分析师", "海通数科");
+        boolean hasDataAnalystJob = jobPostingRepository.existsByTitleAndCompanyName("商业分析师", "美团");
         if (!hasDataAnalystJob) {
             jobPostingRepository.save(JobPosting.builder()
-                .title("数据分析师")
-                .companyName("海通数科")
-                .city("上海")
-                .industry("金融科技")
-                .companyType("国企")
+                .title("商业分析师")
+                .companyName("美团")
+                .city("北京/上海/深圳/成都")
+                .industry("本地生活服务")
+                .companyType("民企")
                 .roleType("数据分析")
-                .salaryRange("14k-20k")
+                .salaryRange("面议")
                 .educationRequirement("本科及以上")
-                .majorKeywords("统计学,数据科学,计算机科学,金融工程")
-                .skillTags("SQL,Python,Excel,Tableau")
-                .description("围绕金融业务场景进行数据清洗、指标建设、报表分析和业务洞察输出，支持产品与运营决策。")
-                .applyUrl("https://jobs.example.com/data-analyst")
+                .majorKeywords("统计学,数据科学,计算机科学,经济学")
+                .skillTags("SQL,Python,Excel,商业分析")
+                .description("美团校园招聘商业分析方向，围绕本地生活业务进行指标建设、数据洞察和经营分析，可通过美团校园招聘官网投递。")
+                .applyUrl("https://campus.meituan.com/")
                 .active(true)
                 .build());
         }
 
-        boolean hasTestDevelopmentJob = jobPostingRepository.existsByTitleAndCompanyName("测试开发工程师", "星河智能科技");
+        boolean hasTestDevelopmentJob = jobPostingRepository.existsByTitleAndCompanyName("软件测试开发工程师", "华为");
         if (!hasTestDevelopmentJob) {
             jobPostingRepository.save(JobPosting.builder()
-                .title("测试开发工程师")
-                .companyName("星河智能科技")
-                .city("上海")
-                .industry("人工智能")
+                .title("软件测试开发工程师")
+                .companyName("华为")
+                .city("深圳/上海/杭州/南京/西安")
+                .industry("通信与智能终端")
                 .companyType("民企")
                 .roleType("测试开发")
-                .salaryRange("15k-21k")
+                .salaryRange("面议")
                 .educationRequirement("本科及以上")
-                .majorKeywords("计算机科学,软件工程,人工智能")
-                .skillTags("Python,自动化测试,接口测试,Linux")
-                .description("负责 AI 平台和模型服务的测试体系建设，参与自动化测试、接口验证、质量度量和发布保障。")
-                .applyUrl("https://jobs.example.com/test-development")
+                .majorKeywords("计算机科学,软件工程,通信工程,电子信息")
+                .skillTags("Python,自动化测试,接口测试,Linux,质量工程")
+                .description("华为校园招聘软件测试开发方向，参与产品质量工程、自动化测试和工程效率建设，可在华为校园招聘职位列表投递。")
+                .applyUrl("https://career.huawei.com/reccampportal/portal5/campus-recruitment.html?jobTypes=0")
                 .active(true)
                 .build());
         }
 
-        boolean hasSecurityJob = jobPostingRepository.existsByTitleAndCompanyName("网络安全工程师", "云盾安全");
+        boolean hasSecurityJob = jobPostingRepository.existsByTitleAndCompanyName("安全工程师（漏洞方向）", "奇安信");
         if (!hasSecurityJob) {
             jobPostingRepository.save(JobPosting.builder()
-                .title("网络安全工程师")
-                .companyName("云盾安全")
-                .city("杭州")
+                .title("安全工程师（漏洞方向）")
+                .companyName("奇安信")
+                .city("北京/成都/南京/厦门")
                 .industry("网络安全")
                 .companyType("民企")
                 .roleType("安全")
-                .salaryRange("18k-26k")
+                .salaryRange("面议")
                 .educationRequirement("本科及以上")
                 .majorKeywords("网络空间安全,信息安全,计算机科学")
-                .skillTags("渗透测试,漏洞分析,Linux,Python")
-                .description("参与企业安全服务项目，负责漏洞验证、安全加固、日志分析和应急响应支持。")
-                .applyUrl("https://jobs.example.com/security-engineer")
+                .skillTags("渗透测试,漏洞分析,Linux,Python,Web安全")
+                .description("奇安信校园招聘安全工程师漏洞方向，跟踪最新安全技术并参与漏洞研究、安全验证和攻防实践，可在奇安信校招职位页投递。")
+                .applyUrl("https://www.qianxin.com/campus/internJobSearch")
                 .active(true)
                 .build());
         }
 
-        boolean hasProductAssistantJob = jobPostingRepository.existsByTitleAndCompanyName("产品经理助理", "港湾装备集团");
+        boolean hasProductAssistantJob = jobPostingRepository.existsByTitleAndCompanyName("产品经理", "京东");
         if (!hasProductAssistantJob) {
             jobPostingRepository.save(JobPosting.builder()
-                .title("产品经理助理")
-                .companyName("港湾装备集团")
-                .city("苏州")
-                .industry("智能制造")
-                .companyType("国企")
+                .title("产品经理")
+                .companyName("京东")
+                .city("北京/上海/深圳")
+                .industry("电商与供应链科技")
+                .companyType("民企")
                 .roleType("产品")
-                .salaryRange("10k-15k")
+                .salaryRange("面议")
                 .educationRequirement("本科及以上")
-                .majorKeywords("管理学,工业工程,计算机科学,自动化")
-                .skillTags("需求分析,Axure,数据分析,沟通协调")
-                .description("参与制造业数字化产品的需求调研、原型设计、项目跟进和跨部门沟通，协助推动产品落地。")
-                .applyUrl("https://jobs.example.com/product-assistant")
+                .majorKeywords("管理学,工业工程,计算机科学,电子商务")
+                .skillTags("需求分析,Axure,数据分析,项目协同")
+                .description("京东校园招聘产品方向，参与零售、物流、科技等业务产品规划和需求落地，可在京东招聘官网选择校园招聘投递。")
+                .applyUrl("https://zhaopin.jd.com/")
                 .active(true)
                 .build());
         }
@@ -377,61 +373,232 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void updateLegacyEmploymentSeedData() {
+        java.time.LocalDateTime baseFairStart = java.time.LocalDateTime.now().plusDays(3).withHour(15).withMinute(0).withSecond(0).withNano(0);
         for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("Internet Campus Career Fair", "Future Tech")) {
-            fair.setTitle("互联网校园招聘宣讲会");
-            fair.setCompanyName("未来科技");
-            fair.setCity("上海");
-            fair.setIndustry("互联网");
-            fair.setTargetRoles("后端,前端,产品");
-            fair.setLocation("学生中心 A101");
-            fair.setApplyUrl("https://jobs.example.com/future-tech");
-            fair.setDescription("面向应届毕业生介绍校园招聘岗位、培养计划和线上申请流程。");
-            careerFairRepository.save(fair);
+            applyRealCareerFairSeed(fair,
+                "腾讯2026应届生招聘宣讲会", "腾讯", "线上", "互联网",
+                "技术研发,产品,设计,市场,职能", "腾讯校招官网",
+                baseFairStart, baseFairStart.plusHours(1).plusMinutes(30), baseFairStart.plusDays(2).withHour(23).withMinute(59),
+                "https://join.qq.com/index.html",
+                "腾讯校招官网发布的2026应届生招聘入口，可查看校招岗位、招聘流程并在线投递。");
+        }
+        for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("互联网校园招聘宣讲会", "未来科技")) {
+            applyRealCareerFairSeed(fair,
+                "腾讯2026应届生招聘宣讲会", "腾讯", "线上", "互联网",
+                "技术研发,产品,设计,市场,职能", "腾讯校招官网",
+                baseFairStart, baseFairStart.plusHours(1).plusMinutes(30), baseFairStart.plusDays(2).withHour(23).withMinute(59),
+                "https://join.qq.com/index.html",
+                "腾讯校招官网发布的2026应届生招聘入口，可查看校招岗位、招聘流程并在线投递。");
+        }
+        for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("杜邦（中国）研发管理有限公司宣讲会", "杜邦（中国）研发管理有限公司")) {
+            applyRealCareerFairSeed(fair,
+                "腾讯2026应届生招聘宣讲会", "腾讯", "线上", "互联网",
+                "技术研发,产品,设计,市场,职能", "腾讯校招官网",
+                baseFairStart, baseFairStart.plusHours(1).plusMinutes(30), baseFairStart.plusDays(2).withHour(23).withMinute(59),
+                "https://join.qq.com/index.html",
+                "腾讯校招官网发布的2026应届生招聘入口，可查看校招岗位、招聘流程并在线投递。");
         }
 
         for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("Smart Manufacturing Fair", "Harbor Equipment Group")) {
-            fair.setTitle("智能制造专场招聘会");
-            fair.setCompanyName("港湾装备集团");
-            fair.setCity("苏州");
-            fair.setIndustry("智能制造");
-            fair.setTargetRoles("质量工程,嵌入式,供应链");
-            fair.setLocation("就业指导中心 2 楼");
-            fair.setApplyUrl("https://jobs.example.com/manufacturing");
-            fair.setDescription("联合多部门发布智能制造岗位，说明招聘流程、岗位要求和网申安排。");
-            careerFairRepository.save(fair);
+            applyRealCareerFairSeed(fair,
+                "中国电信2026校园招聘宣讲会", "中国电信", "线上", "通信运营商",
+                "云网技术,软件研发,数据分析,市场运营", "中国电信招聘官网",
+                baseFairStart.plusDays(1), baseFairStart.plusDays(1).plusHours(1), baseFairStart.plusDays(3).withHour(18).withMinute(0),
+                "https://job.chinatelecom.com.cn/wt/TELE/web/index",
+                "中国电信官方招聘平台，提供校园招聘岗位、宣讲问答、招聘进度和在线投递入口。");
+        }
+        for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("智能制造专场招聘会", "港湾装备集团")) {
+            applyRealCareerFairSeed(fair,
+                "中国电信2026校园招聘宣讲会", "中国电信", "线上", "通信运营商",
+                "云网技术,软件研发,数据分析,市场运营", "中国电信招聘官网",
+                baseFairStart.plusDays(1), baseFairStart.plusDays(1).plusHours(1), baseFairStart.plusDays(3).withHour(18).withMinute(0),
+                "https://job.chinatelecom.com.cn/wt/TELE/web/index",
+                "中国电信官方招聘平台，提供校园招聘岗位、宣讲问答、招聘进度和在线投递入口。");
+        }
+        for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("晓禾教育科技（武汉）有限公司宣讲会", "晓禾教育科技（武汉）有限公司")) {
+            applyRealCareerFairSeed(fair,
+                "中国电信2026校园招聘宣讲会", "中国电信", "线上", "通信运营商",
+                "云网技术,软件研发,数据分析,市场运营", "中国电信招聘官网",
+                baseFairStart.plusDays(1), baseFairStart.plusDays(1).plusHours(1), baseFairStart.plusDays(3).withHour(18).withMinute(0),
+                "https://job.chinatelecom.com.cn/wt/TELE/web/index",
+                "中国电信官方招聘平台，提供校园招聘岗位、宣讲问答、招聘进度和在线投递入口。");
+        }
+
+        for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("人工智能算法专场宣讲会", "星河智能科技")) {
+            java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(5).withHour(14).withMinute(0).withSecond(0).withNano(0);
+            applyRealCareerFairSeed(fair,
+                "中国建设银行2026校园招聘宣讲会", "中国建设银行", "线上", "金融",
+                "金融科技,柜面服务,客户经理,管理培训生", "中国建设银行招聘官网",
+                start, start.plusHours(2), start.plusDays(3).withHour(23).withMinute(59),
+                "https://job1.ccb.com/cn/job/plan_index.html?planType=XY",
+                "中国建设银行官方校园招聘首页，提供校招公告、校园宣讲会、岗位计划和在线申请入口。");
+        }
+        for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("捷迈（上海）医疗国际贸易有限公司宣讲会", "捷迈（上海）医疗国际贸易有限公司")) {
+            java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(5).withHour(14).withMinute(0).withSecond(0).withNano(0);
+            applyRealCareerFairSeed(fair,
+                "中国建设银行2026校园招聘宣讲会", "中国建设银行", "线上", "金融",
+                "金融科技,柜面服务,客户经理,管理培训生", "中国建设银行招聘官网",
+                start, start.plusHours(2), start.plusDays(3).withHour(23).withMinute(59),
+                "https://job1.ccb.com/cn/job/plan_index.html?planType=XY",
+                "中国建设银行官方校园招聘首页，提供校招公告、校园宣讲会、岗位计划和在线申请入口。");
+        }
+
+        for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("金融科技校招宣讲会", "海通数科")) {
+            java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(9).withHour(10).withMinute(0).withSecond(0).withNano(0);
+            applyRealCareerFairSeed(fair,
+                "中国平安2026校园招聘宣讲会", "中国平安", "线上", "金融科技",
+                "科技研发,产品运营,数据分析,金融业务", "中国平安校园招聘官网",
+                start, start.plusHours(2), start.plusDays(3).withHour(18).withMinute(0),
+                "https://campus.pingan.com/",
+                "中国平安校园招聘官网，提供校园招聘宣讲会、岗位搜索、投递进度和在线申请入口。");
+        }
+        for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("汇智（北京）能源有限公司宣讲会", "汇智（北京）能源有限公司")) {
+            java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(9).withHour(10).withMinute(0).withSecond(0).withNano(0);
+            applyRealCareerFairSeed(fair,
+                "中国平安2026校园招聘宣讲会", "中国平安", "线上", "金融科技",
+                "科技研发,产品运营,数据分析,金融业务", "中国平安校园招聘官网",
+                start, start.plusHours(2), start.plusDays(3).withHour(18).withMinute(0),
+                "https://campus.pingan.com/",
+                "中国平安校园招聘官网，提供校园招聘宣讲会、岗位搜索、投递进度和在线申请入口。");
+        }
+
+        for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("智能制造管培生招聘会", "东海精工集团")) {
+            java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(14).withHour(15).withMinute(0).withSecond(0).withNano(0);
+            applyRealCareerFairSeed(fair,
+                "联想2026校园招聘宣讲会", "联想", "线上", "智能终端与企业科技",
+                "软件研发,硬件研发,供应链,产品经理", "联想校园招聘官网",
+                start, start.plusHours(2).plusMinutes(30), start.plusDays(3).withHour(20).withMinute(0),
+                "https://talent.lenovo.com.cn/campus",
+                "联想校园招聘官网，提供中国校园招聘项目、岗位信息、招聘流程和在线投递入口。");
+        }
+        for (CareerFair fair : careerFairRepository.findByTitleAndCompanyName("道恩集团有限公司宣讲会", "道恩集团有限公司")) {
+            java.time.LocalDateTime start = java.time.LocalDateTime.now().plusDays(14).withHour(15).withMinute(0).withSecond(0).withNano(0);
+            applyRealCareerFairSeed(fair,
+                "联想2026校园招聘宣讲会", "联想", "线上", "智能终端与企业科技",
+                "软件研发,硬件研发,供应链,产品经理", "联想校园招聘官网",
+                start, start.plusHours(2).plusMinutes(30), start.plusDays(3).withHour(20).withMinute(0),
+                "https://talent.lenovo.com.cn/campus",
+                "联想校园招聘官网，提供中国校园招聘项目、岗位信息、招聘流程和在线投递入口。");
         }
 
         for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("Java Backend Engineer", "Future Tech")) {
-            job.setTitle("Java 后端工程师");
-            job.setCompanyName("未来科技");
-            job.setCity("上海");
-            job.setIndustry("互联网");
-            job.setCompanyType("民企");
-            job.setRoleType("后端");
-            job.setSalaryRange("18k-25k");
-            job.setEducationRequirement("本科及以上");
-            job.setMajorKeywords("计算机科学,软件工程,信息系统");
-            job.setSkillTags("Java,Spring Boot,MySQL,Redis");
-            job.setDescription("参与校园招聘产品的后端服务建设，负责接口开发、数据处理与系统稳定性优化。");
-            job.setApplyUrl("https://jobs.example.com/java-backend");
-            jobPostingRepository.save(job);
+            applyRealJobPostingSeed(job,
+                "软件开发-后台开发方向", "腾讯", "深圳/北京/上海/广州/成都/武汉/杭州", "互联网", "民企", "后端",
+                "面议", "本科及以上", "计算机科学,软件工程,信息系统", "Java,C++,Go,分布式系统,数据库",
+                "腾讯校招软件开发后台方向，面向服务端研发、分布式系统、业务后台和基础架构等岗位，可在腾讯校招官网完成岗位投递。",
+                "https://join.qq.com/post.html?query=2_75%2Cp_2");
+        }
+        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("Java 后端工程师", "未来科技")) {
+            applyRealJobPostingSeed(job,
+                "软件开发-后台开发方向", "腾讯", "深圳/北京/上海/广州/成都/武汉/杭州", "互联网", "民企", "后端",
+                "面议", "本科及以上", "计算机科学,软件工程,信息系统", "Java,C++,Go,分布式系统,数据库",
+                "腾讯校招软件开发后台方向，面向服务端研发、分布式系统、业务后台和基础架构等岗位，可在腾讯校招官网完成岗位投递。",
+                "https://join.qq.com/post.html?query=2_75%2Cp_2");
         }
 
         for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("Product Operations Trainee", "Harbor Equipment Group")) {
-            job.setTitle("产品运营管培生");
-            job.setCompanyName("港湾装备集团");
-            job.setCity("苏州");
-            job.setIndustry("智能制造");
-            job.setCompanyType("国企");
-            job.setRoleType("产品运营");
-            job.setSalaryRange("10k-15k");
-            job.setEducationRequirement("本科及以上");
-            job.setMajorKeywords("管理学,自动化,计算机科学");
-            job.setSkillTags("数据分析,沟通协调,项目管理");
-            job.setDescription("负责产品运营数据分析、流程协同和项目跟进，参与制造业校招生管培培养计划。");
-            job.setApplyUrl("https://jobs.example.com/product-operation");
-            jobPostingRepository.save(job);
+            applyRealJobPostingSeed(job,
+                "产品运营校招生", "字节跳动", "北京/上海/深圳/杭州", "互联网", "民企", "产品运营",
+                "面议", "本科及以上", "管理学,新闻传播,计算机科学,数据科学", "数据分析,用户运营,内容运营,项目管理",
+                "字节跳动校园招聘产品运营方向，覆盖内容、用户、商业化和增长运营等场景，可在字节跳动校招职位页搜索并投递。",
+                "https://jobs.bytedance.com/campus/m/position");
         }
+        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("产品运营管培生", "港湾装备集团")) {
+            applyRealJobPostingSeed(job,
+                "产品运营校招生", "字节跳动", "北京/上海/深圳/杭州", "互联网", "民企", "产品运营",
+                "面议", "本科及以上", "管理学,新闻传播,计算机科学,数据科学", "数据分析,用户运营,内容运营,项目管理",
+                "字节跳动校园招聘产品运营方向，覆盖内容、用户、商业化和增长运营等场景，可在字节跳动校招职位页搜索并投递。",
+                "https://jobs.bytedance.com/campus/m/position");
+        }
+        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("前端开发工程师", "未来科技")) {
+            applyRealJobPostingSeed(job,
+                "前端开发工程师", "阿里巴巴", "杭州/北京/上海/深圳", "互联网", "民企", "前端",
+                "面议", "本科及以上", "计算机科学,软件工程,数字媒体技术", "Vue,React,JavaScript,TypeScript",
+                "阿里巴巴校园招聘研发类前端方向，参与业务平台、用户产品和技术中台的 Web 端研发，可在阿里巴巴校招官网投递。",
+                "https://campus-talent.alibaba.com/");
+        }
+        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("数据分析师", "海通数科")) {
+            applyRealJobPostingSeed(job,
+                "商业分析师", "美团", "北京/上海/深圳/成都", "本地生活服务", "民企", "数据分析",
+                "面议", "本科及以上", "统计学,数据科学,计算机科学,经济学", "SQL,Python,Excel,商业分析",
+                "美团校园招聘商业分析方向，围绕本地生活业务进行指标建设、数据洞察和经营分析，可通过美团校园招聘官网投递。",
+                "https://campus.meituan.com/");
+        }
+        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("测试开发工程师", "星河智能科技")) {
+            applyRealJobPostingSeed(job,
+                "软件测试开发工程师", "华为", "深圳/上海/杭州/南京/西安", "通信与智能终端", "民企", "测试开发",
+                "面议", "本科及以上", "计算机科学,软件工程,通信工程,电子信息", "Python,自动化测试,接口测试,Linux,质量工程",
+                "华为校园招聘软件测试开发方向，参与产品质量工程、自动化测试和工程效率建设，可在华为校园招聘职位列表投递。",
+                "https://career.huawei.com/reccampportal/portal5/campus-recruitment.html?jobTypes=0");
+        }
+        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("网络安全工程师", "云盾安全")) {
+            applyRealJobPostingSeed(job,
+                "安全工程师（漏洞方向）", "奇安信", "北京/成都/南京/厦门", "网络安全", "民企", "安全",
+                "面议", "本科及以上", "网络空间安全,信息安全,计算机科学", "渗透测试,漏洞分析,Linux,Python,Web安全",
+                "奇安信校园招聘安全工程师漏洞方向，跟踪最新安全技术并参与漏洞研究、安全验证和攻防实践，可在奇安信校招职位页投递。",
+                "https://www.qianxin.com/campus/internJobSearch");
+        }
+        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("产品经理助理", "港湾装备集团")) {
+            applyRealJobPostingSeed(job,
+                "产品经理", "京东", "北京/上海/深圳", "电商与供应链科技", "民企", "产品",
+                "面议", "本科及以上", "管理学,工业工程,计算机科学,电子商务", "需求分析,Axure,数据分析,项目协同",
+                "京东校园招聘产品方向，参与零售、物流、科技等业务产品规划和需求落地，可在京东招聘官网选择校园招聘投递。",
+                "https://zhaopin.jd.com/");
+        }
+    }
+
+    private void applyRealJobPostingSeed(JobPosting job,
+                                         String title,
+                                         String companyName,
+                                         String city,
+                                         String industry,
+                                         String companyType,
+                                         String roleType,
+                                         String salaryRange,
+                                         String educationRequirement,
+                                         String majorKeywords,
+                                         String skillTags,
+                                         String description,
+                                         String applyUrl) {
+        job.setTitle(title);
+        job.setCompanyName(companyName);
+        job.setCity(city);
+        job.setIndustry(industry);
+        job.setCompanyType(companyType);
+        job.setRoleType(roleType);
+        job.setSalaryRange(salaryRange);
+        job.setEducationRequirement(educationRequirement);
+        job.setMajorKeywords(majorKeywords);
+        job.setSkillTags(skillTags);
+        job.setDescription(description);
+        job.setApplyUrl(applyUrl);
+        jobPostingRepository.save(job);
+    }
+
+    private void applyRealCareerFairSeed(CareerFair fair,
+                                         String title,
+                                         String companyName,
+                                         String city,
+                                         String industry,
+                                         String targetRoles,
+                                         String location,
+                                         java.time.LocalDateTime startTime,
+                                         java.time.LocalDateTime endTime,
+                                         java.time.LocalDateTime applyDeadline,
+                                         String applyUrl,
+                                         String description) {
+        fair.setTitle(title);
+        fair.setCompanyName(companyName);
+        fair.setCity(city);
+        fair.setIndustry(industry);
+        fair.setTargetRoles(targetRoles);
+        fair.setLocation(location);
+        fair.setStartTime(startTime);
+        fair.setEndTime(endTime);
+        fair.setApplyDeadline(applyDeadline);
+        fair.setApplyUrl(applyUrl);
+        fair.setDescription(description);
+        careerFairRepository.save(fair);
     }
 
     private void cleanupDuplicateCareerFairs() {

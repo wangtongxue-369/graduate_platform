@@ -300,6 +300,31 @@ export const employmentApi = {
     link.remove()
     URL.revokeObjectURL(url)
   },
+  async exportResume(format, token) {
+    const normalizedFormat = format === 'pdf' ? 'pdf' : 'docx'
+    const response = await fetch(`${API_BASE}/api/job/resume/export?format=${normalizedFormat}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+    if (!response.ok) {
+      const data = await response.json().catch(() => null)
+      throw new Error(data?.message || `Request failed: ${response.status}`)
+    }
+    const blob = await response.blob()
+    const disposition = response.headers.get('content-disposition') || ''
+    const starMatch = disposition.match(/filename\*=UTF-8''([^;]+)/)
+    const plainMatch = disposition.match(/filename="?([^";]+)"?/)
+    const fileName = starMatch
+      ? decodeURIComponent(starMatch[1])
+      : (plainMatch ? plainMatch[1] : `online-resume.${normalizedFormat}`)
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  },
   deleteResumeFile(token) {
     return request('/api/job/resume/file', { method: 'DELETE', token })
   },
@@ -323,6 +348,9 @@ export const employmentApi = {
   },
   markNotificationRead(id, token) {
     return request(`/api/job/notifications/${id}/read`, { method: 'PUT', token })
+  },
+  deleteNotification(id, token) {
+    return request(`/api/job/notifications/${id}`, { method: 'DELETE', token })
   },
 }
 

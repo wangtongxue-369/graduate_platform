@@ -4,6 +4,7 @@ import com.graduateplatform.common.dto.ApiResponse;
 import com.graduateplatform.common.exception.UnauthorizedException;
 import com.graduateplatform.job.dto.*;
 import com.graduateplatform.job.service.EmploymentService;
+import com.graduateplatform.job.service.ResumeExportService;
 import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -21,9 +22,11 @@ import java.util.Map;
 @RequestMapping("/api/job")
 public class EmploymentController {
     private final EmploymentService employmentService;
+    private final ResumeExportService resumeExportService;
 
-    public EmploymentController(EmploymentService employmentService) {
+    public EmploymentController(EmploymentService employmentService, ResumeExportService resumeExportService) {
         this.employmentService = employmentService;
+        this.resumeExportService = resumeExportService;
     }
 
     @GetMapping("/fairs")
@@ -110,6 +113,19 @@ public class EmploymentController {
         return ApiResponse.ok(employmentService.deleteResumeFile(currentUserId(auth)), "Resume file deleted");
     }
 
+    @GetMapping("/resume/export")
+    public ResponseEntity<byte[]> exportResume(@RequestParam(defaultValue = "docx") String format, Authentication auth) {
+        ResumeExportService.ExportedResume export = resumeExportService.exportResume(currentUserId(auth), format);
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType(export.contentType()))
+            .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                .filename(export.fileName(), StandardCharsets.UTF_8)
+                .build()
+                .toString())
+            .contentLength(export.content().length)
+            .body(export.content());
+    }
+
     @GetMapping("/recommendations")
     public ApiResponse<?> recommendations(@RequestParam Map<String, String> filters, Authentication auth) {
         return ApiResponse.ok(employmentService.recommendations(currentUserId(auth), filters));
@@ -145,6 +161,11 @@ public class EmploymentController {
     @PutMapping("/notifications/{id}/read")
     public ApiResponse<?> markNotificationRead(@PathVariable Long id, Authentication auth) {
         return ApiResponse.ok(employmentService.markNotificationRead(currentUserId(auth), id), "Notification marked read");
+    }
+
+    @DeleteMapping("/notifications/{id}")
+    public ApiResponse<?> deleteNotification(@PathVariable Long id, Authentication auth) {
+        return ApiResponse.ok(employmentService.deleteNotification(currentUserId(auth), id), "Notification deleted");
     }
 
     private Long currentUserId(Authentication auth) {

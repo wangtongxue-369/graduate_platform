@@ -4892,6 +4892,358 @@
   margin-top: 4px;
 }
 
+.resume-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.resume-action-bar,
+.resume-mode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.resume-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.resume-toolbar .resume-action-bar {
+  justify-content: flex-end;
+}
+
+.resume-export-menu {
+  position: relative;
+}
+
+.resume-export-options {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  min-width: 140px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-strong);
+  box-shadow: var(--panel-shadow);
+  display: grid;
+  gap: 6px;
+}
+
+.resume-export-options button,
+.resume-mode-tabs button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+}
+
+.resume-export-options button {
+  width: 100%;
+  min-height: 36px;
+  border-radius: 8px;
+  text-align: left;
+  padding: 8px 10px;
+}
+
+.resume-export-options button:hover,
+.resume-mode-tabs button:hover,
+.resume-mode-tabs button.is-active {
+  border-color: color-mix(in srgb, var(--primary) 36%, var(--line));
+  background: var(--primary-softer);
+}
+
+.resume-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  align-items: start;
+  gap: 24px;
+}
+
+.resume-workspace,
+.resume-workspace *,
+.resume-workspace *::before,
+.resume-workspace *::after {
+  box-sizing: border-box;
+}
+
+.resume-editor-column,
+.resume-side-column {
+  display: grid;
+  gap: 16px;
+}
+
+.resume-side-column {
+  padding-top: 72px;
+}
+
+.resume-workspace .feature-card {
+  border-radius: 20px;
+  padding: 22px 24px;
+}
+
+.resume-editor-column .form-grid {
+  gap: 10px 14px;
+}
+
+.resume-editor-column .field {
+  gap: 7px;
+}
+
+.resume-editor-column .field span,
+.resume-side-column .field span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.resume-editor-column .field input,
+.resume-editor-column .field select,
+.resume-editor-column .field textarea,
+.resume-side-column .field input {
+  width: 100%;
+  min-height: 40px;
+  border-radius: 14px;
+}
+
+.resume-editor-column .field textarea {
+  min-height: 54px;
+  resize: vertical;
+}
+
+.resume-mode-tabs {
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  width: fit-content;
+}
+
+.resume-mode-tabs button {
+  min-width: 72px;
+  min-height: 36px;
+  border-radius: 10px;
+  padding: 8px 14px;
+}
+
+.resume-preview-frame {
+  width: 100%;
+  overflow-x: auto;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+}
+
+.resume-preview-sheet {
+  width: min(740px, 100%);
+  min-height: 980px;
+  margin: 0 auto;
+  padding: 44px 52px;
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: 4px;
+  background: #fff;
+  color: #1f2933;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12);
+}
+
+.resume-preview-sheet--compact {
+  min-height: 860px;
+  padding: 36px 44px;
+}
+
+.resume-preview-head {
+  padding-bottom: 18px;
+  border-bottom: 2px solid #1f6f68;
+  display: grid;
+  gap: 8px;
+}
+
+.resume-preview-head h3 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.resume-preview-head p,
+.resume-preview-section p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.resume-preview-section {
+  display: grid;
+  gap: 7px;
+  padding-top: 16px;
+}
+
+.resume-preview-section h4 {
+  margin: 0;
+  color: #0f766e;
+  font-size: 16px;
+}
+
+.resume-preview-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 18px;
+}
+
+.resume-preview-facts span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.resume-preview-facts strong {
+  color: #4b5563;
+  font-size: 12px;
+}
+
+.resume-status-card {
+  display: grid;
+  gap: 10px;
+}
+
+.resume-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.resume-stat-row:last-child {
+  border-bottom: 0;
+}
+
+.resume-stat-row span {
+  color: var(--muted);
+}
+
+.application-layout {
+  align-items: start;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+}
+
+.application-form-card {
+  gap: 20px;
+}
+
+.application-form-section {
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.application-form-section:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.application-form-section h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.application-form-section .field.span-2 {
+  grid-column: 1 / -1;
+}
+
+.application-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.application-track-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 32px;
+}
+
+.application-track-card {
+  align-content: start;
+}
+
+.application-track-card .track-head {
+  align-items: flex-start;
+}
+
+.application-detail-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.application-detail-item {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+}
+
+.application-detail-item span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.application-detail-item strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+@media (max-width: 920px) {
+  .resume-page-head,
+  .resume-workspace,
+  .application-layout,
+  .application-track-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .resume-page-head {
+    display: grid;
+  }
+
+  .resume-side-column {
+    padding-top: 0;
+  }
+
+  .resume-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .resume-toolbar .resume-action-bar {
+    justify-content: flex-start;
+  }
+
+  .resume-preview-sheet {
+    min-height: auto;
+    padding: 32px 24px;
+  }
+
+  .resume-preview-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .application-form-section .field.span-2 {
+    grid-column: auto;
+  }
+}
+
 @media (max-width: 720px) {
   .case-profile {
     grid-template-columns: 1fr;
@@ -4928,5 +5280,9 @@
 
   .experience-modal-actions .btn {
     flex: 1 1 130px;
+  }
+
+  .application-detail-list {
+    grid-template-columns: 1fr;
   }
 }
