@@ -22,7 +22,9 @@ import java.util.*;
 @Service
 public class EmploymentService {
     private static final Set<String> VALID_STATUSES = Set.of(
-        "TODO", "APPLIED", "VIEWED", "WRITTEN_TEST", "INTERVIEW", "OFFER", "REJECTED", "CLOSED"
+        "TODO", "APPLIED", "SCREENING", "VIEWED", "WRITTEN_TEST", "FIRST_INTERVIEW",
+        "SECOND_INTERVIEW", "HR_INTERVIEW", "FINAL_INTERVIEW", "INTERVIEW", "OFFER",
+        "ACCEPTED", "DECLINED", "REJECTED", "WITHDRAWN", "CLOSED"
     );
     private static final long MAX_RESUME_FILE_SIZE = 10 * 1024 * 1024;
     private static final Map<String, String> RESUME_FILE_TYPES = Map.of(
@@ -239,10 +241,38 @@ public class EmploymentService {
         User user = ensureUser(userId);
         JobSubscriptionPreference pref = preferenceRepository.findByUserId(userId).orElse(null);
         ResumeProfile resume = resumeRepository.findByUserId(userId).orElse(null);
+        Map<String, String> normalizedFilters = filters == null ? Map.of() : filters;
         List<JobPosting> jobs = jobRepository.findByActiveTrueOrderByCreatedAtDesc();
-        return jobs.stream()
-            .map(job -> recommendationMap(job, user, pref, resume, filters == null ? Map.of() : filters))
-            .filter(Objects::nonNull)
+        List<JobPosting> candidates = jobs.stream()
+            .filter(job -> recommendationFilterPasses(job, normalizedFilters))
+            .toList();
+        if (candidates.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> queryTokens = profileTokens(user, pref, resume, normalizedFilters);
+        Map<JobPosting, List<String>> documentTokens = new LinkedHashMap<>();
+        Map<String, Integer> documentFrequency = new LinkedHashMap<>();
+        for (JobPosting job : candidates) {
+            List<String> tokens = jobProfileTokens(job);
+            documentTokens.put(job, tokens);
+            new HashSet<>(tokens).forEach(token -> documentFrequency.merge(token, 1, Integer::sum));
+        }
+        double averageDocumentLength = documentTokens.values().stream().mapToInt(List::size).average().orElse(1.0);
+
+        List<RecommendationCandidate> scored = new ArrayList<>();
+        double maxBm25 = 0.0;
+        for (JobPosting job : candidates) {
+            List<String> tokens = documentTokens.get(job);
+            double cosine = tfIdfCosine(queryTokens, tokens, documentFrequency, candidates.size());
+            double bm25 = bm25(queryTokens, tokens, documentFrequency, candidates.size(), averageDocumentLength);
+            maxBm25 = Math.max(maxBm25, bm25);
+            scored.add(new RecommendationCandidate(job, cosine, bm25, preferenceScore(job, user, pref, resume, normalizedFilters)));
+        }
+
+        final double bm25Max = maxBm25;
+        return scored.stream()
+            .map(candidate -> algorithmRecommendationMap(candidate, bm25Max))
             .sorted((a, b) -> Integer.compare((Integer) b.get("matchScore"), (Integer) a.get("matchScore")))
             .toList();
     }
@@ -257,16 +287,19 @@ public class EmploymentService {
     @Transactional
     public Map<String, Object> createApplication(Long userId, ApplicationRecordRequest req) {
         User user = ensureUser(userId);
+        JobPosting job = resolveJob(req.getJobPostingId());
         ApplicationRecord record = ApplicationRecord.builder()
             .user(user)
-            .companyName(trimRequired(req.getCompanyName(), "公司名称不能为空"))
-            .jobTitle(trimRequired(req.getJobTitle(), "必填字段不能为空"))
-            .jobPosting(resolveJob(req.getJobPostingId()))
+            .companyName(trimRequired(firstNonBlank(req.getCompanyName(), job == null ? null : job.getCompanyName()), "公司名称不能为空"))
+            .jobTitle(trimRequired(firstNonBlank(req.getJobTitle(), job == null ? null : job.getTitle()), "必填字段不能为空"))
+            .jobPosting(job)
             .status(normalizeStatus(req.getStatus()))
             .appliedAt(req.getAppliedAt())
             .nextStepAt(req.getNextStepAt())
             .notes(trim(req.getNotes()))
             .build();
+        applyApplicationDetails(record, req, job, true);
+        applyCurrentResumeSnapshot(record, userId, req.getResumeFileName());
         return toApplicationMap(applicationRepository.save(record));
     }
 
@@ -275,13 +308,17 @@ public class EmploymentService {
         ensureUser(userId);
         ApplicationRecord record = applicationRepository.findByIdAndUserId(id, userId)
             .orElseThrow(() -> new BusinessException("投递记录不存在或不属于当前用户"));
-        record.setCompanyName(trimRequired(req.getCompanyName(), "公司名称不能为空"));
-        record.setJobTitle(trimRequired(req.getJobTitle(), "必填字段不能为空"));
-        record.setJobPosting(resolveJob(req.getJobPostingId()));
+        JobPosting job = resolveJob(req.getJobPostingId());
+        boolean linkedJobChanged = !Objects.equals(record.getJobPosting() == null ? null : record.getJobPosting().getId(), req.getJobPostingId());
+        record.setCompanyName(trimRequired(applicationSnapshotValue(req.getCompanyName(), record.getCompanyName(), job == null ? null : job.getCompanyName(), linkedJobChanged), "公司名称不能为空"));
+        record.setJobTitle(trimRequired(applicationSnapshotValue(req.getJobTitle(), record.getJobTitle(), job == null ? null : job.getTitle(), linkedJobChanged), "必填字段不能为空"));
+        record.setJobPosting(job);
         record.setStatus(normalizeStatus(req.getStatus()));
         record.setAppliedAt(req.getAppliedAt() == null ? record.getAppliedAt() : req.getAppliedAt());
         record.setNextStepAt(req.getNextStepAt());
         record.setNotes(trim(req.getNotes()));
+        applyApplicationDetails(record, req, job, linkedJobChanged);
+        applyCurrentResumeSnapshot(record, userId, req.getResumeFileName());
         return toApplicationMap(applicationRepository.save(record));
     }
 
@@ -292,6 +329,45 @@ public class EmploymentService {
             .orElseThrow(() -> new BusinessException("投递记录不存在或不属于当前用户"));
         applicationRepository.delete(record);
         return Map.of("deleted", true, "id", id);
+    }
+
+    private void applyApplicationDetails(ApplicationRecord record, ApplicationRecordRequest req, JobPosting job, boolean refreshFromJob) {
+        record.setCity(trim(applicationSnapshotValue(req.getCity(), record.getCity(), job == null ? null : job.getCity(), refreshFromJob)));
+        record.setIndustry(trim(applicationSnapshotValue(req.getIndustry(), record.getIndustry(), job == null ? null : job.getIndustry(), refreshFromJob)));
+        record.setCompanyType(trim(applicationSnapshotValue(req.getCompanyType(), record.getCompanyType(), job == null ? null : job.getCompanyType(), refreshFromJob)));
+        record.setRoleType(trim(applicationSnapshotValue(req.getRoleType(), record.getRoleType(), job == null ? null : job.getRoleType(), refreshFromJob)));
+        record.setSalaryRange(trim(applicationSnapshotValue(req.getSalaryRange(), record.getSalaryRange(), job == null ? null : job.getSalaryRange(), refreshFromJob)));
+        record.setEducationRequirement(trim(applicationSnapshotValue(req.getEducationRequirement(), record.getEducationRequirement(), job == null ? null : job.getEducationRequirement(), refreshFromJob)));
+        record.setMajorKeywords(trim(applicationSnapshotValue(req.getMajorKeywords(), record.getMajorKeywords(), job == null ? null : job.getMajorKeywords(), refreshFromJob)));
+        record.setSkillTags(trim(applicationSnapshotValue(req.getSkillTags(), record.getSkillTags(), job == null ? null : job.getSkillTags(), refreshFromJob)));
+        record.setApplyUrl(trim(applicationSnapshotValue(req.getApplyUrl(), record.getApplyUrl(), job == null ? null : job.getApplyUrl(), refreshFromJob)));
+        record.setApplicationChannel(applicationOptionalText(req.getApplicationChannel(), record.getApplicationChannel()));
+        record.setContactName(applicationOptionalText(req.getContactName(), record.getContactName()));
+        record.setContactInfo(applicationOptionalText(req.getContactInfo(), record.getContactInfo()));
+        record.setInterviewRound(applicationOptionalText(req.getInterviewRound(), record.getInterviewRound()));
+        record.setInterviewMethod(applicationOptionalText(req.getInterviewMethod(), record.getInterviewMethod()));
+        record.setInterviewLocation(applicationOptionalText(req.getInterviewLocation(), record.getInterviewLocation()));
+        record.setExpectedSalary(applicationOptionalText(req.getExpectedSalary(), record.getExpectedSalary()));
+        record.setOfferSalary(applicationOptionalText(req.getOfferSalary(), record.getOfferSalary()));
+        record.setLastFollowUpAt(req.getLastFollowUpAt());
+        record.setFailureReason(applicationOptionalText(req.getFailureReason(), record.getFailureReason()));
+    }
+
+    private String applicationSnapshotValue(String requestedValue, String currentValue, String jobValue, boolean refreshFromJob) {
+        return refreshFromJob
+            ? firstNonBlank(requestedValue, jobValue, currentValue)
+            : firstNonBlank(requestedValue, currentValue);
+    }
+
+    private String applicationOptionalText(String requestedValue, String currentValue) {
+        return requestedValue == null ? currentValue : trim(requestedValue);
+    }
+
+    private void applyCurrentResumeSnapshot(ApplicationRecord record, Long userId, String requestedResumeFileName) {
+        String currentResumeFileName = resumeRepository.findByUserId(userId)
+            .map(ResumeProfile::getResumeFileName)
+            .orElse(null);
+        record.setResumeFileName(trim(firstNonBlank(requestedResumeFileName, record.getResumeFileName(), currentResumeFileName)));
     }
 
     @Transactional(readOnly = true)
@@ -314,6 +390,15 @@ public class EmploymentService {
         notification.setReadFlag(true);
         notification.setReadAt(LocalDateTime.now());
         return toNotificationMap(notificationRepository.save(notification));
+    }
+
+    @Transactional
+    public Map<String, Object> deleteNotification(Long userId, Long notificationId) {
+        ensureUser(userId);
+        EmploymentNotification notification = notificationRepository.findByIdAndUserId(notificationId, userId)
+            .orElseThrow(() -> new BusinessException("通知不存在或不属于当前用户"));
+        notificationRepository.delete(notification);
+        return Map.of("deleted", true, "id", notificationId);
     }
 
     @Transactional
@@ -547,8 +632,7 @@ public class EmploymentService {
         throw new BusinessException("通知来源必须是 FAIR 或 JOB");
     }
 
-    private Map<String, Object> recommendationMap(JobPosting job, User user, JobSubscriptionPreference pref,
-                                                  ResumeProfile resume, Map<String, String> filters) {
+    private boolean recommendationFilterPasses(JobPosting job, Map<String, String> filters) {
         String keyword = filterValue(filters, "keyword");
         String city = filterValue(filters, "city");
         String industry = filterValue(filters, "industry");
@@ -559,100 +643,246 @@ public class EmploymentService {
         String skills = firstFilterValue(filters, "skills", "skillTags");
         String salaryRange = filterValue(filters, "salaryRange");
         boolean onlyApplyable = Boolean.parseBoolean(defaultString(filterValue(filters, "onlyApplyable"), "false"));
-        String resumeTargetRole = resume == null ? null : resume.getTargetRole();
-        String resumeExpectedCities = resume == null ? null : resume.getExpectedCities();
-        String resumeExpectedIndustries = resume == null ? null : resume.getExpectedIndustries();
-        String resumeExpectedSalary = resume == null ? null : resume.getExpectedSalary();
-        String resumeEducationLevel = resume == null ? null : resume.getEducationLevel();
 
         if (hasText(keyword) && !matchesJobKeyword(job, keyword)) {
-            return null;
+            return false;
         }
-        if (!manualTextFilterPasses(job.getCity(), city)
-            || !manualTextFilterPasses(job.getIndustry(), industry)
-            || !manualTextFilterPasses(job.getRoleType(), roleType)
-            || !manualTextFilterPasses(job.getCompanyType(), companyType)
-            || !manualRequirementFilterPasses(job.getEducationRequirement(), education)
-            || !manualRequirementFilterPasses(job.getMajorKeywords(), major)
-            || !manualRequirementFilterPasses(job.getSkillTags(), skills)
-            || !manualTextFilterPasses(job.getSalaryRange(), salaryRange)
-            || (onlyApplyable && !hasText(job.getApplyUrl()))) {
-            return null;
+        return manualTextFilterPasses(job.getCity(), city)
+            && manualTextFilterPasses(job.getIndustry(), industry)
+            && manualTextFilterPasses(job.getRoleType(), roleType)
+            && manualTextFilterPasses(job.getCompanyType(), companyType)
+            && manualRequirementFilterPasses(job.getEducationRequirement(), education)
+            && manualRequirementFilterPasses(job.getMajorKeywords(), major)
+            && manualRequirementFilterPasses(job.getSkillTags(), skills)
+            && manualTextFilterPasses(job.getSalaryRange(), salaryRange)
+            && (!onlyApplyable || hasText(job.getApplyUrl()));
+    }
+
+    private Map<String, Object> algorithmRecommendationMap(RecommendationCandidate candidate, double maxBm25) {
+        JobPosting job = candidate.job();
+        double bm25Score = maxBm25 <= 0 ? 0 : candidate.bm25() / maxBm25;
+        double timeScore = timeDecayScore(job.getCreatedAt());
+        double applyScore = hasText(job.getApplyUrl()) ? 1.0 : 0.0;
+        double finalScore = 20
+            + 40 * candidate.cosine()
+            + 22 * bm25Score
+            + 23 * candidate.preferenceScore()
+            + 8 * timeScore
+            + 7 * applyScore;
+        Map<String, Object> map = toJobMap(job);
+        map.put("matchScore", Math.min(100, Math.max(0, (int) Math.round(finalScore))));
+        map.put("matchReasons", algorithmReasons(candidate, bm25Score, timeScore, applyScore));
+        return map;
+    }
+
+    private List<String> algorithmReasons(RecommendationCandidate candidate, double bm25Score, double timeScore, double applyScore) {
+        List<String> reasons = new ArrayList<>();
+        if (candidate.cosine() >= 0.18) reasons.add("简历与岗位画像相似");
+        if (bm25Score >= 0.45) reasons.add("岗位文本相关度高");
+        if (candidate.preferenceScore() >= 0.50) reasons.add("求职偏好匹配");
+        if (timeScore >= 0.80) reasons.add("近期发布岗位");
+        if (applyScore > 0) reasons.add("可直接投递");
+        if (reasons.isEmpty()) reasons.add("可作为备选岗位");
+        return reasons.stream().limit(5).toList();
+    }
+
+    private List<String> profileTokens(User user, JobSubscriptionPreference pref, ResumeProfile resume, Map<String, String> filters) {
+        return tokenize(joinRecommendationText(
+            filterValue(filters, "keyword"),
+            filterValue(filters, "city"),
+            filterValue(filters, "industry"),
+            filterValue(filters, "roleType"),
+            filterValue(filters, "companyType"),
+            firstFilterValue(filters, "education", "educationRequirement"),
+            firstFilterValue(filters, "major", "majorKeywords"),
+            firstFilterValue(filters, "skills", "skillTags"),
+            filterValue(filters, "salaryRange"),
+            user.getMajor(),
+            pref == null ? null : pref.getCities(),
+            pref == null ? null : pref.getIndustries(),
+            pref == null ? null : pref.getRoleTypes(),
+            pref == null ? null : pref.getCompanyTypes(),
+            pref == null ? null : pref.getSalaryRange(),
+            resume == null ? null : resume.getTargetRole(),
+            resume == null ? null : resume.getExpectedCities(),
+            resume == null ? null : resume.getExpectedIndustries(),
+            resume == null ? null : resume.getExpectedSalary(),
+            resume == null ? null : resume.getEducationLevel(),
+            resume == null ? null : resume.getMajor(),
+            resume == null ? null : resume.getSkillTags(),
+            resume == null ? null : resume.getProjectKeywords(),
+            resume == null ? null : resume.getInternshipKeywords(),
+            resume == null ? null : resume.getCertificates(),
+            resume == null ? null : resume.getBaseInfo(),
+            resume == null ? null : resume.getEducation(),
+            resume == null ? null : resume.getProjects(),
+            resume == null ? null : resume.getInternships(),
+            resume == null ? null : resume.getSkills(),
+            resume == null ? null : resume.getSelfEvaluation()
+        ));
+    }
+
+    private List<String> jobProfileTokens(JobPosting job) {
+        return tokenize(joinRecommendationText(
+            job.getTitle(),
+            job.getCompanyName(),
+            job.getCity(),
+            job.getIndustry(),
+            job.getCompanyType(),
+            job.getRoleType(),
+            job.getSalaryRange(),
+            job.getEducationRequirement(),
+            job.getMajorKeywords(),
+            job.getSkillTags(),
+            job.getDescription()
+        ));
+    }
+
+    private double preferenceScore(JobPosting job, User user, JobSubscriptionPreference pref, ResumeProfile resume, Map<String, String> filters) {
+        int matched = 0;
+        int total = 0;
+
+        String citySignal = firstNonBlank(filterValue(filters, "city"), pref == null ? null : pref.getCities(), resume == null ? null : resume.getExpectedCities());
+        if (hasText(citySignal)) {
+            total++;
+            if (matchesAny(citySignal, job.getCity()) || matchesText(job.getCity(), citySignal)) matched++;
         }
 
-        int score = 40;
-        List<String> reasons = new ArrayList<>();
-        if (hasText(keyword)) {
-            score += 6; reasons.add("关键词匹配");
+        String industrySignal = firstNonBlank(filterValue(filters, "industry"), pref == null ? null : pref.getIndustries(), resume == null ? null : resume.getExpectedIndustries());
+        if (hasText(industrySignal)) {
+            total++;
+            if (matchesAny(industrySignal, job.getIndustry()) || matchesText(job.getIndustry(), industrySignal)) matched++;
         }
-        if (hasText(city) && matchesText(job.getCity(), city)) {
-            score += 12; reasons.add("城市匹配");
-        } else if (pref != null && matchesAny(pref.getCities(), job.getCity())) {
-            score += 6; reasons.add("偏好城市匹配");
+
+        String roleSignal = firstNonBlank(filterValue(filters, "roleType"), pref == null ? null : pref.getRoleTypes(), resume == null ? null : resume.getTargetRole());
+        if (hasText(roleSignal)) {
+            total++;
+            if (matchesAny(roleSignal, job.getRoleType()) || matchesText(job.getRoleType(), roleSignal) || matchesText(job.getTitle(), roleSignal)) matched++;
         }
-        if (!hasText(city) && matchesAny(resumeExpectedCities, job.getCity())) {
-            score += 8; reasons.add("简历期望城市匹配");
+
+        String companyTypeSignal = firstNonBlank(filterValue(filters, "companyType"), pref == null ? null : pref.getCompanyTypes());
+        if (hasText(companyTypeSignal)) {
+            total++;
+            if (matchesAny(companyTypeSignal, job.getCompanyType()) || matchesText(job.getCompanyType(), companyTypeSignal)) matched++;
         }
-        if (hasText(industry) && matchesText(job.getIndustry(), industry)) {
-            score += 10; reasons.add("行业匹配");
-        } else if (pref != null && matchesAny(pref.getIndustries(), job.getIndustry())) {
-            score += 6; reasons.add("偏好行业匹配");
+
+        String educationSignal = firstNonBlank(firstFilterValue(filters, "education", "educationRequirement"), resume == null ? null : resume.getEducationLevel());
+        if (hasText(educationSignal)) {
+            total++;
+            if (requirementMatches(job.getEducationRequirement(), educationSignal)) matched++;
         }
-        if (!hasText(industry) && matchesAny(resumeExpectedIndustries, job.getIndustry())) {
-            score += 8; reasons.add("简历期望行业匹配");
+
+        String majorSignal = firstNonBlank(firstFilterValue(filters, "major", "majorKeywords"), user.getMajor(), resume == null ? null : resume.getMajor(), resume == null ? null : resume.getEducation());
+        if (hasText(majorSignal)) {
+            total++;
+            if (matchesAnyCandidate(job.getMajorKeywords(), majorSignal)) matched++;
         }
-        if (hasText(roleType) && matchesText(job.getRoleType(), roleType)) {
-            score += 14; reasons.add("岗位类型匹配");
-        } else if (pref != null && matchesAny(pref.getRoleTypes(), job.getRoleType())) {
-            score += 8; reasons.add("偏好岗位匹配");
+
+        String skillSignal = firstNonBlank(firstFilterValue(filters, "skills", "skillTags"), resume == null ? null : resume.getSkillTags(), resume == null ? null : resume.getSkills(), resume == null ? null : resume.getProjectKeywords(), resume == null ? null : resume.getInternshipKeywords());
+        if (hasText(skillSignal)) {
+            total++;
+            if (matchesAnyCandidate(job.getSkillTags(), skillSignal)) matched++;
         }
-        if (!hasText(roleType) && matchesResumeRole(job, resumeTargetRole)) {
-            score += 12; reasons.add("简历求职意向匹配");
+
+        String salarySignal = firstNonBlank(filterValue(filters, "salaryRange"), pref == null ? null : pref.getSalaryRange(), resume == null ? null : resume.getExpectedSalary());
+        if (hasText(salarySignal)) {
+            total++;
+            if (matchesText(job.getSalaryRange(), salarySignal)) matched++;
         }
-        if (hasText(companyType) && matchesText(job.getCompanyType(), companyType)) {
-            score += 8; reasons.add("企业类型匹配");
-        } else if (pref != null && matchesAny(pref.getCompanyTypes(), job.getCompanyType())) {
-            score += 6; reasons.add("偏好企业类型匹配");
+
+        return total == 0 ? 0 : (double) matched / total;
+    }
+
+    private String joinRecommendationText(String... values) {
+        List<String> parts = new ArrayList<>();
+        if (values != null) {
+            for (String value : values) {
+                if (hasText(value)) parts.add(value.trim());
+            }
         }
-        if (hasText(education) && requirementMatches(job.getEducationRequirement(), education)) {
-            score += 10; reasons.add("学历符合");
-        } else if (!hasText(education) && hasText(resumeEducationLevel) && requirementMatches(job.getEducationRequirement(), resumeEducationLevel)) {
-            score += 8; reasons.add("简历学历符合");
+        return String.join(" ", parts);
+    }
+
+    private List<String> tokenize(String text) {
+        if (!hasText(text)) return List.of();
+        List<String> tokens = new ArrayList<>();
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+            .compile("[\\p{IsHan}]+|[A-Za-z0-9+#.]+")
+            .matcher(text.toLowerCase(Locale.ROOT));
+        while (matcher.find()) {
+            String token = matcher.group();
+            if (token.length() <= 1) continue;
+            tokens.add(token);
+            if (containsChinese(token) && token.length() > 2) {
+                int max = Math.min(4, token.length());
+                for (int size = 2; size <= max; size++) {
+                    for (int i = 0; i + size <= token.length(); i++) {
+                        tokens.add(token.substring(i, i + size));
+                    }
+                }
+            }
         }
-        if (hasText(major) && requirementMatches(job.getMajorKeywords(), major)) {
-            score += 14; reasons.add("专业条件匹配");
-        } else if (resume != null && matchesAnyCandidate(job.getMajorKeywords(), resume.getMajor(), resume.getEducation())) {
-            score += 14; reasons.add("简历专业匹配");
-        } else if (matchesAny(job.getMajorKeywords(), user.getMajor())) {
-            score += 14; reasons.add("用户专业匹配");
+        return tokens;
+    }
+
+    private boolean containsChinese(String token) {
+        return token.codePoints().anyMatch(codePoint -> Character.UnicodeScript.of(codePoint) == Character.UnicodeScript.HAN);
+    }
+
+    private double tfIdfCosine(List<String> queryTokens, List<String> documentTokens, Map<String, Integer> documentFrequency, int documentCount) {
+        if (queryTokens.isEmpty() || documentTokens.isEmpty()) return 0.0;
+        Map<String, Double> queryVector = tfIdfVector(queryTokens, documentFrequency, documentCount);
+        Map<String, Double> documentVector = tfIdfVector(documentTokens, documentFrequency, documentCount);
+        double dot = 0;
+        for (Map.Entry<String, Double> entry : queryVector.entrySet()) {
+            dot += entry.getValue() * documentVector.getOrDefault(entry.getKey(), 0.0);
         }
-        if (hasText(skills) && requirementMatches(job.getSkillTags(), skills)) {
-            score += 14; reasons.add("技能标签匹配");
-        } else if (resume != null && matchesAnyCandidate(job.getSkillTags(), resume.getSkillTags(), resume.getSkills(), resume.getCertificates())) {
-            score += 14; reasons.add("简历技能匹配");
+        double queryNorm = vectorNorm(queryVector);
+        double documentNorm = vectorNorm(documentVector);
+        if (queryNorm == 0 || documentNorm == 0) return 0.0;
+        return dot / (queryNorm * documentNorm);
+    }
+
+    private Map<String, Double> tfIdfVector(List<String> tokens, Map<String, Integer> documentFrequency, int documentCount) {
+        Map<String, Long> counts = tokens.stream().collect(java.util.stream.Collectors.groupingBy(token -> token, LinkedHashMap::new, java.util.stream.Collectors.counting()));
+        Map<String, Double> vector = new LinkedHashMap<>();
+        int length = Math.max(tokens.size(), 1);
+        for (Map.Entry<String, Long> entry : counts.entrySet()) {
+            double tf = (double) entry.getValue() / length;
+            vector.put(entry.getKey(), tf * inverseDocumentFrequency(entry.getKey(), documentFrequency, documentCount));
         }
-        if (resume != null && matchesAnyCandidate(job.getSkillTags(), resume.getProjectKeywords(), resume.getProjects())) {
-            score += 8; reasons.add("项目经历匹配");
+        return vector;
+    }
+
+    private double bm25(List<String> queryTokens, List<String> documentTokens, Map<String, Integer> documentFrequency, int documentCount, double averageDocumentLength) {
+        if (queryTokens.isEmpty() || documentTokens.isEmpty()) return 0.0;
+        Map<String, Long> termFrequency = documentTokens.stream().collect(java.util.stream.Collectors.groupingBy(token -> token, java.util.stream.Collectors.counting()));
+        Set<String> query = new LinkedHashSet<>(queryTokens);
+        double k1 = 1.5;
+        double b = 0.75;
+        double score = 0.0;
+        for (String token : query) {
+            long frequency = termFrequency.getOrDefault(token, 0L);
+            if (frequency == 0) continue;
+            double denominator = frequency + k1 * (1 - b + b * documentTokens.size() / Math.max(averageDocumentLength, 1.0));
+            score += inverseDocumentFrequency(token, documentFrequency, documentCount) * (frequency * (k1 + 1)) / denominator;
         }
-        if (resume != null && (matchesAnyCandidate(job.getSkillTags(), resume.getInternshipKeywords(), resume.getInternships())
-            || matchesAnyCandidate(job.getRoleType(), resume.getInternshipKeywords(), resume.getInternships())
-            || matchesAnyCandidate(job.getIndustry(), resume.getInternshipKeywords(), resume.getInternships()))) {
-            score += 8; reasons.add("实习经历匹配");
-        }
-        if (hasText(salaryRange) && matchesText(job.getSalaryRange(), salaryRange)) {
-            score += 6; reasons.add("薪资偏好匹配");
-        } else if (pref != null && matchesText(job.getSalaryRange(), pref.getSalaryRange())) {
-            score += 4; reasons.add("偏好薪资匹配");
-        } else if (matchesText(job.getSalaryRange(), resumeExpectedSalary)) {
-            score += 4; reasons.add("简历期望薪资匹配");
-        }
-        if (hasText(job.getApplyUrl())) {
-            score += 4; reasons.add("可直接投递");
-        }
-        Map<String, Object> map = toJobMap(job);
-        map.put("matchScore", Math.min(score, 100));
-        map.put("matchReasons", reasons);
-        return map;
+        return score;
+    }
+
+    private double inverseDocumentFrequency(String token, Map<String, Integer> documentFrequency, int documentCount) {
+        int df = documentFrequency.getOrDefault(token, 0);
+        return Math.log(1 + (documentCount - df + 0.5) / (df + 0.5));
+    }
+
+    private double vectorNorm(Map<String, Double> vector) {
+        return Math.sqrt(vector.values().stream().mapToDouble(value -> value * value).sum());
+    }
+
+    private double timeDecayScore(LocalDateTime createdAt) {
+        if (createdAt == null) return 0.4;
+        long days = Math.max(0, java.time.Duration.between(createdAt, LocalDateTime.now()).toDays());
+        return Math.exp(-days / 30.0);
     }
 
     private String filterValue(Map<String, String> filters, String key) {
@@ -1076,9 +1306,29 @@ public class EmploymentService {
         map.put("companyName", record.getCompanyName());
         map.put("jobTitle", record.getJobTitle());
         map.put("jobPostingId", record.getJobPosting() != null ? record.getJobPosting().getId() : null);
+        map.put("city", record.getCity());
+        map.put("industry", record.getIndustry());
+        map.put("companyType", record.getCompanyType());
+        map.put("roleType", record.getRoleType());
+        map.put("salaryRange", record.getSalaryRange());
+        map.put("educationRequirement", record.getEducationRequirement());
+        map.put("majorKeywords", record.getMajorKeywords());
+        map.put("skillTags", record.getSkillTags());
+        map.put("applyUrl", record.getApplyUrl());
+        map.put("applicationChannel", record.getApplicationChannel());
+        map.put("resumeFileName", record.getResumeFileName());
+        map.put("contactName", record.getContactName());
+        map.put("contactInfo", record.getContactInfo());
+        map.put("interviewRound", record.getInterviewRound());
+        map.put("interviewMethod", record.getInterviewMethod());
+        map.put("interviewLocation", record.getInterviewLocation());
+        map.put("expectedSalary", record.getExpectedSalary());
+        map.put("offerSalary", record.getOfferSalary());
         map.put("status", record.getStatus());
         map.put("appliedAt", toString(record.getAppliedAt()));
         map.put("nextStepAt", toString(record.getNextStepAt()));
+        map.put("lastFollowUpAt", toString(record.getLastFollowUpAt()));
+        map.put("failureReason", record.getFailureReason());
         map.put("notes", record.getNotes());
         map.put("createdAt", toString(record.getCreatedAt()));
         map.put("updatedAt", toString(record.getUpdatedAt()));
@@ -1115,6 +1365,14 @@ public class EmploymentService {
 
     private String defaultString(String value, String fallback) {
         return hasText(value) ? value.trim() : fallback;
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) return null;
+        for (String value : values) {
+            if (hasText(value)) return value.trim();
+        }
+        return null;
     }
 
     private String toString(LocalDateTime time) {
@@ -1190,6 +1448,8 @@ public class EmploymentService {
     }
 
     public record ResumeFileDownload(COSObject cosObject, String fileName, Long fileSize, String contentType) {}
+
+    private record RecommendationCandidate(JobPosting job, double cosine, double bm25, double preferenceScore) {}
 
     private record NotificationSource(String title, String content, String city, String industry, String roleType, String companyType) {}
 }

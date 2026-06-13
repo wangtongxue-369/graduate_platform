@@ -19,6 +19,23 @@ const emptyFilters = {
   onlyApplyable: false,
 }
 
+function trackingUrl(job) {
+  const params = new URLSearchParams()
+  params.set('jobPostingId', job.id)
+  params.set('companyName', job.companyName || '')
+  params.set('jobTitle', job.title || '')
+  params.set('city', job.city || '')
+  params.set('industry', job.industry || '')
+  params.set('companyType', job.companyType || '')
+  params.set('roleType', job.roleType || '')
+  params.set('salaryRange', job.salaryRange || '')
+  params.set('educationRequirement', job.educationRequirement || '')
+  params.set('majorKeywords', job.majorKeywords || '')
+  params.set('skillTags', job.skillTags || '')
+  params.set('applyUrl', job.applyUrl || '')
+  return `/job/applications?${params.toString()}`
+}
+
 export default function JobRecommendPage() {
   const { token, isAuthed, loading: authLoading } = useAuth()
   const canUseRemote = Boolean(isAuthed && token && token !== 'dev-token')
@@ -79,6 +96,23 @@ export default function JobRecommendPage() {
     }
   }
 
+  async function deleteNotification(id) {
+    if (!canUseRemote) {
+      setError('请使用真实账号登录后再操作提醒。')
+      return
+    }
+    try {
+      await employmentApi.deleteNotification(id, token)
+      setNotifications((prev) => {
+        const items = (Array.isArray(prev) ? prev : (prev.items || [])).filter((item) => item.id !== id)
+        if (Array.isArray(prev)) return items
+        return { ...prev, items, unreadCount: items.filter((item) => !item.readFlag).length, totalItems: items.length }
+      })
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
   const updateFilter = (key, value) => setFilters(prev => ({ ...prev, [key]: value }))
 
   function resetFilters() {
@@ -92,9 +126,9 @@ export default function JobRecommendPage() {
       <main className="shell">
         <section className="section">
           <div className="section-head">
-            <p className="eyebrow">就业方向 - 规则推荐</p>
+            <p className="eyebrow">就业方向 - 算法推荐</p>
             <h2>匹配岗位列表</h2>
-            <p className="muted">默认展示全部启用岗位，并按筛选条件、保存偏好、专业和简历技能生成匹配分。</p>
+            <p className="muted">默认展示全部启用岗位，并按画像相似度、文本相关度、保存偏好、时效和可投递信号生成匹配分。</p>
             {error && <div className="error-text">{error}</div>}
           </div>
 
@@ -171,6 +205,7 @@ export default function JobRecommendPage() {
                     {item.readFlag
                       ? <span className="tag subtle">已读</span>
                       : <button className="btn outline small" type="button" onClick={() => markRead(item.id)}>标记已读</button>}
+                    <button className="btn ghost small" type="button" onClick={() => deleteNotification(item.id)}>删除</button>
                   </div>
                 </div>
               ))}
@@ -195,7 +230,7 @@ export default function JobRecommendPage() {
                 <div className="tag-row">{(job.matchReasons || []).map(reason => <span className="tag subtle" key={reason}>{reason}</span>)}</div>
                 <div className="tag-row">
                   <Link className="btn primary small" to={`/job/postings/${job.id}`}>查看详情</Link>
-                  <Link className="btn outline small" to={`/job/applications?jobPostingId=${job.id}&companyName=${encodeURIComponent(job.companyName || '')}&jobTitle=${encodeURIComponent(job.title || '')}`}>加入投递跟踪</Link>
+                  <Link className="btn outline small" to={trackingUrl(job)}>加入投递跟踪</Link>
                   {job.applyUrl && <a className="btn ghost small" href={job.applyUrl} target="_blank" rel="noreferrer">打开申请链接</a>}
                 </div>
               </div>

@@ -11,6 +11,15 @@ function trackingUrl(job) {
   params.set('jobPostingId', job.id)
   params.set('companyName', job.companyName || '')
   params.set('jobTitle', job.title || '')
+  params.set('city', job.city || '')
+  params.set('industry', job.industry || '')
+  params.set('companyType', job.companyType || '')
+  params.set('roleType', job.roleType || '')
+  params.set('salaryRange', job.salaryRange || '')
+  params.set('educationRequirement', job.educationRequirement || '')
+  params.set('majorKeywords', job.majorKeywords || '')
+  params.set('skillTags', job.skillTags || '')
+  params.set('applyUrl', job.applyUrl || '')
   return `/job/applications?${params.toString()}`
 }
 

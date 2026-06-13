@@ -31,6 +31,65 @@ public class ApplicationRecord {
     @JoinColumn(name = "job_posting_id")
     private JobPosting jobPosting;
 
+    @Column(length = 80)
+    private String city;
+
+    @Column(length = 80)
+    private String industry;
+
+    @Column(length = 80)
+    private String companyType;
+
+    @Column(length = 80)
+    private String roleType;
+
+    @Column(length = 80)
+    private String salaryRange;
+
+    @Column(length = 120)
+    private String educationRequirement;
+
+    @Column(length = 500)
+    private String majorKeywords;
+
+    @Column(length = 500)
+    private String skillTags;
+
+    @Column(length = 500)
+    private String applyUrl;
+
+    @Column(length = 80)
+    private String applicationChannel;
+
+    @Column(length = 120)
+    private String resumeFileName;
+
+    @Column(length = 120)
+    private String contactName;
+
+    @Column(length = 120)
+    private String contactInfo;
+
+    @Column(length = 80)
+    private String interviewRound;
+
+    @Column(length = 80)
+    private String interviewMethod;
+
+    @Column(length = 300)
+    private String interviewLocation;
+
+    @Column(length = 80)
+    private String expectedSalary;
+
+    @Column(length = 80)
+    private String offerSalary;
+
+    private LocalDateTime lastFollowUpAt;
+
+    @Column(length = 500)
+    private String failureReason;
+
     @Column(nullable = false, length = 40)
     private String status;
 
