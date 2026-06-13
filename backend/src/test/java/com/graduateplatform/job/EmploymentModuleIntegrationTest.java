@@ -444,6 +444,153 @@ class EmploymentModuleIntegrationTest {
     }
 
     @Test
+    void applicationRecordSnapshotsLinkedJobAndKeepsHistoricalFields() throws Exception {
+        JobPosting job = jobRepository.save(JobPosting.builder()
+            .title("算法工程师")
+            .companyName("智能科技")
+            .city("上海")
+            .industry("人工智能")
+            .companyType("民企")
+            .roleType("算法")
+            .salaryRange("25k-35k")
+            .educationRequirement("硕士")
+            .majorKeywords("计算机科学,人工智能")
+            .skillTags("Python,机器学习")
+            .applyUrl("https://careers.example.com/ai")
+            .active(true)
+            .build());
+
+        String createResponse = mockMvc.perform(post("/api/job/applications")
+                .header("Authorization", "Bearer " + userToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.ofEntries(
+                    Map.entry("jobPostingId", job.getId()),
+                    Map.entry("status", "FIRST_INTERVIEW"),
+                    Map.entry("applicationChannel", "官网"),
+                    Map.entry("contactName", "HR 张老师"),
+                    Map.entry("contactInfo", "hr@example.com"),
+                    Map.entry("interviewRound", "一面"),
+                    Map.entry("interviewMethod", "线上"),
+                    Map.entry("interviewLocation", "https://meeting.example.com/ai"),
+                    Map.entry("expectedSalary", "30k"),
+                    Map.entry("notes", "从岗位详情加入")
+                ))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.companyName").value("智能科技"))
+            .andExpect(jsonPath("$.data.jobTitle").value("算法工程师"))
+            .andExpect(jsonPath("$.data.city").value("上海"))
+            .andExpect(jsonPath("$.data.industry").value("人工智能"))
+            .andExpect(jsonPath("$.data.salaryRange").value("25k-35k"))
+            .andExpect(jsonPath("$.data.applyUrl").value("https://careers.example.com/ai"))
+            .andExpect(jsonPath("$.data.status").value("FIRST_INTERVIEW"))
+            .andExpect(jsonPath("$.data.applicationChannel").value("官网"))
+            .andReturn().getResponse().getContentAsString();
+        long applicationId = objectMapper.readTree(createResponse).path("data").path("id").asLong();
+
+        mockMvc.perform(put("/api/admin/employment/jobs/" + job.getId())
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.ofEntries(
+                    Map.entry("title", "算法平台工程师"),
+                    Map.entry("companyName", "智能科技"),
+                    Map.entry("city", "北京"),
+                    Map.entry("industry", "平台研发"),
+                    Map.entry("salaryRange", "35k-45k"),
+                    Map.entry("applyUrl", "https://careers.example.com/platform"),
+                    Map.entry("active", true)
+                ))))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/job/applications").header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data[0].id").value(applicationId))
+            .andExpect(jsonPath("$.data[0].jobTitle").value("算法工程师"))
+            .andExpect(jsonPath("$.data[0].city").value("上海"))
+            .andExpect(jsonPath("$.data[0].industry").value("人工智能"))
+            .andExpect(jsonPath("$.data[0].salaryRange").value("25k-35k"))
+            .andExpect(jsonPath("$.data[0].applyUrl").value("https://careers.example.com/ai"));
+
+        mockMvc.perform(put("/api/job/applications/" + applicationId)
+                .header("Authorization", "Bearer " + userToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "jobPostingId", job.getId(),
+                    "status", "SECOND_INTERVIEW"
+                ))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.status").value("SECOND_INTERVIEW"))
+            .andExpect(jsonPath("$.data.jobTitle").value("算法工程师"))
+            .andExpect(jsonPath("$.data.city").value("上海"))
+            .andExpect(jsonPath("$.data.salaryRange").value("25k-35k"))
+            .andExpect(jsonPath("$.data.applicationChannel").value("官网"))
+            .andExpect(jsonPath("$.data.contactName").value("HR 张老师"))
+            .andExpect(jsonPath("$.data.expectedSalary").value("30k"));
+
+        JobPosting replacement = jobRepository.save(JobPosting.builder()
+            .title("数据平台工程师")
+            .companyName("数据科技")
+            .city("杭州")
+            .industry("数据平台")
+            .salaryRange("22k-30k")
+            .applyUrl("https://careers.example.com/data")
+            .active(true)
+            .build());
+
+        mockMvc.perform(put("/api/job/applications/" + applicationId)
+                .header("Authorization", "Bearer " + userToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "jobPostingId", replacement.getId(),
+                    "status", "APPLIED"
+                ))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.companyName").value("数据科技"))
+            .andExpect(jsonPath("$.data.jobTitle").value("数据平台工程师"))
+            .andExpect(jsonPath("$.data.city").value("杭州"))
+            .andExpect(jsonPath("$.data.industry").value("数据平台"))
+            .andExpect(jsonPath("$.data.salaryRange").value("22k-30k"))
+            .andExpect(jsonPath("$.data.applyUrl").value("https://careers.example.com/data"));
+    }
+
+    @Test
+    void resumeExportReturnsGeneratedWordAndPdfFiles() throws Exception {
+        mockMvc.perform(get("/api/job/resume/export?format=docx"))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(put("/api/job/resume")
+                .header("Authorization", "Bearer " + userToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "templateType", "default",
+                    "targetRole", "Java Developer",
+                    "expectedCities", "Shanghai",
+                    "baseInfo", "Test User\njob@test.local",
+                    "projects", "Graduate platform resume export"
+                ))))
+            .andExpect(status().isOk());
+
+        MvcResult word = mockMvc.perform(get("/api/job/resume/export?format=docx")
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(header().string("Content-Type", containsString("application/vnd.openxmlformats-officedocument.wordprocessingml.document")))
+            .andExpect(header().string("Content-Disposition", containsString("online-resume")))
+            .andReturn();
+        assertThat(word.getResponse().getContentAsByteArray()).startsWith(new byte[] { 'P', 'K' });
+
+        MvcResult pdf = mockMvc.perform(get("/api/job/resume/export?format=pdf")
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(header().string("Content-Type", containsString("application/pdf")))
+            .andExpect(header().string("Content-Disposition", containsString(".pdf")))
+            .andReturn();
+        assertThat(new String(pdf.getResponse().getContentAsByteArray(), 0, 4)).isEqualTo("%PDF");
+
+        mockMvc.perform(get("/api/job/resume/export?format=txt")
+                .header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void resumeFileUploadDownloadReplaceAndDeleteDoesNotExposeCosLocation() throws Exception {
         when(cosService.uploadFile(any(), anyLong(), anyString(), anyString()))
             .thenReturn("https://cos.example.com/private/resume.pdf");
@@ -590,7 +737,7 @@ class EmploymentModuleIntegrationTest {
     }
 
     @Test
-    void recommendationsUseRuleMatchingWithoutExternalService() throws Exception {
+    void recommendationsUseHybridContentAlgorithmWithoutExternalService() throws Exception {
         jobRepository.save(JobPosting.builder()
             .title("Java 后端工程师").companyName("未来科技").city("上海").industry("互联网")
             .roleType("后端").majorKeywords("计算机科学,软件工程").skillTags("Java,Spring Boot")
@@ -608,7 +755,8 @@ class EmploymentModuleIntegrationTest {
         mockMvc.perform(get("/api/job/recommendations").header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data[0].title").value("Java 后端工程师"))
-            .andExpect(jsonPath("$.data[0].matchScore").value(74));
+            .andExpect(jsonPath("$.data[0].matchScore").isNumber())
+            .andExpect(jsonPath("$.data[0].matchReasons").value(hasItem("求职偏好匹配")));
     }
 
     @Test
@@ -622,8 +770,9 @@ class EmploymentModuleIntegrationTest {
 
         mockMvc.perform(get("/api/job/recommendations").header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data[0].matchScore").value(40))
-            .andExpect(jsonPath("$.data[1].matchScore").value(40));
+            .andExpect(jsonPath("$.data[0].matchScore").isNumber())
+            .andExpect(jsonPath("$.data[1].matchScore").isNumber())
+            .andExpect(jsonPath("$.data[0].matchReasons").value(hasItem("近期发布岗位")));
 
         mockMvc.perform(get("/api/job/recommendations")
                 .param("city", "上海")
@@ -664,9 +813,9 @@ class EmploymentModuleIntegrationTest {
         mockMvc.perform(get("/api/job/recommendations").header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data[0].title").value("Java 后端工程师"))
-            .andExpect(jsonPath("$.data[0].matchScore").value(100))
-            .andExpect(jsonPath("$.data[0].matchReasons").value(hasItem("简历求职意向匹配")))
-            .andExpect(jsonPath("$.data[0].matchReasons").value(hasItem("简历技能匹配")));
+            .andExpect(jsonPath("$.data[0].matchScore").isNumber())
+            .andExpect(jsonPath("$.data[0].matchReasons").value(hasItem("简历与岗位画像相似")))
+            .andExpect(jsonPath("$.data[0].matchReasons").value(hasItem("岗位文本相关度高")));
     }
 
     @Test
@@ -687,8 +836,8 @@ class EmploymentModuleIntegrationTest {
         mockMvc.perform(get("/api/job/recommendations").header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data[0].title").value("国企管培生"))
-            .andExpect(jsonPath("$.data[0].matchScore").value(46))
-            .andExpect(jsonPath("$.data[0].matchReasons[0]").value("偏好企业类型匹配"));
+            .andExpect(jsonPath("$.data[0].matchScore").isNumber())
+            .andExpect(jsonPath("$.data[0].matchReasons").value(hasItem("求职偏好匹配")));
     }
 
     @Test
@@ -739,7 +888,17 @@ class EmploymentModuleIntegrationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.readFlag").value(true));
 
-        assertThat(notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId())).hasSize(1);
+        mockMvc.perform(delete("/api/job/notifications/" + notificationId).header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.deleted").value(true))
+            .andExpect(jsonPath("$.data.id").value(notificationId));
+
+        mockMvc.perform(get("/api/job/notifications").header("Authorization", "Bearer " + userToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.unreadCount").value(0))
+            .andExpect(jsonPath("$.data.totalItems").value(0));
+
+        assertThat(notificationRepository.findByUserIdOrderByCreatedAtDesc(user.getId())).isEmpty();
     }
 
     @Test

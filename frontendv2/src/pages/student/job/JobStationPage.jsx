@@ -511,6 +511,23 @@ export function JobRecommendationsPage() {
     }
   }, [canUseRemote, filters.city, filters.industry, filters.keyword, filters.onlyApplyable, filters.roleType, filters.skills, token])
 
+  async function handleDeleteNotification(notificationId) {
+    if (!canUseRemote) {
+      setNotice('请使用真实账号登录后再删除就业提醒。')
+      return
+    }
+
+    try {
+      await employmentApi.deleteNotification(notificationId, token)
+      setNotifications((current) => {
+        const items = ensureArray(current.items).filter((item) => item.id !== notificationId)
+        return { ...current, items, unreadCount: items.filter((item) => !item.readFlag).length, totalItems: items.length }
+      })
+    } catch (error) {
+      setNotice(fallbackDataNotice('就业提醒删除', error))
+    }
+  }
+
   return (
     <>
       <div className="v2-main-column">
@@ -647,6 +664,7 @@ export function JobRecommendationsPage() {
                 <strong>{item.title}</strong>
                 <span>{item.content}</span>
                 <span>{item.readFlag ? '已读' : '未读'}</span>
+                <button className="v2-secondary-link" type="button" onClick={() => handleDeleteNotification(item.id)}>删除</button>
               </div>
             ))}
             {!notifications.items.length ? <p>当前没有就业提醒。</p> : null}
