@@ -50,10 +50,10 @@
 - 附件下载
 - 按审核状态查看我的资料
 
-#### 导师与 1v1 咨询
+#### 学长学姐与 1v1 咨询
 
-- 导师列表
-- 导师详情
+- 学长学姐列表
+- 学长学姐详情
 - 申请入驻
 - 查看我的入驻信息
 - 注销入驻
@@ -87,7 +87,7 @@
 
 以下能力当前没有后端管理接口或成熟前端基线，因此不纳入本次设计：
 
-- 管理员导师入驻审核
+- 管理员学长学姐入驻审核
 - 管理员咨询会话治理
 - 管理员自习室治理
 
@@ -151,8 +151,8 @@
 
 承载：
 
-- 导师列表
-- 导师入驻
+- 学长学姐列表
+- 学长学姐入驻
 - 咨询消息
 - 自习室列表与房间内工作区
 
@@ -182,6 +182,8 @@
 - `/station/kaoyan/support/mentors/apply`
 - `/station/kaoyan/support/messages`
 - `/station/kaoyan/support/rooms/:roomId`
+
+说明：为对齐现有后端与旧版前端实现，路由路径与接口命名暂保留 `mentors` / `mentorApi`，但页面文案与产品表达统一使用“学长学姐”。
 
 ### 管理员端
 
@@ -317,19 +319,19 @@
 
 主区左右双列：
 
-- 左列：导师咨询列表
+- 左列：学长学姐咨询列表
 - 右列：自习室列表
 
 页头动作：
 
-- 申请导师入驻
+- 申请学长学姐入驻
 - 进入咨询消息
 
 这页的目标是先选支持资源，再决定进入咨询还是进入房间。
 
-### 导师入驻页：`/station/kaoyan/support/mentors/apply`
+### 学长学姐入驻页：`/station/kaoyan/support/mentors/apply`
 
-独立长表单页，不与导师列表混排。
+独立长表单页，不与学长学姐列表混排。
 
 该页同时支持：
 
@@ -486,26 +488,26 @@ SSE 断开时要允许退化为手动刷新，不让房间页直接不可用。
 - `studyPlanApi.createPlan`
 - `studyPlanApi.updatePlan`
 - `studyPlanApi.deletePlan`
-- `studyPlanApi.checkins`
-- `studyPlanApi.addCheckin`
-- `studyPlanApi.updateCheckin`
-- `studyPlanApi.deleteCheckin`
+- `studyPlanApi.checkIns`
+- `studyPlanApi.addCheckIn`
+- `studyPlanApi.updateCheckIn`
+- `studyPlanApi.deleteCheckIn`
 
 ### 资料中枢
 
 - `materialApi.listPage`
 - `materialApi.detail`
-- `materialApi.create`
+- 复用旧版上传实现，抽出 `XMLHttpRequest + FormData` 上传 helper，直连 `POST /api/kaoyan/materials`
 - `materialApi.myMaterials`
 - `materialApi.downloadUrl`
 
 ### 陪跑协同
 
 - `mentorApi.mentorsPage`
-- `mentorApi.detail`
+- `mentorApi.mentorDetail`
 - `mentorApi.myProfile`
 - `mentorApi.saveProfile`
-- `mentorApi.deactivateProfile`
+- `mentorApi.deleteProfile`
 - `mentorApi.createSession`
 - `mentorApi.sentSessions`
 - `mentorApi.receivedSessions`
@@ -518,9 +520,9 @@ SSE 断开时要允许退化为手动刷新，不让房间页直接不可用。
 - `studyRoomApi.roomDetail`
 - `studyRoomApi.joinRoom`
 - `studyRoomApi.leaveRoom`
-- `studyRoomApi.messages`
+- `studyRoomApi.messagesAfter`
 - `studyRoomApi.sendMessage`
-- `studyRoomApi.streamUrl`
+- `studyRoomApi.roomStreamUrl`
 - `studyRoomApi.leaderboard`
 - `studyRoomApi.myCurrentRoom`
 - `studyRoomApi.myCreatedRooms`
@@ -568,7 +570,7 @@ SSE 断开时要允许退化为手动刷新，不让房间页直接不可用。
 适用页：
 
 - 上传资料
-- 导师入驻
+- 学长学姐入驻
 - 打卡录入
 - 消息发送
 
@@ -628,7 +630,7 @@ SSE 断开时要允许退化为手动刷新，不让房间页直接不可用。
 ### Phase E
 
 - 协同总览
-- 导师入驻
+- 学长学姐入驻
 - 咨询消息页
 - 自习室房间页
 
