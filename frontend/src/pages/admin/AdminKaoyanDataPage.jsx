@@ -302,18 +302,6 @@ export default function AdminKaoyanDataPage() {
             <p className="muted">后台维护考研院校库与历年分数线数据；在每个院校卡片上点击"维护分数线"可管理该校的分数线记录。</p>
           </div>
 
-          <div className="admin-tabs">
-            {tabs.map((tab) => (
-              <button
-                className={`admin-tab active`}
-                key={tab.key}
-                type="button"
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
           <div className="admin-page-shell">
             <form className="admin-toolbar-card admin-filter-stack" onSubmit={handleFilter}>
               <div className="filter-grid">

@@ -63,4 +63,10 @@ describe('AdminKaoyanDataPage school-scoped score management', () => {
     expect(formPos, 'form modal block must exist').toBeGreaterThan(0)
     expect(formPos).toBeGreaterThan(scoresPos)
   })
+
+  it('no longer renders the redundant admin-tabs button row', () => {
+    // With only one tab left (院校信息), the row of tab buttons is
+    // redundant visual chrome and has been removed.
+    expect(source).not.toMatch(/className="admin-tabs"/)
+  })
 })
