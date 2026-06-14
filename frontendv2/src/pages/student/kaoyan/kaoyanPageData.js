@@ -7,6 +7,19 @@ import {
 
 export const materialStatusOptions = ['PENDING', 'APPROVED', 'REJECTED']
 
+export function createKaoyanSchoolLedgerFilters() {
+  return {
+    schoolName: '',
+    region: '',
+    majorCategory: '',
+    majorName: '',
+    year: '',
+    is985: '',
+    is211: '',
+    isDoubleFirstClass: '',
+  }
+}
+
 export function createEmptyPlanForm() {
   return {
     name: '',
@@ -61,14 +74,23 @@ export function createKaoyanSchoolPreviewRows() {
     majorName: item.major,
     majorCategory: '考研方向',
     region: '华东',
+    province: ['浙江', '上海', '江苏'][index] || '华东',
     schoolType: '综合类',
     totalScoreLine: String(item.line).replace(/[^\d]/g, ''),
     year: '2025',
-    admissionRatio: item.trend,
+    politicsLine: 58 + index,
+    foreignLangLine: 60 + index,
+    subject1Line: 102 + index * 3,
+    subject2Line: 118 + index * 4,
+    admissionRatio: Number.parseFloat(String(item.trend).replace(/[^\d.]/g, '')) || '',
     plannedEnrollment: 24 + index,
+    actualApplicants: 120 + index * 18,
     note: item.note,
+    source: '预览数据',
+    isNationalLine: false,
     is985: index !== 2,
     is211: true,
+    isDoubleFirstClass: true,
     favorite: index === 0,
   }))
 }
@@ -225,6 +247,131 @@ export function buildSchoolRows(schoolsData, scoreLinesData) {
   }
 }
 
+function matchTriStateFlag(value, expected) {
+  if (expected === '' || expected === undefined || expected === null) {
+    return true
+  }
+  return Boolean(value) === (expected === 'true')
+}
+
+function matchSchoolSideFilters(school, filters = {}) {
+  const schoolName = String(filters.schoolName || '').trim()
+  const region = String(filters.region || '').trim()
+
+  if (schoolName && !String(school.name || school.schoolName || '').includes(schoolName)) {
+    return false
+  }
+
+  if (region) {
+    const regionText = `${school.region || ''} ${school.province || ''}`.trim()
+    if (!regionText.includes(region)) {
+      return false
+    }
+  }
+
+  if (!matchTriStateFlag(school.is985, filters.is985)) return false
+  if (!matchTriStateFlag(school.is211, filters.is211)) return false
+  if (!matchTriStateFlag(school.isDoubleFirstClass, filters.isDoubleFirstClass)) return false
+
+  return true
+}
+
+function hasActiveSchoolSideFilters(filters = {}) {
+  return [
+    filters.schoolName,
+    filters.region,
+    filters.is985,
+    filters.is211,
+    filters.isDoubleFirstClass,
+  ].some((item) => String(item || '').trim() !== '')
+}
+
+function toSchoolLedgerRow(item, schoolMap, index) {
+  const school = schoolMap.get(item.schoolId)
+    || Array.from(schoolMap.values()).find((candidate) => candidate.name === item.schoolName)
+    || {}
+
+  return {
+    id: item.id ?? `score-line-${index}`,
+    schoolId: item.schoolId ?? school.id ?? '',
+    schoolName: item.schoolName || school.name || '院校待补充',
+    majorName: item.majorName || '专业待补充',
+    majorCategory: item.majorCategory || '门类待补充',
+    year: item.year || '',
+    region: school.region || item.schoolRegion || school.province || '',
+    province: school.province || '',
+    schoolType: school.schoolType || '',
+    totalScoreLine: item.totalScoreLine || '',
+    politicsLine: item.politicsLine || '',
+    foreignLangLine: item.foreignLangLine || '',
+    subject1Line: item.subject1Line || '',
+    subject2Line: item.subject2Line || '',
+    plannedEnrollment: item.plannedEnrollment || '',
+    actualApplicants: item.actualApplicants || '',
+    admissionRatio: item.admissionRatio || '',
+    note: firstNonEmpty(item.note, school.note, ''),
+    source: item.source || '',
+    isNationalLine: Boolean(item.isNationalLine),
+    is985: Boolean(item.is985 ?? school.is985),
+    is211: Boolean(item.is211 ?? school.is211),
+    isDoubleFirstClass: Boolean(item.isDoubleFirstClass ?? school.isDoubleFirstClass),
+    favorite: Boolean(item.favorite),
+  }
+}
+
+export function buildSchoolLedgerRows(schoolsData, scoreLinesData, schoolFilters = {}) {
+  const schoolPage = ensurePage(schoolsData)
+  const scorePage = ensurePage(scoreLinesData)
+  const schools = schoolPage.content
+  const schoolMap = new Map(schools.map((item) => [item.id ?? item.name, item]))
+  const filteredSchools = schools.filter((item) => matchSchoolSideFilters(item, schoolFilters))
+  const allowedSchoolIds = new Set(
+    filteredSchools
+      .map((item) => item.id)
+      .filter((item) => item !== '' && item !== null && item !== undefined),
+  )
+  const allowedSchoolNames = new Set(
+    filteredSchools
+      .map((item) => item.name || item.schoolName)
+      .filter(Boolean),
+  )
+  const enforceSchoolMatch = hasActiveSchoolSideFilters(schoolFilters)
+
+  const rows = scorePage.content
+    .filter((item) => {
+      if (!enforceSchoolMatch) {
+        return true
+      }
+      if (!allowedSchoolIds.size && !allowedSchoolNames.size) {
+        return false
+      }
+      return allowedSchoolIds.has(item.schoolId) || allowedSchoolNames.has(item.schoolName)
+    })
+    .map((item, index) => toSchoolLedgerRow(item, schoolMap, index))
+
+  return {
+    rows,
+    schoolCount: Number(schoolPage.totalElements ?? schools.length ?? 0),
+    scoreCount: Number(scorePage.totalElements ?? rows.length ?? 0),
+  }
+}
+
+export function paginateSchoolLedgerRows(rows, { page, pageSize }) {
+  const safePageSize = Math.max(1, Number(pageSize || 10))
+  const totalElements = Array.isArray(rows) ? rows.length : 0
+  const totalPages = Math.max(1, Math.ceil(totalElements / safePageSize))
+  const safePage = Math.min(Math.max(0, Number(page || 0)), totalPages - 1)
+  const startIndex = safePage * safePageSize
+
+  return {
+    pageRows: rows.slice(startIndex, startIndex + safePageSize),
+    page: safePage,
+    pageSize: safePageSize,
+    totalElements,
+    totalPages,
+  }
+}
+
 export function normalizeFavoriteRows(data) {
   return ensureArray(data).map((item, index) => ({
     id: item.id ?? `favorite-${index}`,
@@ -234,7 +381,15 @@ export function normalizeFavoriteRows(data) {
     majorCategory: item.majorCategory || '门类待补充',
     year: item.year || '',
     totalScoreLine: item.totalScoreLine || '',
+    politicsLine: item.politicsLine || '',
+    foreignLangLine: item.foreignLangLine || '',
+    subject1Line: item.subject1Line || '',
+    subject2Line: item.subject2Line || '',
+    plannedEnrollment: item.plannedEnrollment || '',
+    actualApplicants: item.actualApplicants || '',
+    admissionRatio: item.admissionRatio || '',
     note: item.note || '收藏记录已同步',
+    source: item.source || '',
     favorite: true,
   }))
 }

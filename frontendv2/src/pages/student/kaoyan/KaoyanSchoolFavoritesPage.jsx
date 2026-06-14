@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { kaoyanApi } from '@legacy/lib/api.js'
 import PageIntro from '@/components/PageIntro.jsx'
+import KaoyanSchoolLedgerTable from '@/components/kaoyan/KaoyanSchoolLedgerTable.jsx'
 import {
   createKaoyanFavoritePreviewRows,
   normalizeFavoriteRows,
@@ -16,15 +17,19 @@ import {
 export default function KaoyanSchoolFavoritesPage() {
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
-  const [rows, setRows] = useState(createKaoyanFavoritePreviewRows())
+  const previewRows = createKaoyanFavoritePreviewRows()
+  const [rows, setRows] = useState(previewRows)
   const [notice, setNotice] = useState(previewDataNotice('收藏账本'))
+  const [expandedRowIds, setExpandedRowIds] = useState(new Set())
 
   useEffect(() => {
     let active = true
 
     async function loadRows() {
       if (!canUseRemote) {
-        setRows(createKaoyanFavoritePreviewRows())
+        const nextRows = createKaoyanFavoritePreviewRows()
+        if (!active) return
+        setRows(nextRows)
         setNotice(previewDataNotice('收藏账本'))
         return
       }
@@ -35,8 +40,9 @@ export default function KaoyanSchoolFavoritesPage() {
         setRows(normalizeFavoriteRows(data))
         setNotice(remoteDataNotice('收藏账本'))
       } catch (error) {
+        const nextRows = createKaoyanFavoritePreviewRows()
         if (!active) return
-        setRows(createKaoyanFavoritePreviewRows())
+        setRows(nextRows)
         setNotice(fallbackDataNotice('收藏账本', error))
       }
     }
@@ -46,6 +52,18 @@ export default function KaoyanSchoolFavoritesPage() {
       active = false
     }
   }, [canUseRemote, token])
+
+  function handleToggleExpand(rowId) {
+    setExpandedRowIds((current) => {
+      const next = new Set(current)
+      if (next.has(rowId)) {
+        next.delete(rowId)
+      } else {
+        next.add(rowId)
+      }
+      return next
+    })
+  }
 
   return (
     <div className="v2-main-column">
@@ -62,29 +80,33 @@ export default function KaoyanSchoolFavoritesPage() {
 
       {notice ? <div className="v2-status-note">{notice}</div> : null}
 
-      <section className="v2-ledger-card" aria-label="收藏分数线列表">
-        {rows.map((item) => (
-          <div className="v2-ledger-row" key={item.id}>
-            <div>
-              <strong>{item.schoolName}</strong>
-              <p>{item.majorName}</p>
-              <p>{item.majorCategory}</p>
-            </div>
-            <div>
-              <strong>{item.totalScoreLine ? `总分线 ${item.totalScoreLine}` : '总分线待补充'}</strong>
-              <p>{item.year ? `${item.year} 年` : '年份待补充'}</p>
-            </div>
-            <div>
-              <p>{item.note}</p>
-              <div className="v2-tag-row">
-                <span>已收藏</span>
-              </div>
-            </div>
-          </div>
-        ))}
-        {!rows.length ? <div className="v2-status-note">你当前还没有收藏任何分数线。</div> : null}
+      <section className="v2-summary-strip" aria-label="收藏账本摘要">
+        <article className="v2-summary-card">
+          <span>收藏记录</span>
+          <strong>{rows.length}</strong>
+          <p>这里只保留你已经决定持续跟踪的目标分数线。</p>
+        </article>
+        <article className="v2-summary-card">
+          <span>信息密度</span>
+          <strong>表格视图</strong>
+          <p>字段结构和主账本保持一致，方便来回比对。</p>
+        </article>
       </section>
+
+      <KaoyanSchoolLedgerTable
+        rows={rows}
+        compareIds={[]}
+        expandedRowIds={expandedRowIds}
+        favoriteIds={new Set(rows.map((item) => item.id))}
+        page={0}
+        totalPages={1}
+        totalElements={rows.length}
+        compareEnabled={false}
+        favoriteActionEnabled={false}
+        paginationEnabled={false}
+        emptyMessage="你当前还没有收藏任何分数线。"
+        onToggleExpand={handleToggleExpand}
+      />
     </div>
   )
 }
-

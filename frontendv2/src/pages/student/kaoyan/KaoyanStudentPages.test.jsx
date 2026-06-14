@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import KaoyanSchoolsPage from '@/pages/student/kaoyan/KaoyanSchoolsPage.jsx'
@@ -84,7 +84,7 @@ describe('kaoyan student split pages', () => {
     })
   })
 
-  it('renders school ledger rows from backend data', async () => {
+  it('applies sidebar filters on submit and opens compare modal at two selections', async () => {
     apiMocks.kaoyanApi.schoolsPage.mockResolvedValue({
       content: [
         {
@@ -96,8 +96,17 @@ describe('kaoyan student split pages', () => {
           is211: true,
           schoolType: '综合',
         },
+        {
+          id: 2,
+          name: '复旦大学',
+          region: '华东',
+          province: '上海',
+          is985: true,
+          is211: true,
+          schoolType: '综合',
+        },
       ],
-      totalElements: 1,
+      totalElements: 2,
       totalPages: 1,
     })
     apiMocks.kaoyanApi.scoreLinesPage.mockResolvedValue({
@@ -114,8 +123,25 @@ describe('kaoyan student split pages', () => {
           plannedEnrollment: 28,
           favorite: false,
         },
+        {
+          id: 12,
+          schoolId: 2,
+          schoolName: '复旦大学',
+          year: 2025,
+          majorCategory: '理学',
+          majorName: '软件工程',
+          totalScoreLine: 385,
+          politicsLine: 58,
+          foreignLangLine: 60,
+          subject1Line: 102,
+          subject2Line: 121,
+          plannedEnrollment: 20,
+          actualApplicants: 150,
+          admissionRatio: 7.5,
+          favorite: false,
+        },
       ],
-      totalElements: 1,
+      totalElements: 2,
       totalPages: 1,
     })
 
@@ -126,11 +152,28 @@ describe('kaoyan student split pages', () => {
       expect(apiMocks.kaoyanApi.scoreLinesPage).toHaveBeenCalled()
     })
     expect(await screen.findByText('浙江大学')).toBeInTheDocument()
-    expect(screen.getByText('计算机科学与技术')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '收藏分数线' })).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: '院校' })).toBeInTheDocument()
+    expect(screen.getByLabelText('年份')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('年份'), {
+      target: { value: '2025' },
+    })
+    expect(apiMocks.kaoyanApi.scoreLinesPage).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(screen.getByRole('button', { name: '应用筛选' }))
+    await waitFor(() => {
+      expect(apiMocks.kaoyanApi.scoreLinesPage).toHaveBeenCalledTimes(2)
+    })
+
+    fireEvent.click(screen.getByLabelText('选择 浙江大学 对比'))
+    fireEvent.click(screen.getByLabelText('选择 复旦大学 对比'))
+    fireEvent.click(screen.getByRole('button', { name: '对比 2 项' }))
+
+    expect(screen.getByText('分数线对比')).toBeInTheDocument()
+    expect(screen.getByText('报考人数')).toBeInTheDocument()
   })
 
-  it('renders favorite score lines from backend data', async () => {
+  it('renders favorite score lines with table-aligned fields from backend data', async () => {
     apiMocks.kaoyanApi.favoriteScoreLines.mockResolvedValue([
       {
         id: 11,
@@ -140,7 +183,11 @@ describe('kaoyan student split pages', () => {
         majorCategory: '工学',
         year: 2025,
         totalScoreLine: 390,
+        plannedEnrollment: 28,
+        admissionRatio: 6.2,
+        actualApplicants: 174,
         note: '复试名单发布时间稳定',
+        source: '研招网',
       },
     ])
 
@@ -150,8 +197,10 @@ describe('kaoyan student split pages', () => {
       expect(apiMocks.kaoyanApi.favoriteScoreLines).toHaveBeenCalledWith('remote-token')
     })
     expect(await screen.findByText('浙江大学')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: '院校' })).toBeInTheDocument()
     expect(screen.getByText('计算机科学与技术')).toBeInTheDocument()
-    expect(screen.getByText(/总分线 390/)).toBeInTheDocument()
+    expect(screen.getByText('28')).toBeInTheDocument()
+    expect(screen.getByText('6.2:1')).toBeInTheDocument()
   })
 
   it('renders plan detail and check-ins from backend data', async () => {

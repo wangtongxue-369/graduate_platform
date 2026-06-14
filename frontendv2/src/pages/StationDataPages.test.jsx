@@ -136,7 +136,8 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
       }),
     ).toBeInTheDocument()
     expect(screen.getByText('筛选控制器')).toBeInTheDocument()
-    expect(screen.getByLabelText('院校地区')).toBeInTheDocument()
+    expect(screen.getByLabelText('院校名称')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: '院校' })).toBeInTheDocument()
 
     await waitFor(() => {
       expect(apiMocks.kaoyanApi.schoolsPage).toHaveBeenCalled()
@@ -144,7 +145,7 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
     })
     expect(await screen.findByText('浙江大学')).toBeInTheDocument()
     expect(screen.getByText('计算机科学与技术')).toBeInTheDocument()
-    expect(screen.getByText(/总分线 390/)).toBeInTheDocument()
+    expect(screen.getByText('390')).toBeInTheDocument()
   })
 
   it('renders remote kaogong exam groups and subscriptions with rightbar filters', async () => {
