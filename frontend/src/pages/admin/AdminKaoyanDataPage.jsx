@@ -9,7 +9,6 @@ import '../../App.css'
 
 const tabs = [
   { key: 'schools', label: '院校信息' },
-  { key: 'scores', label: '分数线' },
 ]
 
 const emptySchool = {
@@ -87,11 +86,21 @@ export default function AdminKaoyanDataPage() {
   const [scoreForm, setScoreForm] = useState(emptyScore)
   const [schools, setSchools] = useState([])
 
+  // Scores modal: when a school card's "维护分数线" button is clicked, this
+  // holds the school whose score lines are being managed. Null when closed.
+  const [scoresModalSchool, setScoresModalSchool] = useState(null)
+  const [scoresModalRows, setScoresModalRows] = useState([])
+  const [scoresModalPage, setScoresModalPage] = useState(0)
+  const [scoresModalPageInfo, setScoresModalPageInfo] = useState({ totalPages: 1, totalElements: 0 })
+  const [scoresModalLoading, setScoresModalLoading] = useState(false)
+  // School name to display as a static label in the score form (when invoked
+  // from the school-scoped scores modal). Empty string means "general add".
+  const [scoreFormSchoolName, setScoreFormSchoolName] = useState('')
+
   const activeTab = useMemo(() => tabs.find((item) => item.key === active), [active])
 
   useEffect(() => {
     loadRows()
-    loadSchoolOptions()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, page])
 
@@ -111,24 +120,13 @@ export default function AdminKaoyanDataPage() {
     setScoreForm((prev) => ({ ...prev, [key]: value }))
   }
 
-  async function loadSchoolOptions() {
-    try {
-      const data = await adminApi.kaoyanSchools({ size: 1000 }, token)
-      setSchools(data?.content || [])
-    } catch {
-      // ignore
-    }
-  }
-
   async function loadRows(event, nextPage = page) {
     event?.preventDefault()
     setLoading(true)
     setMessage('')
     try {
       const params = { ...filters, page: nextPage, size: pageSize }
-      const data = active === 'schools'
-        ? await adminApi.kaoyanSchools(params, token)
-        : await adminApi.kaoyanScoreLines(params, token)
+      const data = await adminApi.kaoyanSchools(params, token)
       setRows(data?.content || [])
       setPageInfo({
         totalPages: data?.totalPages || 1,
@@ -152,29 +150,32 @@ export default function AdminKaoyanDataPage() {
     setLoading(true)
     setMessage('')
     try {
-      if (active === 'schools') {
-        if (editingId) {
-          await adminApi.updateKaoyanSchool(editingId, schoolForm, token)
-        } else {
-          await adminApi.createKaoyanSchool(schoolForm, token)
-        }
-        setSchoolForm(emptySchool)
+      if (editingId && scoreFormSchoolName) {
+        await adminApi.updateKaoyanScoreLine(editingId, scoreForm, token)
+      } else if (editingId) {
+        await adminApi.updateKaoyanSchool(editingId, schoolForm, token)
+      } else if (scoreFormSchoolName) {
+        await adminApi.createKaoyanScoreLine(scoreForm, token)
       } else {
-        if (editingId) {
-          await adminApi.updateKaoyanScoreLine(editingId, scoreForm, token)
-        } else {
-          await adminApi.createKaoyanScoreLine(scoreForm, token)
-        }
-        setScoreForm(emptyScore)
+        await adminApi.createKaoyanSchool(schoolForm, token)
       }
+      setMessage(
+        scoreFormSchoolName
+          ? `分数线已保存（${scoreFormSchoolName}）`
+          : `院校信息已保存`,
+      )
+      const wasScore = !!scoreFormSchoolName
       setEditingId(null)
-      setMessage(`${activeTab?.label || '数据'}已保存`)
       setShowFormModal(false)
       setSchoolForm(emptySchool)
       setScoreForm(emptyScore)
-      setPage(0)
-      await loadRows(null, 0)
-      await loadSchoolOptions()
+      setScoreFormSchoolName('')
+      if (wasScore) {
+        await loadScoresForModal()
+      } else {
+        setPage(0)
+        await loadRows(null, 0)
+      }
     } catch (err) {
       setMessage(err.message || '操作失败')
     } finally {
@@ -182,26 +183,10 @@ export default function AdminKaoyanDataPage() {
     }
   }
 
-  function switchTab(key) {
-    setActive(key)
-    setPage(0)
-    setEditingId(null)
-    setMessage('')
-  }
-
   function editRecord(row) {
     setEditingId(row.id)
-    setMessage(`正在编辑：${row.name || row.schoolName}`)
-    if (active === 'schools') {
-      setSchoolForm({ ...emptySchool, ...row })
-    } else {
-      const form = { ...emptyScore }
-      Object.keys(row).forEach((key) => {
-        if (key in form) form[key] = row[key]
-      })
-      if (row.schoolId) form.schoolId = row.schoolId
-      setScoreForm(form)
-    }
+    setMessage(`正在编辑：${row.name}`)
+    setSchoolForm({ ...emptySchool, ...row })
     setShowFormModal(true)
   }
 
@@ -209,6 +194,7 @@ export default function AdminKaoyanDataPage() {
     setEditingId(null)
     setSchoolForm(emptySchool)
     setScoreForm(emptyScore)
+    setScoreFormSchoolName('')
     setMessage('')
     setShowFormModal(true)
   }
@@ -218,23 +204,87 @@ export default function AdminKaoyanDataPage() {
     setEditingId(null)
     setSchoolForm(emptySchool)
     setScoreForm(emptyScore)
+    setScoreFormSchoolName('')
   }
 
   async function deleteRecord(id) {
     setLoading(true)
     setMessage('')
     try {
-      if (active === 'schools') {
-        await adminApi.deleteKaoyanSchool(id, token)
-      } else {
-        await adminApi.deleteKaoyanScoreLine(id, token)
-      }
-      setMessage(`${activeTab?.label || '数据'}已停用`)
+      await adminApi.deleteKaoyanSchool(id, token)
+      setMessage('院校信息已停用')
       await loadRows()
     } catch (err) {
       setMessage(err.message || '停用失败')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // ===== Scores modal: per-school score line management =====
+
+  async function openScoresModal(school) {
+    setScoresModalSchool(school)
+    setScoresModalPage(0)
+    setScoresModalRows([])
+    setScoresModalPageInfo({ totalPages: 1, totalElements: 0 })
+    await loadScoresForModal(0)
+  }
+
+  function closeScoresModal() {
+    setScoresModalSchool(null)
+    setScoresModalRows([])
+    setScoresModalPage(0)
+    setScoresModalPageInfo({ totalPages: 1, totalElements: 0 })
+  }
+
+  async function loadScoresForModal(nextPage = scoresModalPage) {
+    if (!scoresModalSchool) return
+    setScoresModalLoading(true)
+    try {
+      const data = await adminApi.kaoyanScoreLines(
+        { schoolId: scoresModalSchool.id, page: nextPage, size: pageSize },
+        token,
+      )
+      setScoresModalRows(data?.content || [])
+      setScoresModalPageInfo({
+        totalPages: data?.totalPages || 1,
+        totalElements: data?.totalElements || 0,
+      })
+    } catch (err) {
+      setMessage(err.message || '分数线加载失败')
+    } finally {
+      setScoresModalLoading(false)
+    }
+  }
+
+  function openScoreCreateForm() {
+    if (!scoresModalSchool) return
+    setEditingId(null)
+    setScoreForm({ ...emptyScore, schoolId: scoresModalSchool.id })
+    setScoreFormSchoolName(scoresModalSchool.name)
+    setMessage('')
+    setShowFormModal(true)
+  }
+
+  function editScoreInModal(row) {
+    setEditingId(row.id)
+    setScoreForm({ ...emptyScore, ...row, schoolId: row.schoolId || scoresModalSchool.id })
+    setScoreFormSchoolName(scoresModalSchool?.name || row.schoolName || '')
+    setMessage(`正在编辑：${row.year} ${row.majorName || row.majorCategory || ''}`)
+    setShowFormModal(true)
+  }
+
+  async function deleteScoreInModal(id) {
+    if (!confirm('确定停用此分数线吗？')) return
+    setScoresModalLoading(true)
+    try {
+      await adminApi.deleteKaoyanScoreLine(id, token)
+      await loadScoresForModal()
+    } catch (err) {
+      setMessage(err.message || '停用失败')
+    } finally {
+      setScoresModalLoading(false)
     }
   }
 
@@ -247,16 +297,15 @@ export default function AdminKaoyanDataPage() {
           <div className="section-head">
             <p className="eyebrow">考研数据维护</p>
             <h2>院校信息与历年分数线</h2>
-            <p className="muted">后台维护考研院校库与历年分数线数据，用户可按院校、年份、专业查询并对比。</p>
+            <p className="muted">后台维护考研院校库与历年分数线数据；在每个院校卡片上点击"维护分数线"可管理该校的分数线记录。</p>
           </div>
 
           <div className="admin-tabs">
             {tabs.map((tab) => (
               <button
-                className={`admin-tab ${active === tab.key ? 'active' : ''}`}
+                className={`admin-tab active`}
                 key={tab.key}
                 type="button"
-                onClick={() => switchTab(tab.key)}
               >
                 {tab.label}
               </button>
@@ -265,67 +314,43 @@ export default function AdminKaoyanDataPage() {
 
           <div className="admin-page-shell">
             <form className="admin-toolbar-card admin-filter-stack" onSubmit={handleFilter}>
-              {active === 'schools' ? (
-                <div className="filter-grid">
-                  <label className="field">
-                    <span>院校名称</span>
-                    <input value={filters.name} onChange={(e) => updateFilter('name', e.target.value)} placeholder="模糊搜索" />
-                  </label>
-                  <label className="field">
-                    <span>地区</span>
-                    <input value={filters.region} onChange={(e) => updateFilter('region', e.target.value)} placeholder="如：北京" />
-                  </label>
-                  <label className="field">
-                    <span>省份</span>
-                    <input value={filters.province} onChange={(e) => updateFilter('province', e.target.value)} placeholder="如：江苏" />
-                  </label>
-                  <label className="field">
-                    <span>院校类型</span>
-                    <select value={filters.schoolType} onChange={(e) => updateFilter('schoolType', e.target.value)}>
-                      <option value="">全部</option>
-                      {schoolTypes.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </label>
-                  <label className="field">
-                    <span>985</span>
-                    <select value={filters.is985} onChange={(e) => updateFilter('is985', e.target.value)}>
-                      <option value="">不限</option>
-                      <option value="true">是</option>
-                      <option value="false">否</option>
-                    </select>
-                  </label>
-                  <label className="field">
-                    <span>211</span>
-                    <select value={filters.is211} onChange={(e) => updateFilter('is211', e.target.value)}>
-                      <option value="">不限</option>
-                      <option value="true">是</option>
-                      <option value="false">否</option>
-                    </select>
-                  </label>
-                </div>
-              ) : (
-                <div className="filter-grid">
-                  <label className="field">
-                    <span>院校名称</span>
-                    <input value={filters.schoolName} onChange={(e) => updateFilter('schoolName', e.target.value)} placeholder="模糊搜索" />
-                  </label>
-                  <label className="field">
-                    <span>年份</span>
-                    <input value={filters.year} onChange={(e) => updateFilter('year', e.target.value)} placeholder="如：2025" />
-                  </label>
-                  <label className="field">
-                    <span>专业门类</span>
-                    <select value={filters.majorCategory} onChange={(e) => updateFilter('majorCategory', e.target.value)}>
-                      <option value="">全部</option>
-                      {majorCategories.map((c) => <option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </label>
-                  <label className="field">
-                    <span>具体专业</span>
-                    <input value={filters.majorName} onChange={(e) => updateFilter('majorName', e.target.value)} placeholder="模糊搜索" />
-                  </label>
-                </div>
-              )}
+              <div className="filter-grid">
+                <label className="field">
+                  <span>院校名称</span>
+                  <input value={filters.name} onChange={(e) => updateFilter('name', e.target.value)} placeholder="模糊搜索" />
+                </label>
+                <label className="field">
+                  <span>地区</span>
+                  <input value={filters.region} onChange={(e) => updateFilter('region', e.target.value)} placeholder="如：北京" />
+                </label>
+                <label className="field">
+                  <span>省份</span>
+                  <input value={filters.province} onChange={(e) => updateFilter('province', e.target.value)} placeholder="如：江苏" />
+                </label>
+                <label className="field">
+                  <span>院校类型</span>
+                  <select value={filters.schoolType} onChange={(e) => updateFilter('schoolType', e.target.value)}>
+                    <option value="">全部</option>
+                    {schoolTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>985</span>
+                  <select value={filters.is985} onChange={(e) => updateFilter('is985', e.target.value)}>
+                    <option value="">不限</option>
+                    <option value="true">是</option>
+                    <option value="false">否</option>
+                  </select>
+                </label>
+                <label className="field">
+                  <span>211</span>
+                  <select value={filters.is211} onChange={(e) => updateFilter('is211', e.target.value)}>
+                    <option value="">不限</option>
+                    <option value="true">是</option>
+                    <option value="false">否</option>
+                  </select>
+                </label>
+              </div>
               <div className="admin-filter-bar">
                 <button className="btn primary" type="submit" disabled={loading}>{loading ? '查询中...' : '查询'}</button>
                 <button className="btn ghost" type="button" onClick={() => { setFilters(emptyFilters); setPage(0) }}>清空</button>
@@ -348,8 +373,7 @@ export default function AdminKaoyanDataPage() {
                 <p className="muted">暂无数据</p>
               ) : (
                 <div className="admin-record-grid">
-                  {active === 'schools' ? rows.map((row) => renderSchoolRow(row, editRecord, deleteRecord)) : null}
-                  {active === 'scores' ? rows.map((row) => renderScoreRow(row, editRecord, deleteRecord)) : null}
+                  {rows.map((row) => renderSchoolRow(row, editRecord, deleteRecord, openScoresModal))}
                 </div>
               )}
               <Pagination
@@ -368,20 +392,65 @@ export default function AdminKaoyanDataPage() {
         <div className="modal-overlay" onClick={closeFormModal}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720 }}>
             <div className="modal-header">
-              <h3 style={{ margin: 0 }}>{editingId ? `编辑${activeTab?.label || ''}` : `新增${activeTab?.label || ''}`}</h3>
+              <h3 style={{ margin: 0 }}>
+                {editingId
+                  ? `编辑${scoreFormSchoolName ? '分数线' : activeTab?.label || ''}`
+                  : `新增${scoreFormSchoolName ? '分数线' : activeTab?.label || ''}`}
+                {scoreFormSchoolName && <span style={{ fontSize: '0.85em', color: 'var(--muted)', marginLeft: 8 }}>· {scoreFormSchoolName}</span>}
+              </h3>
               <button className="btn ghost" type="button" onClick={closeFormModal} style={{ padding: '4px 8px', fontSize: '0.85rem' }}>✕</button>
             </div>
             <form onSubmit={createRecord}>
               <div className="modal-body">
-                {active === 'schools'
-                  ? renderSchoolForm(schoolForm, updateSchoolForm)
-                  : renderScoreForm(scoreForm, updateScoreForm, schools)}
+                {scoreFormSchoolName
+                  ? renderScoreForm(scoreForm, updateScoreForm)
+                  : renderSchoolForm(schoolForm, updateSchoolForm)}
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn ghost" onClick={closeFormModal}>取消</button>
                 <button type="submit" className="btn primary" disabled={loading}>{loading ? '保存中...' : '保存'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {scoresModalSchool && (
+        <div className="modal-overlay" onClick={closeScoresModal}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 880 }}>
+            <div className="modal-header">
+              <h3 style={{ margin: 0 }}>
+                {scoresModalSchool.name} 的分数线
+                <span className="admin-status-chip is-neutral" style={{ marginLeft: 12, fontSize: '0.7em' }}>共 {scoresModalPageInfo.totalElements} 条</span>
+              </h3>
+              <button className="btn ghost" type="button" onClick={closeScoresModal} style={{ padding: '4px 8px', fontSize: '0.85rem' }}>✕</button>
+            </div>
+            <div style={{ padding: '0 22px 14px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="btn primary small" type="button" onClick={openScoreCreateForm}>+ 新增分数线</button>
+            </div>
+            <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              {scoresModalLoading ? (
+                <p className="muted">加载中...</p>
+              ) : scoresModalRows.length === 0 ? (
+                <p className="muted" style={{ textAlign: 'center', padding: '2rem 0' }}>该院校暂无分数线，点击右上"新增分数线"添加。</p>
+              ) : (
+                <div className="admin-record-grid">
+                  {scoresModalRows.map((row) => renderScoreRow(row, editScoreInModal, deleteScoreInModal))}
+                </div>
+              )}
+              <Pagination
+                page={scoresModalPage + 1}
+                total={scoresModalPageInfo.totalPages}
+                totalItems={scoresModalPageInfo.totalElements}
+                onChange={(nextPage) => {
+                  setScoresModalPage(nextPage - 1)
+                  loadScoresForModal(nextPage - 1)
+                }}
+              />
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn ghost" onClick={closeScoresModal}>关闭</button>
+            </div>
           </div>
         </div>
       )}
@@ -420,16 +489,9 @@ function renderSchoolForm(form, update) {
   )
 }
 
-function renderScoreForm(form, update, schools) {
+function renderScoreForm(form, update) {
   return (
     <div className="filter-grid">
-      <label className="field">
-        <span>院校</span>
-        <select value={form.schoolId} onChange={(e) => update('schoolId', e.target.value)} required>
-          <option value="">选择院校</option>
-          {schools.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
-      </label>
       <TextField label="年份" value={form.year} onChange={(value) => update('year', value)} required placeholder="如：2025" />
       <label className="field">
         <span>专业门类</span>
@@ -467,11 +529,14 @@ function TextField({ label, value, onChange, type = 'text', required = false, pl
   )
 }
 
-function rowActions(row, onEdit, onDelete) {
+function rowActions(row, onEdit, onDelete, onManageScores) {
   return (
     <div className="admin-record-side">
       <span className={`admin-status-chip ${activeStatusClassMap[String(row.active !== false)] || 'is-neutral'}`}>{row.active === false ? '已停用' : '启用中'}</span>
       <div className="admin-inline-actions">
+        {onManageScores ? (
+          <button className="btn outline small" type="button" onClick={() => onManageScores(row)}>维护分数线</button>
+        ) : null}
         <button className="btn outline small" type="button" onClick={() => onEdit(row)}>编辑</button>
         <button className="btn outline-neutral small" type="button" onClick={() => onDelete(row.id)} disabled={row.active === false}>停用</button>
       </div>
@@ -479,7 +544,7 @@ function rowActions(row, onEdit, onDelete) {
   )
 }
 
-function renderSchoolRow(row, onEdit, onDelete) {
+function renderSchoolRow(row, onEdit, onDelete, onManageScores) {
   return (
     <article className="admin-record-card" key={row.id}>
       <div className="admin-record-main">
@@ -491,7 +556,7 @@ function renderSchoolRow(row, onEdit, onDelete) {
           <span>{row.isDoubleFirstClass ? '双一流' : '普通院校'}</span>
         </div>
       </div>
-      {rowActions(row, onEdit, onDelete)}
+      {rowActions(row, onEdit, onDelete, onManageScores)}
     </article>
   )
 }
