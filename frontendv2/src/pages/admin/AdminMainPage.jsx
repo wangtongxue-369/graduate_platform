@@ -170,7 +170,7 @@ export function AdminKaoyanPage() {
     <AdminDomainPage
       domainKey="kaoyan"
       title="先保证资料质量，再放大考研内容规模。"
-      lead="围绕资料审核、分数线维护与导师入驻。"
+      lead="围绕资料审核、分数线维护与学长学姐入驻。"
     />
   )
 }

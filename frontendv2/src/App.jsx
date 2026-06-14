@@ -32,12 +32,19 @@ import KaogongStationPage, {
   KaogongJobsPage,
   KaogongScoreLinesPage,
 } from '@/pages/student/kaogong/KaogongStationPage.jsx'
-import KaoyanStationPage, {
-  KaoyanMaterialsPage,
-  KaoyanPlansPage,
-  KaoyanSchoolsPage,
-  KaoyanSupportPage,
-} from '@/pages/student/kaoyan/KaoyanStationPage.jsx'
+import KaoyanOverviewPage from '@/pages/student/kaoyan/KaoyanOverviewPage.jsx'
+import KaoyanSchoolsPage from '@/pages/student/kaoyan/KaoyanSchoolsPage.jsx'
+import KaoyanSchoolFavoritesPage from '@/pages/student/kaoyan/KaoyanSchoolFavoritesPage.jsx'
+import KaoyanPlansPage from '@/pages/student/kaoyan/KaoyanPlansPage.jsx'
+import KaoyanPlanDetailPage from '@/pages/student/kaoyan/KaoyanPlanDetailPage.jsx'
+import KaoyanMaterialsPage from '@/pages/student/kaoyan/KaoyanMaterialsPage.jsx'
+import KaoyanMaterialUploadPage from '@/pages/student/kaoyan/KaoyanMaterialUploadPage.jsx'
+import KaoyanMyMaterialsPage from '@/pages/student/kaoyan/KaoyanMyMaterialsPage.jsx'
+import KaoyanMaterialDetailPage from '@/pages/student/kaoyan/KaoyanMaterialDetailPage.jsx'
+import KaoyanSupportOverviewPage from '@/pages/student/kaoyan/KaoyanSupportOverviewPage.jsx'
+import KaoyanMentorApplyPage from '@/pages/student/kaoyan/KaoyanMentorApplyPage.jsx'
+import KaoyanMessagesPage from '@/pages/student/kaoyan/KaoyanMessagesPage.jsx'
+import KaoyanStudyRoomPage from '@/pages/student/kaoyan/KaoyanStudyRoomPage.jsx'
 import StudyAbroadStationPage, {
   StudyAbroadApplicationsPage,
   StudyAbroadCasesPage,
@@ -45,10 +52,13 @@ import StudyAbroadStationPage, {
   StudyAbroadProgramsPage,
   StudyAbroadTimelinePage,
 } from '@/pages/student/studyabroad/StudyAbroadStationPage.jsx'
+import AdminKaoyanOverviewPage from '@/pages/admin/AdminKaoyanOverviewPage.jsx'
+import AdminKaoyanMaterialsPage from '@/pages/admin/AdminKaoyanMaterialsPage.jsx'
+import AdminKaoyanSchoolsPage from '@/pages/admin/AdminKaoyanSchoolsPage.jsx'
+import AdminKaoyanScoreLinesPage from '@/pages/admin/AdminKaoyanScoreLinesPage.jsx'
 import {
   AdminEmploymentPage,
   AdminKaogongPage,
-  AdminKaoyanPage,
   AdminQuestionBanksPage,
 } from '@/pages/admin/AdminMainPage.jsx'
 import SettingsProfilePage from '@/pages/settings/SettingsProfilePage.jsx'
@@ -130,11 +140,19 @@ export default function App() {
           <Route path="/station/job/recommendations" element={<JobRecommendationsPage />} />
           <Route path="/station/job/applications" element={<JobApplicationsPage />} />
           <Route path="/station/job/fairs" element={<JobFairsPage />} />
-          <Route path="/station/kaoyan" element={<KaoyanStationPage />} />
+          <Route path="/station/kaoyan" element={<KaoyanOverviewPage />} />
           <Route path="/station/kaoyan/schools" element={<KaoyanSchoolsPage />} />
+          <Route path="/station/kaoyan/schools/favorites" element={<KaoyanSchoolFavoritesPage />} />
           <Route path="/station/kaoyan/plans" element={<KaoyanPlansPage />} />
+          <Route path="/station/kaoyan/plans/:planId" element={<KaoyanPlanDetailPage />} />
           <Route path="/station/kaoyan/materials" element={<KaoyanMaterialsPage />} />
-          <Route path="/station/kaoyan/support" element={<KaoyanSupportPage />} />
+          <Route path="/station/kaoyan/materials/upload" element={<KaoyanMaterialUploadPage />} />
+          <Route path="/station/kaoyan/materials/mine" element={<KaoyanMyMaterialsPage />} />
+          <Route path="/station/kaoyan/materials/:materialId" element={<KaoyanMaterialDetailPage />} />
+          <Route path="/station/kaoyan/support" element={<KaoyanSupportOverviewPage />} />
+          <Route path="/station/kaoyan/support/mentors/apply" element={<KaoyanMentorApplyPage />} />
+          <Route path="/station/kaoyan/support/messages" element={<KaoyanMessagesPage />} />
+          <Route path="/station/kaoyan/support/rooms/:roomId" element={<KaoyanStudyRoomPage />} />
           <Route path="/station/kaogong" element={<KaogongStationPage />} />
           <Route path="/station/kaogong/jobs" element={<KaogongJobsPage />} />
           <Route path="/station/kaogong/score-lines" element={<KaogongScoreLinesPage />} />
@@ -163,7 +181,10 @@ export default function App() {
           <Route path="/admin/community/categories" element={<AdminCommunityCategoriesPage />} />
           <Route path="/admin/community/users" element={<AdminCommunityUsersPage />} />
           <Route path="/admin/question-banks" element={<AdminQuestionBanksPage />} />
-          <Route path="/admin/kaoyan" element={<AdminKaoyanPage />} />
+          <Route path="/admin/kaoyan" element={<AdminKaoyanOverviewPage />} />
+          <Route path="/admin/kaoyan/materials" element={<AdminKaoyanMaterialsPage />} />
+          <Route path="/admin/kaoyan/schools" element={<AdminKaoyanSchoolsPage />} />
+          <Route path="/admin/kaoyan/score-lines" element={<AdminKaoyanScoreLinesPage />} />
           <Route path="/admin/kaogong" element={<AdminKaogongPage />} />
           <Route path="/admin/employment" element={<AdminEmploymentPage />} />
         </Route>

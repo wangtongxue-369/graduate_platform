@@ -1,18 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  KaoyanSchoolsPage,
-} from '@/pages/student/kaoyan/KaoyanStationPage.jsx'
-import {
-  KaogongCalendarPage,
-} from '@/pages/student/kaogong/KaogongStationPage.jsx'
-import {
-  JobResumePage,
-} from '@/pages/student/job/JobStationPage.jsx'
-import {
-  StudyAbroadProgramsPage,
-} from '@/pages/student/studyabroad/StudyAbroadStationPage.jsx'
+import KaoyanSchoolsPage from '@/pages/student/kaoyan/KaoyanSchoolsPage.jsx'
+import { KaogongCalendarPage } from '@/pages/student/kaogong/KaogongStationPage.jsx'
+import { JobResumePage } from '@/pages/student/job/JobStationPage.jsx'
+import { StudyAbroadProgramsPage } from '@/pages/student/studyabroad/StudyAbroadStationPage.jsx'
 
 const authState = vi.hoisted(() => ({
   user: {
@@ -28,6 +20,8 @@ const apiMocks = vi.hoisted(() => ({
   kaoyanApi: {
     schoolsPage: vi.fn(),
     scoreLinesPage: vi.fn(),
+    favoriteScoreLine: vi.fn(),
+    unfavoriteScoreLine: vi.fn(),
   },
   materialApi: {
     listPage: vi.fn(),
@@ -136,10 +130,18 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
 
     renderPage(<KaoyanSchoolsPage />)
 
-    expect(screen.getByText('院校比较')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', {
+        name: '把院校档案、分数线和收藏动作叠在同一张比较账本里。',
+      }),
+    ).toBeInTheDocument()
     expect(screen.getByText('筛选控制器')).toBeInTheDocument()
     expect(screen.getByLabelText('院校地区')).toBeInTheDocument()
 
+    await waitFor(() => {
+      expect(apiMocks.kaoyanApi.schoolsPage).toHaveBeenCalled()
+      expect(apiMocks.kaoyanApi.scoreLinesPage).toHaveBeenCalled()
+    })
     expect(await screen.findByText('浙江大学')).toBeInTheDocument()
     expect(screen.getByText('计算机科学与技术')).toBeInTheDocument()
     expect(screen.getByText(/总分线 390/)).toBeInTheDocument()
@@ -185,7 +187,7 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
       expect(apiMocks.kaogongApi.calendarExamGroupsPage).toHaveBeenCalled()
     })
     expect(screen.getAllByText('浙江省公务员考试').length).toBeGreaterThan(0)
-    expect(screen.getByText(/^报名开始$/)).toBeInTheDocument()
+    expect(screen.getByText(/^报名开始/)).toBeInTheDocument()
     expect(screen.getByText('距离报名开始还有 3 天')).toBeInTheDocument()
   })
 

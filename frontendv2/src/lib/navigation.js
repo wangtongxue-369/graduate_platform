@@ -5,12 +5,19 @@ export const TARGET_LABEL_MAP = {
   liuxue: '留学',
 }
 
+const studentRouteTargetMap = [
+  ['/station/kaoyan', 'kaoyan'],
+  ['/station/kaogong', 'kaogong'],
+  ['/station/job', 'job'],
+  ['/station/studyabroad', 'liuxue'],
+]
+
 const directionNavMap = {
   kaoyan: [
     { label: '考研总览', to: '/station/kaoyan' },
-    { label: '院校比较', to: '/station/kaoyan/schools' },
-    { label: '学习计划', to: '/station/kaoyan/plans' },
-    { label: '资料架', to: '/station/kaoyan/materials' },
+    { label: '择校账本', to: '/station/kaoyan/schools' },
+    { label: '计划轨道', to: '/station/kaoyan/plans' },
+    { label: '资料中枢', to: '/station/kaoyan/materials' },
     { label: '陪跑协同', to: '/station/kaoyan/support' },
   ],
   kaogong: [
@@ -22,7 +29,7 @@ const directionNavMap = {
   ],
   job: [
     { label: '就业总览', to: '/station/job' },
-    { label: '简历中心', to: '/station/job/resume' },
+    { label: '简历中枢', to: '/station/job/resume' },
     { label: '岗位推荐', to: '/station/job/recommendations' },
     { label: '投递跟踪', to: '/station/job/applications' },
     { label: '招聘会目录', to: '/station/job/fairs' },
@@ -57,7 +64,14 @@ export function getDirectionNav(target) {
   return directionNavMap[target] || directionNavMap.job
 }
 
-export function getAppNavigation(user) {
+export function resolveStudentTarget(user, pathname = '') {
+  if (user?.role === 'admin') return null
+
+  const matchedTarget = studentRouteTargetMap.find(([prefix]) => pathname.startsWith(prefix))?.[1]
+  return matchedTarget || user?.target || 'job'
+}
+
+export function getAppNavigation(user, pathname = '') {
   if (user?.role === 'admin') {
     return [
       {
@@ -79,6 +93,8 @@ export function getAppNavigation(user) {
     ]
   }
 
+  const currentTarget = resolveStudentTarget(user, pathname)
+
   return [
     {
       title: '公共功能',
@@ -88,8 +104,8 @@ export function getAppNavigation(user) {
       ],
     },
     {
-      title: `${TARGET_LABEL_MAP[user?.target] || '方向'}模块`,
-      items: getDirectionNav(user?.target),
+      title: `${TARGET_LABEL_MAP[currentTarget] || '方向'}模块`,
+      items: getDirectionNav(currentTarget),
     },
   ]
 }
@@ -103,10 +119,11 @@ export function getSettingsNavigation() {
   ]
 }
 
-export function getShellTitle(user, mode = 'app') {
+export function getShellTitle(user, mode = 'app', pathname = '') {
   if (mode === 'settings') return '个人设置'
   if (user?.role === 'admin') return '管理员主站'
-  return `${TARGET_LABEL_MAP[user?.target] || '方向'}主站`
+  const currentTarget = resolveStudentTarget(user, pathname)
+  return `${TARGET_LABEL_MAP[currentTarget] || '方向'}主站`
 }
 
 export function getShellDescription(user, mode = 'app') {
@@ -116,5 +133,5 @@ export function getShellDescription(user, mode = 'app') {
   if (user?.role === 'admin') {
     return '以治理队列为入口，再进入各管理模块处理真实后端业务。'
   }
-  return '公共功能与方向功能在同一套左栏中汇流，进入具体页面再逐层深入。'
+  return '公共功能与方向能力在同一套左栏中汇流，进入具体页面再逐层深入。'
 }

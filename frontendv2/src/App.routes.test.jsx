@@ -106,23 +106,65 @@ vi.mock('@/pages/student/job/JobStationPage.jsx', () => ({
     return <h1>岗位推荐</h1>
   },
   JobResumePage: function JobResumePageMock() {
-    return <h1>简历中心</h1>
+    return <h1>简历中枢</h1>
+  },
+}))
+
+vi.mock('@/pages/student/kaoyan/KaoyanOverviewPage.jsx', () => ({
+  default: function KaoyanOverviewPageMock() {
+    return <h1>考研总览</h1>
+  },
+}))
+
+vi.mock('@/pages/student/kaoyan/KaoyanSchoolsPage.jsx', () => ({
+  default: function KaoyanSchoolsPageMock() {
+    return <h1>择校账本</h1>
+  },
+}))
+
+vi.mock('@/pages/student/kaoyan/KaoyanSchoolFavoritesPage.jsx', () => ({
+  default: function KaoyanSchoolFavoritesPageMock() {
+    return <h1>收藏账本</h1>
+  },
+}))
+
+vi.mock('@/pages/student/kaoyan/KaoyanPlansPage.jsx', () => ({
+  default: function KaoyanPlansPageMock() {
+    return <h1>计划轨道</h1>
+  },
+}))
+
+vi.mock('@/pages/student/kaoyan/KaoyanPlanDetailPage.jsx', () => ({
+  default: function KaoyanPlanDetailPageMock() {
+    return <h1>计划详情</h1>
+  },
+}))
+
+vi.mock('@/pages/student/kaoyan/KaoyanMaterialsPage.jsx', () => ({
+  default: function KaoyanMaterialsPageMock() {
+    return <h1>资料中枢</h1>
+  },
+}))
+
+vi.mock('@/pages/student/kaoyan/KaoyanMaterialUploadPage.jsx', () => ({
+  default: function KaoyanMaterialUploadPageMock() {
+    return <h1>上传资料</h1>
+  },
+}))
+
+vi.mock('@/pages/student/kaoyan/KaoyanMyMaterialsPage.jsx', () => ({
+  default: function KaoyanMyMaterialsPageMock() {
+    return <h1>我的资料</h1>
+  },
+}))
+
+vi.mock('@/pages/student/kaoyan/KaoyanMaterialDetailPage.jsx', () => ({
+  default: function KaoyanMaterialDetailPageMock() {
+    return <h1>资料详情</h1>
   },
 }))
 
 vi.mock('@/pages/student/kaoyan/KaoyanStationPage.jsx', () => ({
-  default: function KaoyanStationPageMock() {
-    return <h1>考研主站</h1>
-  },
-  KaoyanMaterialsPage: function KaoyanMaterialsPageMock() {
-    return <h1>考研资料</h1>
-  },
-  KaoyanPlansPage: function KaoyanPlansPageMock() {
-    return <h1>学习计划</h1>
-  },
-  KaoyanSchoolsPage: function KaoyanSchoolsPageMock() {
-    return <h1>院校比较</h1>
-  },
   KaoyanSupportPage: function KaoyanSupportPageMock() {
     return <h1>陪跑协同</h1>
   },

@@ -1,26 +1,53 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
+import App from '@/App.jsx'
 import { PracticeBankPreviewPage } from '@/pages/practice/PracticeDirectoryPage.jsx'
-import { KaoyanSchoolsPage } from '@/pages/student/kaoyan/KaoyanStationPage.jsx'
+import KaoyanSchoolsPage from '@/pages/student/kaoyan/KaoyanSchoolsPage.jsx'
 import { AdminKaoyanPage } from '@/pages/admin/AdminMainPage.jsx'
 import { AdminCommunityReviewsPage } from '@/pages/admin/AdminCommunityPages.jsx'
 import SettingsSecurityPage from '@/pages/settings/SettingsSecurityPage.jsx'
 
+const authState = vi.hoisted(() => ({
+  user: {
+    id: 1,
+    name: '考研测试用户',
+    role: 'user',
+    target: 'kaoyan',
+  },
+  token: 'dev-token',
+  isAuthed: true,
+  loading: false,
+}))
+
 vi.mock('@legacy/context/AuthContext.jsx', () => ({
-  useAuth: () => ({
-    user: {
-      id: 1,
-      name: '考研测试用户',
-      role: 'admin',
-      target: 'kaoyan',
-    },
-    token: 'dev-token',
-    isAuthed: true,
-  }),
+  useAuth: () => authState,
 }))
 
 vi.mock('@legacy/lib/api.js', () => ({
+  kaoyanApi: {
+    schoolsPage: vi.fn(),
+    scoreLinesPage: vi.fn(),
+    favoriteScoreLine: vi.fn(),
+    unfavoriteScoreLine: vi.fn(),
+    favoriteScoreLines: vi.fn(),
+  },
+  materialApi: {
+    listPage: vi.fn(),
+    myMaterials: vi.fn(),
+    detail: vi.fn(),
+    downloadUrl: vi.fn(() => '#'),
+  },
+  mentorApi: {
+    mentorsPage: vi.fn(),
+    unreadCount: vi.fn(),
+  },
+  studyRoomApi: {
+    roomList: vi.fn(),
+  },
+  studyPlanApi: {
+    myPlans: vi.fn(),
+  },
   adminApi: {
     reviewList: vi.fn(),
   },
@@ -58,7 +85,49 @@ describe('page-level return paths', () => {
     expect(screen.getByRole('link', { name: '考研主站' })).toHaveAttribute('href', '/station/kaoyan')
   })
 
+  it('renders the new deep kaoyan student route from the app router', async () => {
+    render(
+      <MemoryRouter initialEntries={['/station/kaoyan/materials/mine']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '我的资料状态只围绕审核进度查看，不混入公开资料浏览。',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('keeps kaoyan navigation grouped while pointing to the new route hubs', async () => {
+    render(
+      <MemoryRouter initialEntries={['/station/kaoyan']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('link', { name: '择校账本' })).toHaveAttribute('href', '/station/kaoyan/schools')
+    expect(screen.getByRole('link', { name: '计划轨道' })).toHaveAttribute('href', '/station/kaoyan/plans')
+    expect(screen.getByRole('link', { name: '资料中枢' })).toHaveAttribute('href', '/station/kaoyan/materials')
+    expect(screen.getByRole('link', { name: '陪跑协同' })).toHaveAttribute('href', '/station/kaoyan/support')
+  })
+
+  it('uses the current station route for sidebar grouping instead of the default target', async () => {
+    authState.user = { id: 1, name: '跨站测试用户', role: 'user', target: 'kaogong' }
+
+    render(
+      <MemoryRouter initialEntries={['/station/kaoyan']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('link', { name: '考研总览' })).toHaveAttribute('href', '/station/kaoyan')
+    expect(screen.queryByRole('link', { name: '考公总览' })).not.toBeInTheDocument()
+  })
+
   it('shows a return path on admin child pages', () => {
+    authState.user = { id: 1, name: '治理测试用户', role: 'admin', target: 'kaoyan' }
+
     render(
       <MemoryRouter>
         <AdminKaoyanPage />
@@ -69,6 +138,8 @@ describe('page-level return paths', () => {
   })
 
   it('keeps community governance pages inside the admin community route tree', () => {
+    authState.user = { id: 1, name: '治理测试用户', role: 'admin', target: 'kaoyan' }
+
     render(
       <MemoryRouter>
         <AdminCommunityReviewsPage />
