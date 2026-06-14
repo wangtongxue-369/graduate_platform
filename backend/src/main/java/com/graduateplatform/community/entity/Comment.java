@@ -12,8 +12,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString(exclude = {"post", "author", "parentComment", "replies"})
-@EqualsAndHashCode(exclude = {"post", "author", "parentComment", "replies"})
+@ToString(exclude = {"post", "author", "parentComment", "replyToComment", "replies"})
+@EqualsAndHashCode(exclude = {"post", "author", "parentComment", "replyToComment", "replies"})
 public class Comment {
 
     @Id
@@ -34,6 +34,10 @@ public class Comment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_comment_id")
     private Comment parentComment;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reply_to_comment_id")
+    private Comment replyToComment;
 
     @OneToMany(mappedBy = "parentComment")
     @Builder.Default

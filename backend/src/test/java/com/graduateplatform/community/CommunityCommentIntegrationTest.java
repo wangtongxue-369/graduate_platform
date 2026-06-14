@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Map;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -125,7 +126,7 @@ class CommunityCommentIntegrationTest {
     }
 
     @Test
-    void createAndListNestedComments() throws Exception {
+    void replyingToReplyStaysInSecondLevelAndPreservesReplyTarget() throws Exception {
         String rootResponse = mockMvc.perform(post("/api/posts/" + post.getId() + "/comments")
                 .header("Authorization", "Bearer " + authorToken)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -166,7 +167,9 @@ class CommunityCommentIntegrationTest {
                     "parentId", replyId
                 ))))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.parentId").value(replyId));
+            .andExpect(jsonPath("$.data.parentId").value(rootId))
+            .andExpect(jsonPath("$.data.replyToId").value(replyId))
+            .andExpect(jsonPath("$.data.replyToAuthorName").value(replier.getName()));
 
         mockMvc.perform(post("/api/posts/" + post.getId() + "/comments")
                 .header("Authorization", "Bearer " + authorToken)
@@ -180,10 +183,13 @@ class CommunityCommentIntegrationTest {
             .andExpect(jsonPath("$.data.length()").value(2))
             .andExpect(jsonPath("$.data[0].content").value("Root comment"))
             .andExpect(jsonPath("$.data[0].replyCount").value(2))
-            .andExpect(jsonPath("$.data[0].replies.length()").value(1))
+            .andExpect(jsonPath("$.data[0].replies.length()").value(2))
             .andExpect(jsonPath("$.data[0].replies[0].content").value("Reply comment"))
-            .andExpect(jsonPath("$.data[0].replies[0].replyCount").value(1))
-            .andExpect(jsonPath("$.data[0].replies[0].replies[0].content").value("Nested reply"))
+            .andExpect(jsonPath("$.data[0].replies[0].replyCount").value(0))
+            .andExpect(jsonPath("$.data[0].replies[1].content").value("Nested reply"))
+            .andExpect(jsonPath("$.data[0].replies[1].replyToId").value(replyId))
+            .andExpect(jsonPath("$.data[0].replies[1].replyToAuthorName").value(replier.getName()))
+            .andExpect(jsonPath("$.data[0].replies[1].replies.length()").value(0))
             .andExpect(jsonPath("$.data[1].content").value("Second root comment"));
     }
 
@@ -206,6 +212,74 @@ class CommunityCommentIntegrationTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.message").value("回复的评论不存在或不属于当前帖子"));
+    }
+
+    @Test
+    void deletingLeafCommentRemovesItFromPublicThreadAndCount() throws Exception {
+        String rootResponse = mockMvc.perform(post("/api/posts/" + post.getId() + "/comments")
+                .header("Authorization", "Bearer " + authorToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("content", "Leaf comment"))))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        long rootId = objectMapper.readTree(rootResponse).path("data").path("id").asLong();
+
+        mockMvc.perform(delete("/api/posts/" + post.getId() + "/comments/" + rootId)
+                .header("Authorization", "Bearer " + authorToken))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/posts/" + post.getId() + "/comments"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.length()").value(0));
+
+        mockMvc.perform(get("/api/posts/" + post.getId()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.commentCount").value(0));
+    }
+
+    @Test
+    void deletingCommentWithRepliesKeepsPlaceholderAndPreservesReplies() throws Exception {
+        String rootResponse = mockMvc.perform(post("/api/posts/" + post.getId() + "/comments")
+                .header("Authorization", "Bearer " + authorToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("content", "Parent comment"))))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        long rootId = objectMapper.readTree(rootResponse).path("data").path("id").asLong();
+
+        mockMvc.perform(post("/api/posts/" + post.getId() + "/comments")
+                .header("Authorization", "Bearer " + replierToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of(
+                    "content", "Child reply",
+                    "parentId", rootId
+                ))))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(delete("/api/posts/" + post.getId() + "/comments/" + rootId)
+                .header("Authorization", "Bearer " + authorToken))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/posts/" + post.getId() + "/comments"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.length()").value(1))
+            .andExpect(jsonPath("$.data[0].content").value("该评论已被作者删除"))
+            .andExpect(jsonPath("$.data[0].deleted").value(true))
+            .andExpect(jsonPath("$.data[0].authorId").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.data[0].authorName").value(""))
+            .andExpect(jsonPath("$.data[0].replyCount").value(1))
+            .andExpect(jsonPath("$.data[0].replies.length()").value(1))
+            .andExpect(jsonPath("$.data[0].replies[0].content").value("Child reply"));
+
+        mockMvc.perform(get("/api/posts/" + post.getId()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.commentCount").value(1));
     }
 
     private String json(Object value) throws Exception {

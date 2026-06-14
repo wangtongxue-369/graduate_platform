@@ -1,4 +1,6 @@
 spring:
+  application:
+    name: graduate-platform-backend
   datasource:
     url: jdbc:mysql://118.89.81.131:3306/graduate_platform?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf-8
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -50,5 +52,12 @@ tencent:
     base-url: https://rjxt-1331431081.cos.ap-shanghai.myqcloud.com
 
 logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%15.15t] %logger{36} - %msg%n%wEx"
   level:
-    com.graduateplatform: DEBUG
+    root: INFO
+    com.graduateplatform: INFO
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN

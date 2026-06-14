@@ -55,7 +55,7 @@ public class CommentService {
         ensureCanView(post, viewerUserId, admin);
 
         List<Comment> comments = commentRepository.findByPostIdAndStatusInOrderByCreatedAtAsc(postId, VISIBLE_COMMENT_STATUSES);
-        List<Map<String, Object>> tree = buildCommentTree(comments);
+        List<Map<String, Object>> tree = pruneDeletedLeafComments(buildCommentTree(comments));
         populateReplyCounts(tree);
         return tree;
     }
@@ -68,6 +68,16 @@ public class CommentService {
 
         String normalizedContent = normalizeCommentContent(req.getContent());
         Comment parentComment = resolveParentComment(postId, req.getParentId());
+        Comment replyToComment = resolveReplyToComment(postId, req.getReplyToId());
+
+        if (parentComment != null && parentComment.getParentComment() != null) {
+            if (replyToComment == null) {
+                replyToComment = parentComment;
+            }
+            parentComment = findRootComment(parentComment);
+        }
+
+        replyToComment = normalizeReplyTarget(parentComment, replyToComment);
         var sensitiveWord = moderationService.findSensitiveWord(normalizedContent);
         String status = sensitiveWord.isPresent() ? "HIDDEN" : "PUBLISHED";
 
@@ -76,6 +86,7 @@ public class CommentService {
             .post(post)
             .author(author)
             .parentComment(parentComment)
+            .replyToComment(replyToComment)
             .status(status)
             .build());
 
@@ -115,7 +126,7 @@ public class CommentService {
         }
 
         comment.setStatus("DELETED");
-        comment.setContent("该评论已删除");
+        comment.setContent("该评论已被作者删除");
         commentRepository.save(comment);
         return toMap(comment);
     }
@@ -267,6 +278,42 @@ public class CommentService {
             .orElseThrow(() -> new BusinessException("回复的评论不存在或不属于当前帖子"));
     }
 
+    private Comment resolveReplyToComment(Long postId, Long replyToId) {
+        if (replyToId == null) {
+            return null;
+        }
+        return commentRepository.findByIdAndPostIdAndStatusIn(replyToId, postId, EDITABLE_COMMENT_STATUSES)
+            .orElseThrow(() -> new BusinessException("Reply target comment does not exist in the current post"));
+    }
+
+    private Comment normalizeReplyTarget(Comment parentComment, Comment replyToComment) {
+        if (replyToComment == null) {
+            return null;
+        }
+        if (parentComment == null) {
+            throw new BusinessException("replyToId requires parentId");
+        }
+
+        Comment parentRoot = findRootComment(parentComment);
+        Comment replyRoot = findRootComment(replyToComment);
+        if (!parentRoot.getId().equals(replyRoot.getId())) {
+            throw new BusinessException("Reply target comment is outside the current thread");
+        }
+
+        if (replyToComment.getId().equals(parentRoot.getId())) {
+            return null;
+        }
+        return replyToComment;
+    }
+
+    private Comment findRootComment(Comment comment) {
+        Comment current = comment;
+        while (current.getParentComment() != null) {
+            current = current.getParentComment();
+        }
+        return current;
+    }
+
     private String normalizeCommentContent(String content) {
         String normalizedContent = content == null ? "" : content.trim();
         if (normalizedContent.isEmpty()) {
@@ -301,15 +348,31 @@ public class CommentService {
 
     private Map<String, Object> toMap(Comment comment) {
         Map<String, Object> map = new LinkedHashMap<>();
+        boolean deleted = "DELETED".equals(comment.getStatus());
         map.put("id", comment.getId());
         map.put("content", comment.getContent());
-        map.put("authorId", comment.getAuthor().getId());
-        map.put("authorName", comment.getAuthor().getName());
+        map.put("authorId", deleted ? null : comment.getAuthor().getId());
+        map.put("authorName", deleted ? "" : comment.getAuthor().getName());
         map.put("parentId", comment.getParentComment() != null ? comment.getParentComment().getId() : null);
+        map.put("replyToId", comment.getReplyToComment() != null ? comment.getReplyToComment().getId() : null);
+        map.put(
+            "replyToAuthorId",
+            comment.getReplyToComment() != null && !"DELETED".equals(comment.getReplyToComment().getStatus())
+                ? comment.getReplyToComment().getAuthor().getId()
+                : null
+        );
+        map.put(
+            "replyToAuthorName",
+            comment.getReplyToComment() == null
+                ? ""
+                : ("DELETED".equals(comment.getReplyToComment().getStatus())
+                    ? "\u8bc4\u8bba\u5df2\u5220\u9664"
+                    : comment.getReplyToComment().getAuthor().getName())
+        );
         map.put("status", comment.getStatus());
         map.put("reportCount", comment.getReportCount());
         map.put("editable", "PUBLISHED".equals(comment.getStatus()));
-        map.put("deleted", "DELETED".equals(comment.getStatus()));
+        map.put("deleted", deleted);
         map.put("hidden", "HIDDEN".equals(comment.getStatus()));
         map.put("createdAt", comment.getCreatedAt().toString());
         map.put("updatedAt", comment.getUpdatedAt() != null ? comment.getUpdatedAt().toString() : null);
@@ -358,10 +421,29 @@ public class CommentService {
     private int populateReplyCount(Map<String, Object> comment) {
         int totalReplies = 0;
         for (Map<String, Object> reply : getReplies(comment)) {
-            totalReplies += 1 + populateReplyCount(reply);
+            totalReplies += populateReplyCount(reply);
+            if (!Boolean.TRUE.equals(reply.get("deleted"))) {
+                totalReplies += 1;
+            }
         }
         comment.put("replyCount", totalReplies);
         return totalReplies;
+    }
+
+    private List<Map<String, Object>> pruneDeletedLeafComments(List<Map<String, Object>> comments) {
+        List<Map<String, Object>> pruned = new ArrayList<>();
+
+        for (Map<String, Object> comment : comments) {
+            List<Map<String, Object>> nextReplies = pruneDeletedLeafComments(getReplies(comment));
+            comment.put("replies", nextReplies);
+
+            if (Boolean.TRUE.equals(comment.get("deleted")) && nextReplies.isEmpty()) {
+                continue;
+            }
+            pruned.add(comment);
+        }
+
+        return pruned;
     }
 
     private void ensureCanView(Post post, Long viewerUserId, boolean admin) {

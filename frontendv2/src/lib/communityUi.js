@@ -115,7 +115,7 @@ export function formatDateTime(value) {
 }
 
 export function countComments(items = []) {
-  return items.reduce((total, item) => total + 1 + countComments(item.replies || []), 0)
+  return items.reduce((total, item) => total + (item.deleted ? 0 : 1) + countComments(item.replies || []), 0)
 }
 
 export function extractPagePayload(payload) {
@@ -196,6 +196,9 @@ export function normalizeCommunityComment(comment) {
     authorName: comment?.authorName || '',
     content: comment?.content || '',
     parentId: comment?.parentId ?? null,
+    replyToId: comment?.replyToId ?? null,
+    replyToAuthorId: comment?.replyToAuthorId ?? null,
+    replyToAuthorName: comment?.replyToAuthorName || '',
     status: comment?.status || 'PUBLISHED',
     editable: comment?.editable !== false,
     deleted: Boolean(comment?.deleted),
@@ -303,6 +306,11 @@ export function buildSearchParams(currentParams, patch) {
   return next
 }
 
+export function buildCommunityReturnTo(pathname, search = '') {
+  const safePathname = pathname || '/community'
+  return search ? `${safePathname}${search}` : safePathname
+}
+
 export function createPreviewNotificationItems(posts = []) {
   return posts.slice(0, 6).map((post, index) => ({
     id: `preview-${post.id}-${index}`,
@@ -327,6 +335,53 @@ export function cloneCommentTree(items = []) {
     ...item,
     replies: cloneCommentTree(item.replies || []),
   }))
+}
+
+function getCommentDisplayAuthor(comment) {
+  if (comment?.deleted) return '评论已删除'
+  if (comment?.authorName) return comment.authorName
+  if (comment?.authorId) return `用户 ${comment.authorId}`
+  return '匿名用户'
+}
+
+function flattenRepliesForDisplay(items, rootComment, parentComment, bucket) {
+  for (const item of items) {
+    const parentIsRoot = String(parentComment?.id ?? '') === String(rootComment?.id ?? '')
+    const replyToId = item.replyToId ?? (parentIsRoot ? null : parentComment?.id ?? null)
+    const replyToAuthorId = item.replyToAuthorId ?? (parentIsRoot ? null : parentComment?.authorId ?? null)
+    const replyToAuthorName = item.replyToAuthorName || (parentIsRoot ? '' : getCommentDisplayAuthor(parentComment))
+
+    bucket.push({
+      ...item,
+      rootId: rootComment.id,
+      replyToId,
+      replyToAuthorId,
+      replyToAuthorName,
+      replyCount: 0,
+      replies: [],
+    })
+
+    if (item.replies?.length) {
+      flattenRepliesForDisplay(item.replies, rootComment, item, bucket)
+    }
+  }
+}
+
+export function flattenCommentThreadForDisplay(items = []) {
+  return items.map((item) => {
+    const replies = []
+    flattenRepliesForDisplay(item.replies || [], item, item, replies)
+
+    return {
+      ...item,
+      rootId: item.id,
+      replyToId: null,
+      replyToAuthorId: null,
+      replyToAuthorName: '',
+      replyCount: countComments(replies),
+      replies,
+    }
+  })
 }
 
 export function insertCommentIntoTree(items, draftComment, parentId = null) {
@@ -370,12 +425,41 @@ export function updateCommentInTree(items, commentId, updater) {
 }
 
 export function removeCommentFromTree(items, commentId) {
-  return items
-    .filter((item) => String(item.id) !== String(commentId))
-    .map((item) => ({
+  return deleteCommentFromTree(items, commentId)
+}
+
+export function deleteCommentFromTree(items, commentId) {
+  return cleanupDeletedCommentTree(items.map((item) => {
+    if (String(item.id) === String(commentId)) {
+      return {
+        ...item,
+        authorId: null,
+        authorName: '',
+        content: '该评论已被作者删除',
+        deleted: true,
+        editable: false,
+        replies: deleteCommentFromTree(item.replies || [], commentId),
+      }
+    }
+    if (!item.replies?.length) return item
+    return {
       ...item,
-      replies: item.replies?.length ? removeCommentFromTree(item.replies, commentId) : [],
-    }))
+      replies: deleteCommentFromTree(item.replies, commentId),
+    }
+  }))
+}
+
+function cleanupDeletedCommentTree(items = []) {
+  return items
+    .map((item) => {
+      const replies = cleanupDeletedCommentTree(item.replies || [])
+      return {
+        ...item,
+        replies,
+        replyCount: countComments(replies),
+      }
+    })
+    .filter((item) => !(item.deleted && item.replies.length === 0))
 }
 
 export function findCommentInTree(items, commentId) {

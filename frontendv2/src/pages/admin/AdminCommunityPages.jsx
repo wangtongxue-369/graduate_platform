@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import MarkdownContent from '@legacy/components/MarkdownContent.jsx'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { adminApi } from '@legacy/lib/api.js'
+import FrontendV2MarkdownContent from '@/components/markdown/FrontendV2MarkdownContent.jsx'
 import PageIntro from '@/components/PageIntro.jsx'
 import SubnavTabs from '@/components/SubnavTabs.jsx'
 import {
@@ -425,7 +425,7 @@ export function AdminCommunityReviewsPage() {
                   <span>{formatDateTime(selected.createdAt)}</span>
                 </div>
                 <div className="v2-post-markdown">
-                  <MarkdownContent content={selected.content || ''} />
+                  <FrontendV2MarkdownContent content={selected.content || ''} />
                 </div>
                 {selected.reviewReason ? <p>历史处理原因：{selected.reviewReason}</p> : null}
               </section>

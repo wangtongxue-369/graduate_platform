@@ -265,7 +265,7 @@ public class UserService {
         map.put("visibility", post.getVisibility());
         map.put("anonymous", post.getAnonymous());
         map.put("viewCount", post.getViewCount());
-        map.put("commentCount", post.getCommentCount());
+        map.put("commentCount", commentRepository.countByPostIdAndStatusIn(post.getId(), List.of("PUBLISHED")));
         map.put("likeCount", post.getLikeCount());
         map.put("favoriteCount", post.getFavoriteCount());
         map.put("hasAttachment", post.getHasAttachment());

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { communityApi } from '@legacy/lib/api.js'
+import CommunityFilterPanel from '@/components/community/CommunityFilterPanel.jsx'
+import CommunityPostCard from '@/components/community/CommunityPostCard.jsx'
 import PageIntro from '@/components/PageIntro.jsx'
 import SubnavTabs from '@/components/SubnavTabs.jsx'
 import {
@@ -11,13 +13,10 @@ import {
   shouldForceCommunityPreview,
 } from '@/lib/communityPreview.js'
 import {
+  buildCommunityReturnTo,
   buildSearchParams,
-  communityAttachmentOptions,
-  communitySortOptions,
-  createPlainPreview,
   extractPagePayload,
   fallbackCommunityCategories,
-  formatTimeLabel,
   normalizeCommunityCategory,
   normalizeCommunityPost,
 } from '@/lib/communityUi.js'
@@ -54,12 +53,14 @@ function buildPreviewPage(items, page) {
 
 export default function CommunityHubPage() {
   const { isAuthed, token } = useAuth()
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [categories, setCategories] = useState(fallbackCommunityCategories)
   const [pageState, setPageState] = useState(() => extractPagePayload([]))
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [showAllHotTags, setShowAllHotTags] = useState(false)
   const [keywordInput, setKeywordInput] = useState(searchParams.get('keyword') || '')
 
   const activeCategory = searchParams.get('category') || ''
@@ -69,6 +70,7 @@ export default function CommunityHubPage() {
   const activeAttachment = searchParams.get('hasAttachment') || 'all'
   const activePage = Number(searchParams.get('page') || 0)
   const isForcedPreview = shouldForceCommunityPreview(token)
+  const returnTo = buildCommunityReturnTo(location.pathname, location.search)
 
   useEffect(() => {
     setKeywordInput(activeKeyword)
@@ -194,8 +196,10 @@ export default function CommunityHubPage() {
       .map(([tag]) => tag)
   }, [posts])
 
+  const visibleHotTags = showAllHotTags ? hotTags : hotTags.slice(0, 4)
+
   const highlights = useMemo(() => (
-    posts.slice(0, 4).map((post) => ({
+    posts.slice(0, 2).map((post) => ({
       id: post.id,
       title: post.title,
       note: `${post.category?.name || '社区'} · 评论 ${post.commentCount} · 点赞 ${post.likeCount}`,
@@ -220,6 +224,18 @@ export default function CommunityHubPage() {
     updateQuery({ page: nextPage })
   }
 
+  function resetFilters() {
+    setKeywordInput('')
+    setSearchParams(buildSearchParams(searchParams, {
+      category: '',
+      keyword: '',
+      tag: '',
+      hasAttachment: '',
+      sort: 'latest',
+      page: 0,
+    }))
+  }
+
   return (
     <>
       <div className="v2-main-column">
@@ -230,10 +246,7 @@ export default function CommunityHubPage() {
             ? '登录后可直接从目录进入发帖、通知与评论互动。'
             : '游客只浏览公开社区内容，登录后再进入发帖与互动流程。'}
           actions={(
-            <>
-              <Link className="v2-primary-link" to="/community/new">发布帖子</Link>
-              <Link className="v2-secondary-link" to="/community/notifications">消息通知</Link>
-            </>
+            <Link className="v2-primary-link" to="/community/new">发布帖子</Link>
           )}
         />
 
@@ -252,87 +265,26 @@ export default function CommunityHubPage() {
           ))}
         </section>
 
-        <section className="v2-toolbar-card" aria-label="社区目录控制">
-          <div className="v2-toolbar-row">
-            <div className="v2-toolbar-copy">
-              <strong>分类入口</strong>
-              <p>先缩小范围，再进入具体帖子。</p>
-            </div>
-            <div className="v2-chip-group">
-              <button
-                className={`v2-filter-chip ${activeCategory === '' ? 'is-active' : ''}`}
-                type="button"
-                onClick={() => updateQuery({ category: '', page: 0 })}
-              >
-                全部
-              </button>
-              {categories.map((item) => (
-                <button
-                  key={item.id || item.code}
-                  className={`v2-filter-chip ${activeCategory === item.code ? 'is-active' : ''}`}
-                  type="button"
-                  onClick={() => updateQuery({ category: item.code, page: 0 })}
-                >
-                  {item.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="v2-toolbar-row">
-            <div className="v2-toolbar-copy">
-              <strong>排序方式</strong>
-              <p>最新和热度分开看，避免把结果堆成一团。</p>
-            </div>
-            <div className="v2-segment-group">
-              {communitySortOptions.map((item) => (
-                <button
-                  key={item.value}
-                  className={`v2-segment-button ${activeSort === item.value ? 'is-active' : ''}`}
-                  type="button"
-                  onClick={() => updateQuery({ sort: item.value, page: 0 })}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {loading ? (
           <div className="v2-article-card">正在整理社区目录...</div>
         ) : posts.length ? (
           <section className="v2-feed-list" aria-label="社区帖子列表">
             {posts.map((post) => (
-              <Link className="v2-feed-item v2-feed-item--article" key={post.id} to={`/community/${post.id}`}>
-                <div className="v2-feed-body">
-                  <div className="v2-article-meta">
-                    <span>{post.category?.name || '社区'}</span>
-                    <span>{post.visibility === 'members' ? '成员可见' : '公开可见'}</span>
-                    <span>{formatTimeLabel(post.updatedAt || post.createdAt)}</span>
-                  </div>
-                  <strong>{post.title}</strong>
-                  <p>{createPlainPreview(post.content).slice(0, 140) || '暂无摘要内容。'}</p>
-                  <div className="v2-feed-foot">
-                    <div className="v2-tag-row">
-                      {post.tags.slice(0, 4).map((tag) => (
-                        <span key={`${post.id}-${tag}`}>#{tag}</span>
-                      ))}
-                      {post.hasAttachment ? <span>附件 {post.attachmentCount}</span> : null}
-                    </div>
-                    <span className="v2-inline-link">进入帖子</span>
-                  </div>
-                </div>
-                <div className="v2-feed-side">
-                  <span>浏览 {post.viewCount}</span>
-                  <span>评论 {post.commentCount}</span>
-                  <span>点赞 {post.likeCount}</span>
-                </div>
-              </Link>
+              <CommunityPostCard key={post.id} post={post} returnTo={returnTo} />
             ))}
           </section>
         ) : (
-          <div className="v2-article-card">当前筛选条件下还没有帖子，可以换个分类或关键词再试。</div>
+          <div className="v2-article-card">
+            <p>当前筛选条件下还没有帖子，可以换个分类或关键词再试。</p>
+            <button
+              className="v2-secondary-link"
+              type="button"
+              aria-label="reset-filters"
+              onClick={resetFilters}
+            >
+              重置筛选
+            </button>
+          </div>
         )}
 
         <section className="v2-pagination-row" aria-label="社区列表分页">
@@ -359,58 +311,36 @@ export default function CommunityHubPage() {
       </div>
 
       <aside className="v2-side-column">
+        <CommunityFilterPanel
+          categories={categories}
+          activeCategory={activeCategory}
+          activeSort={activeSort}
+          keywordInput={keywordInput}
+          activeAttachment={activeAttachment}
+          onKeywordChange={setKeywordInput}
+          onSubmit={handleSearch}
+          onCategoryChange={(value) => updateQuery({ category: value, page: 0 })}
+          onSortChange={(value) => updateQuery({ sort: value, page: 0 })}
+          onAttachmentChange={(value) => updateQuery({ hasAttachment: value, page: 0 })}
+        />
+
         <section className="v2-side-card">
-          <p className="v2-kicker">目录筛选</p>
-          <form className="v2-filter-form" onSubmit={handleSearch}>
-            <label className="v2-field">
-              <span>关键词</span>
-              <input
-                type="text"
-                value={keywordInput}
-                placeholder="搜索标题、正文或标签"
-                onChange={(event) => setKeywordInput(event.target.value)}
-              />
-            </label>
+          <p className="v2-kicker">快速线索</p>
 
-            <label className="v2-field">
-              <span>附件筛选</span>
-              <div className="v2-segment-group" role="group" aria-label="附件筛选">
-                {communityAttachmentOptions.map((item) => (
-                  <button
-                    key={item.value}
-                    className={`v2-segment-button ${activeAttachment === item.value ? 'is-active' : ''}`}
-                    type="button"
-                    onClick={() => updateQuery({ hasAttachment: item.value, page: 0 })}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </label>
-
-            <button className="v2-sidebar-button" type="submit">更新目录</button>
-          </form>
-        </section>
-
-        {highlights.length ? (
-          <section className="v2-side-card">
-            <p className="v2-kicker">最近讨论重点</p>
+          {highlights.length ? (
             <div className="v2-check-list">
               {highlights.map((item) => (
-                <Link className="v2-check-row" key={item.id} to={`/community/${item.id}`}>
+                <Link className="v2-check-row" key={item.id} to={`/community/${item.id}`} state={{ returnTo }}>
                   <strong>{item.title}</strong>
                   <span>{item.note}</span>
                 </Link>
               ))}
             </div>
-          </section>
-        ) : null}
+          ) : null}
 
-        {hotTags.length ? (
-          <section className="v2-side-card">
-            <p className="v2-kicker">常见标签</p>
+          {hotTags.length ? (
             <div className="v2-tag-row">
-              {hotTags.map((tag) => (
+              {visibleHotTags.map((tag) => (
                 <button
                   key={tag}
                   type="button"
@@ -420,26 +350,19 @@ export default function CommunityHubPage() {
                   #{tag}
                 </button>
               ))}
+              {hotTags.length > 4 ? (
+                <button
+                  type="button"
+                  className="v2-filter-chip"
+                  onClick={() => setShowAllHotTags((current) => !current)}
+                >
+                  {showAllHotTags ? '收起标签' : '更多标签'}
+                </button>
+              ) : null}
             </div>
-          </section>
-        ) : null}
+          ) : null}
 
-        <section className="v2-side-card">
-          <p className="v2-kicker">进入方式</p>
-          <div className="v2-check-list">
-            <div className="v2-check-row">
-              <strong>先看目录</strong>
-              <span>缩小分类和关键词范围，再进入单帖。</span>
-            </div>
-            <div className="v2-check-row">
-              <strong>再看详情</strong>
-              <span>评论、附件、举报都在帖子详情页完成。</span>
-            </div>
-            <div className="v2-check-row">
-              <strong>最后处理互动</strong>
-              <span>通知页只保留消息处理，不和目录混放。</span>
-            </div>
-          </div>
+          <p className="v2-note-text">先在右侧缩小范围，再进入帖子正文；评论、附件和通知回链都留在详情页闭环处理。</p>
         </section>
       </aside>
     </>
