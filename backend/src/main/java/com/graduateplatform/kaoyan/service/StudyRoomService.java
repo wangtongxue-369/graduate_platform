@@ -148,6 +148,7 @@ public class StudyRoomService {
                 "member", toMemberMap(member),
                 "memberCount", memberRepository.findByRoomIdAndLeftAtIsNull(roomId).size()
         ));
+        emitLeaderboardUpdate(roomId, "all");
 
         Map<String, Object> result = toMemberMap(member);
         result.put("sessionStartedAt", session.getStartedAt().toString());
@@ -181,6 +182,7 @@ public class StudyRoomService {
                 "userId", userId,
                 "memberCount", activeCount
         ));
+        emitLeaderboardUpdate(roomId, "all");
     }
 
     public void closeRoom(Long userId, Long roomId) {
@@ -212,6 +214,7 @@ public class StudyRoomService {
 
         // 广播关闭事件
         emitRoomEvent(roomId, "room-closed", Map.of("roomId", roomId));
+        emitLeaderboardUpdate(roomId, "all");
     }
 
     // ========== Messages ==========
@@ -304,7 +307,6 @@ public class StudyRoomService {
     }
 
     public List<Map<String, Object>> getLeaderboard(Long roomId, String period) {
-        List<StudyRoomMember> members = memberRepository.findByRoomIdAndLeftAtIsNull(roomId);
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime since = switch (period.toLowerCase()) {
             case "day" -> now.toLocalDate().atStartOfDay();
@@ -312,18 +314,41 @@ public class StudyRoomService {
             default -> LocalDateTime.of(2020, 1, 1, 0, 0);
         };
 
+        // Include every member the room has ever seen — active and
+        // already-left alike — so departed users stay visible in the
+        // leaderboard with their frozen final duration. Deduplicate by
+        // user, keeping the most recent membership so `leftAt` reflects
+        // their last session (handles users who re-join).
+        List<StudyRoomMember> allMembers = memberRepository.findByRoomId(roomId);
+        allMembers.sort((a, b) -> b.getJoinedAt().compareTo(a.getJoinedAt()));
+        Set<Long> seenUsers = new HashSet<>();
+        List<StudyRoomMember> members = new ArrayList<>();
+        for (StudyRoomMember m : allMembers) {
+            if (seenUsers.add(m.getUser().getId())) members.add(m);
+        }
+
         List<Map<String, Object>> result = new ArrayList<>();
         for (StudyRoomMember m : members) {
             Long durationToday = sessionRepository.sumDurationSecondsSince(m.getUser().getId(), roomId, since);
             Long durationTotal = sessionRepository.sumTotalDurationSeconds(m.getUser().getId(), roomId);
             long totalSeconds = (durationTotal != null ? durationTotal : 0L) + (durationToday != null ? durationToday : 0L);
 
-            result.add(Map.of(
-                    "userId", m.getUser().getId(),
-                    "userName", m.getUser().getName(),
-                    "todayDurationSeconds", durationToday != null ? durationToday : 0L,
-                    "totalDurationSeconds", totalSeconds
-            ));
+            // Active session start time — only set when the user is
+            // currently studying, so the frontend can tick locally.
+            // Departed users (no open session) get a frozen duration.
+            String sessionStartedAt = sessionRepository
+                    .findByUserIdAndRoomIdAndEndedAtIsNull(m.getUser().getId(), roomId)
+                    .map(s -> s.getStartedAt().toString())
+                    .orElse(null);
+
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("userId", m.getUser().getId());
+            entry.put("userName", m.getUser().getName());
+            entry.put("todayDurationSeconds", durationToday != null ? durationToday : 0L);
+            entry.put("totalDurationSeconds", totalSeconds);
+            if (sessionStartedAt != null) entry.put("sessionStartedAt", sessionStartedAt);
+            if (m.getLeftAt() != null) entry.put("leftAt", m.getLeftAt().toString());
+            result.add(entry);
         }
         result.sort((a, b) -> Long.compare((Long) b.get("totalDurationSeconds"), (Long) a.get("totalDurationSeconds")));
         return result;
@@ -349,6 +374,20 @@ public class StudyRoomService {
                 emitter.complete();
             }
         }
+    }
+
+    /**
+     * Compute the leaderboard for {@code period} and push it to every
+     * subscriber of {@code roomId} via a {@code leaderboard-update} SSE
+     * event. Called from join/leave/close so the client list stays
+     * real-time without polling.
+     */
+    private void emitLeaderboardUpdate(Long roomId, String period) {
+        List<Map<String, Object>> board = getLeaderboard(roomId, period);
+        emitRoomEvent(roomId, "leaderboard-update", Map.of(
+                "period", period,
+                "board", board
+        ));
     }
 
     private void removeRoomEmitter(Long roomId, SseEmitter emitter) {
