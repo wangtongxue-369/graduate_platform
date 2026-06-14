@@ -66,11 +66,6 @@ const majorCategories = [
 
 const schoolTypes = ['综合', '理工', '师范', '农林', '医药', '财经', '政法', '民族', '体育', '艺术', '军事', '其他']
 
-const activeStatusClassMap = {
-  true: 'is-success',
-  false: 'is-neutral',
-}
-
 export default function AdminKaoyanDataPage() {
   const { user, token, isAuthed } = useAuth()
   const [active, setActive] = useState('schools')
@@ -79,7 +74,6 @@ export default function AdminKaoyanDataPage() {
   const [rows, setRows] = useState([])
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: 0 })
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [showFormModal, setShowFormModal] = useState(false)
   const [schoolForm, setSchoolForm] = useState(emptySchool)
@@ -123,7 +117,6 @@ export default function AdminKaoyanDataPage() {
   async function loadRows(event, nextPage = page) {
     event?.preventDefault()
     setLoading(true)
-    setMessage('')
     try {
       const params = { ...filters, page: nextPage, size: pageSize }
       const data = await adminApi.kaoyanSchools(params, token)
@@ -132,8 +125,6 @@ export default function AdminKaoyanDataPage() {
         totalPages: data?.totalPages || 1,
         totalElements: data?.totalElements || 0,
       })
-    } catch (err) {
-      setMessage(err.message || '数据加载失败')
     } finally {
       setLoading(false)
     }
@@ -148,7 +139,6 @@ export default function AdminKaoyanDataPage() {
   async function createRecord(event) {
     event.preventDefault()
     setLoading(true)
-    setMessage('')
     try {
       if (editingId && scoreFormSchoolName) {
         await adminApi.updateKaoyanScoreLine(editingId, scoreForm, token)
@@ -159,11 +149,6 @@ export default function AdminKaoyanDataPage() {
       } else {
         await adminApi.createKaoyanSchool(schoolForm, token)
       }
-      setMessage(
-        scoreFormSchoolName
-          ? `分数线已保存（${scoreFormSchoolName}）`
-          : `院校信息已保存`,
-      )
       const wasScore = !!scoreFormSchoolName
       setEditingId(null)
       setShowFormModal(false)
@@ -176,8 +161,6 @@ export default function AdminKaoyanDataPage() {
         setPage(0)
         await loadRows(null, 0)
       }
-    } catch (err) {
-      setMessage(err.message || '操作失败')
     } finally {
       setLoading(false)
     }
@@ -185,7 +168,6 @@ export default function AdminKaoyanDataPage() {
 
   function editRecord(row) {
     setEditingId(row.id)
-    setMessage(`正在编辑：${row.name}`)
     setSchoolForm({ ...emptySchool, ...row })
     setShowFormModal(true)
   }
@@ -195,7 +177,6 @@ export default function AdminKaoyanDataPage() {
     setSchoolForm(emptySchool)
     setScoreForm(emptyScore)
     setScoreFormSchoolName('')
-    setMessage('')
     setShowFormModal(true)
   }
 
@@ -205,20 +186,6 @@ export default function AdminKaoyanDataPage() {
     setSchoolForm(emptySchool)
     setScoreForm(emptyScore)
     setScoreFormSchoolName('')
-  }
-
-  async function deleteRecord(id) {
-    setLoading(true)
-    setMessage('')
-    try {
-      await adminApi.deleteKaoyanSchool(id, token)
-      setMessage('院校信息已停用')
-      await loadRows()
-    } catch (err) {
-      setMessage(err.message || '停用失败')
-    } finally {
-      setLoading(false)
-    }
   }
 
   // ===== Scores modal: per-school score line management =====
@@ -253,8 +220,6 @@ export default function AdminKaoyanDataPage() {
         totalPages: data?.totalPages || 1,
         totalElements: data?.totalElements || 0,
       })
-    } catch (err) {
-      setMessage(err.message || '分数线加载失败')
     } finally {
       setScoresModalLoading(false)
     }
@@ -265,7 +230,6 @@ export default function AdminKaoyanDataPage() {
     setEditingId(null)
     setScoreForm({ ...emptyScore, schoolId: scoresModalSchool.id })
     setScoreFormSchoolName(scoresModalSchool.name)
-    setMessage('')
     setShowFormModal(true)
   }
 
@@ -273,7 +237,6 @@ export default function AdminKaoyanDataPage() {
     setEditingId(row.id)
     setScoreForm({ ...emptyScore, ...row, schoolId: row.schoolId || scoresModalSchool.id })
     setScoreFormSchoolName(scoresModalSchool?.name || row.schoolName || '')
-    setMessage(`正在编辑：${row.year} ${row.majorName || row.majorCategory || ''}`)
     setShowFormModal(true)
   }
 
@@ -283,8 +246,6 @@ export default function AdminKaoyanDataPage() {
     try {
       await adminApi.deleteKaoyanScoreLine(id, token)
       await loadScoresForModal()
-    } catch (err) {
-      setMessage(err.message || '停用失败')
     } finally {
       setScoresModalLoading(false)
     }
@@ -347,7 +308,6 @@ export default function AdminKaoyanDataPage() {
                 <span className="admin-filter-pill is-active">{activeTab?.label || '数据'}</span>
                 <span className="admin-filter-pill">共 {pageInfo.totalElements} 条</span>
               </div>
-              {message ? <div className="admin-note-panel"><p>{message}</p></div> : null}
             </form>
 
             <div className="admin-page-action-row" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
@@ -363,7 +323,7 @@ export default function AdminKaoyanDataPage() {
                 <p className="muted">暂无数据</p>
               ) : (
                 <div className="admin-record-grid">
-                  {rows.map((row) => renderSchoolRow(row, editRecord, deleteRecord, openScoresModal))}
+                  {rows.map((row) => renderSchoolRow(row, editRecord, openScoresModal))}
                 </div>
               )}
               <Pagination
@@ -492,10 +452,6 @@ function renderScoreForm(form, update) {
       </label>
       <TextField label="具体专业" value={form.majorName} onChange={(value) => update('majorName', value)} />
       <TextField label="学位类型" value={form.degreeType} onChange={(value) => update('degreeType', value)} placeholder="学术型/专业型" />
-      <label className="field">
-        <span>国家线</span>
-        <input type="checkbox" checked={form.isNationalLine} onChange={(e) => update('isNationalLine', e.target.checked)} />
-      </label>
       <TextField label="政治线" value={form.politicsLine} onChange={(value) => update('politicsLine', value)} type="number" />
       <TextField label="外语线" value={form.foreignLangLine} onChange={(value) => update('foreignLangLine', value)} type="number" />
       <TextField label="业务课1线" value={form.subject1Line} onChange={(value) => update('subject1Line', value)} type="number" />
@@ -519,22 +475,26 @@ function TextField({ label, value, onChange, type = 'text', required = false, pl
   )
 }
 
-function rowActions(row, onEdit, onDelete, onManageScores) {
+function rowActions(row, onEdit, { onDelete, onManageScores } = {}) {
   return (
     <div className="admin-record-side">
-      <span className={`admin-status-chip ${activeStatusClassMap[String(row.active !== false)] || 'is-neutral'}`}>{row.active === false ? '已停用' : '启用中'}</span>
+      {onDelete ? (
+        <span className={`admin-status-chip ${row.active === false ? 'is-neutral' : 'is-success'}`}>{row.active === false ? '已停用' : '启用中'}</span>
+      ) : null}
       <div className="admin-inline-actions">
         {onManageScores ? (
           <button className="btn outline small" type="button" onClick={() => onManageScores(row)}>维护分数线</button>
         ) : null}
         <button className="btn outline small" type="button" onClick={() => onEdit(row)}>编辑</button>
-        <button className="btn outline-neutral small" type="button" onClick={() => onDelete(row.id)} disabled={row.active === false}>停用</button>
+        {onDelete ? (
+          <button className="btn outline-neutral small" type="button" onClick={() => onDelete(row.id)} disabled={row.active === false}>停用</button>
+        ) : null}
       </div>
     </div>
   )
 }
 
-function renderSchoolRow(row, onEdit, onDelete, onManageScores) {
+function renderSchoolRow(row, onEdit, onManageScores) {
   return (
     <article className="admin-record-card" key={row.id}>
       <div className="admin-record-main">
@@ -546,7 +506,7 @@ function renderSchoolRow(row, onEdit, onDelete, onManageScores) {
           <span>{row.isDoubleFirstClass ? '双一流' : '普通院校'}</span>
         </div>
       </div>
-      {rowActions(row, onEdit, onDelete, onManageScores)}
+      {rowActions(row, onEdit, { onManageScores })}
     </article>
   )
 }
@@ -563,7 +523,7 @@ function renderScoreRow(row, onEdit, onDelete) {
           <span>{row.admissionRatio ? `${row.admissionRatio}:1` : '报录比待补充'}</span>
         </div>
       </div>
-      {rowActions(row, onEdit, onDelete)}
+      {rowActions(row, onEdit, { onDelete })}
     </article>
   )
 }
