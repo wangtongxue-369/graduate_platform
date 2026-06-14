@@ -51,4 +51,16 @@ describe('AdminKaoyanDataPage school-scoped score management', () => {
     expect(openBlock, 'openScoresModal function must exist').not.toBeNull()
     expect(openBlock[1]).toMatch(/loadScoresForModal\(\s*0\s*,\s*school\s*\)/)
   })
+
+  it('form modal is rendered AFTER the scores modal so it stacks on top when editing', () => {
+    // Clicking 编辑 inside the scores modal opens both modals at once.
+    // Both share the same .modal-overlay z-index, so paint order = DOM
+    // order. The form modal must come AFTER scoresModalSchool in the source
+    // so it paints on top — otherwise the user can't reach the form fields.
+    const scoresPos = source.indexOf('scoresModalSchool &&')
+    const formPos = source.indexOf('showFormModal &&')
+    expect(scoresPos, 'scores modal block must exist').toBeGreaterThan(0)
+    expect(formPos, 'form modal block must exist').toBeGreaterThan(0)
+    expect(formPos).toBeGreaterThan(scoresPos)
+  })
 })

@@ -390,33 +390,6 @@ export default function AdminKaoyanDataPage() {
       </main>
       <Footer />
 
-      {showFormModal && (
-        <div className="modal-overlay" onClick={closeFormModal}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720 }}>
-            <div className="modal-header">
-              <h3 style={{ margin: 0 }}>
-                {editingId
-                  ? `编辑${scoreFormSchoolName ? '分数线' : activeTab?.label || ''}`
-                  : `新增${scoreFormSchoolName ? '分数线' : activeTab?.label || ''}`}
-                {scoreFormSchoolName && <span style={{ fontSize: '0.85em', color: 'var(--muted)', marginLeft: 8 }}>· {scoreFormSchoolName}</span>}
-              </h3>
-              <button className="btn ghost" type="button" onClick={closeFormModal} style={{ padding: '4px 8px', fontSize: '0.85rem' }}>✕</button>
-            </div>
-            <form onSubmit={createRecord}>
-              <div className="modal-body">
-                {scoreFormSchoolName
-                  ? renderScoreForm(scoreForm, updateScoreForm)
-                  : renderSchoolForm(schoolForm, updateSchoolForm)}
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn ghost" onClick={closeFormModal}>取消</button>
-                <button type="submit" className="btn primary" disabled={loading}>{loading ? '保存中...' : '保存'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {scoresModalSchool && (
         <div className="modal-overlay" onClick={closeScoresModal}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 880 }}>
@@ -453,6 +426,33 @@ export default function AdminKaoyanDataPage() {
             <div className="modal-actions">
               <button type="button" className="btn ghost" onClick={closeScoresModal}>关闭</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showFormModal && (
+        <div className="modal-overlay" onClick={closeFormModal}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720 }}>
+            <div className="modal-header">
+              <h3 style={{ margin: 0 }}>
+                {editingId
+                  ? `编辑${scoreFormSchoolName ? '分数线' : activeTab?.label || ''}`
+                  : `新增${scoreFormSchoolName ? '分数线' : activeTab?.label || ''}`}
+                {scoreFormSchoolName && <span style={{ fontSize: '0.85em', color: 'var(--muted)', marginLeft: 8 }}>· {scoreFormSchoolName}</span>}
+              </h3>
+              <button className="btn ghost" type="button" onClick={closeFormModal} style={{ padding: '4px 8px', fontSize: '0.85rem' }}>✕</button>
+            </div>
+            <form onSubmit={createRecord}>
+              <div className="modal-body">
+                {scoreFormSchoolName
+                  ? renderScoreForm(scoreForm, updateScoreForm)
+                  : renderSchoolForm(schoolForm, updateSchoolForm)}
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn ghost" onClick={closeFormModal}>取消</button>
+                <button type="submit" className="btn primary" disabled={loading}>{loading ? '保存中...' : '保存'}</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
