@@ -112,6 +112,21 @@ export function AuthProvider({ children }) {
     }
   }
 
+  function syncUser(nextUser) {
+    setUser((current) => {
+      const resolved = typeof nextUser === 'function' ? nextUser(current) : nextUser
+      const merged = resolved && current ? { ...current, ...resolved } : resolved
+
+      if (merged) {
+        localStorage.setItem(USER_KEY, JSON.stringify(merged))
+      } else {
+        localStorage.removeItem(USER_KEY)
+      }
+
+      return merged
+    })
+  }
+
   async function login(payload) {
     const auth = await authApi.login(payload)
     localStorage.removeItem(DEV_USER_KEY)
@@ -158,6 +173,7 @@ export function AuthProvider({ children }) {
         register,
         logout,
         switchDevUser,
+        syncUser,
       }}
     >
       {children}
