@@ -49,6 +49,24 @@
   --admin-filter-active-border: color-mix(in srgb, var(--primary) 44%, var(--line));
   --admin-summary-glow: color-mix(in srgb, var(--primary-soft) 90%, transparent);
   --admin-record-highlight: color-mix(in srgb, var(--accent-soft) 60%, var(--surface-strong));
+  --chat-bg: #eef7f5;
+  --chat-pattern: rgba(15, 118, 110, 0.035);
+  --chat-scroll-thumb: rgba(15, 118, 110, 0.36);
+  --chat-bubble-bg: var(--surface-strong);
+  --chat-bubble-border: #d9e7e4;
+  --chat-bubble-mine-bg: #95ec69;
+  --chat-bubble-mine-border: #98d8cd;
+  --chat-bubble-mine-text: #132018;
+  --chat-composer-bg: rgba(247, 250, 249, 0.98);
+  --chat-composer-border: #d7e6e3;
+  --chat-textarea-border: #d8e5e2;
+  --chat-textarea-focus: #95d6cc;
+  --chat-textarea-focus-ring: rgba(149, 214, 204, 0.22);
+  --chat-textarea-disabled-bg: #f1f5f9;
+  --chat-textarea-disabled-color: #94a3b8;
+  --chat-icon-button-border: #b8d5d0;
+  --chat-icon-button-color: #5f7772;
+  --chat-icon-button-hover-bg: #eef7f5;
   --font-scale: 1;
   --bg: var(--page-bg);
 
@@ -110,6 +128,24 @@
   --admin-filter-active-border: color-mix(in srgb, var(--primary) 52%, var(--line));
   --admin-summary-glow: color-mix(in srgb, var(--primary-soft) 78%, transparent);
   --admin-record-highlight: color-mix(in srgb, var(--accent-soft) 68%, var(--surface-strong));
+  --chat-bg: var(--surface-soft);
+  --chat-pattern: rgba(52, 211, 153, 0.05);
+  --chat-scroll-thumb: rgba(52, 211, 153, 0.32);
+  --chat-bubble-bg: var(--surface-elevated);
+  --chat-bubble-border: var(--line-strong);
+  --chat-bubble-mine-bg: var(--primary);
+  --chat-bubble-mine-border: var(--primary-strong);
+  --chat-bubble-mine-text: var(--primary-ink);
+  --chat-composer-bg: var(--surface);
+  --chat-composer-border: var(--line);
+  --chat-textarea-border: var(--line);
+  --chat-textarea-focus: var(--primary);
+  --chat-textarea-focus-ring: rgba(52, 211, 153, 0.22);
+  --chat-textarea-disabled-bg: var(--surface-muted);
+  --chat-textarea-disabled-color: var(--muted);
+  --chat-icon-button-border: var(--line);
+  --chat-icon-button-color: var(--muted);
+  --chat-icon-button-hover-bg: var(--primary-softer);
   --bg: var(--page-bg);
 }
 
