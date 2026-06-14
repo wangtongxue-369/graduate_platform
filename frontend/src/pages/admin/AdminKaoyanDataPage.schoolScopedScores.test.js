@@ -39,4 +39,16 @@ describe('AdminKaoyanDataPage school-scoped score management', () => {
     // static label in the modal header instead.
     expect(source).not.toMatch(/<span>院校<\/span>/)
   })
+
+  it('openScoresModal passes the school to loadScoresForModal so the first fetch is not skipped', () => {
+    // React state updates are async — setScoresModalSchool(school) does NOT
+    // make the next synchronous read of scoresModalSchool see the new value.
+    // If openScoresModal calls loadScoresForModal() without forwarding the
+    // school parameter, the function's closure still has scoresModalSchool
+    // === null and the early-return `if (!scoresModalSchool) return` fires,
+    // leaving the modal open with an empty list.
+    const openBlock = source.match(/function openScoresModal\([^)]*\)\s*\{([\s\S]*?)\n\s{2}\}/)
+    expect(openBlock, 'openScoresModal function must exist').not.toBeNull()
+    expect(openBlock[1]).toMatch(/loadScoresForModal\(\s*0\s*,\s*school\s*\)/)
+  })
 })

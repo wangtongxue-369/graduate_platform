@@ -228,7 +228,9 @@ export default function AdminKaoyanDataPage() {
     setScoresModalPage(0)
     setScoresModalRows([])
     setScoresModalPageInfo({ totalPages: 1, totalElements: 0 })
-    await loadScoresForModal(0)
+    // Pass `school` explicitly — React state updates are async, so the
+    // closure-captured `scoresModalSchool` is still null on this call.
+    await loadScoresForModal(0, school)
   }
 
   function closeScoresModal() {
@@ -238,12 +240,12 @@ export default function AdminKaoyanDataPage() {
     setScoresModalPageInfo({ totalPages: 1, totalElements: 0 })
   }
 
-  async function loadScoresForModal(nextPage = scoresModalPage) {
-    if (!scoresModalSchool) return
+  async function loadScoresForModal(nextPage = scoresModalPage, school = scoresModalSchool) {
+    if (!school) return
     setScoresModalLoading(true)
     try {
       const data = await adminApi.kaoyanScoreLines(
-        { schoolId: scoresModalSchool.id, page: nextPage, size: pageSize },
+        { schoolId: school.id, page: nextPage, size: pageSize },
         token,
       )
       setScoresModalRows(data?.content || [])
