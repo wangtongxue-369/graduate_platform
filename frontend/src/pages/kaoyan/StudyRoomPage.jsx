@@ -44,6 +44,18 @@ function calcElapsed(startedAt) {
   return Math.floor((now - start) / 1000)
 }
 
+// Live duration for a leaderboard row: backend's `totalDurationSeconds` is
+// a snapshot of finished sessions only, so for users still studying we add
+// the seconds elapsed since their active `sessionStartedAt` so the badge
+// ticks up without a server roundtrip.
+function leaderboardDisplaySeconds(entry, nowMs) {
+  const base = entry?.totalDurationSeconds || 0
+  if (!entry?.sessionStartedAt) return base
+  const startMs = new Date(entry.sessionStartedAt).getTime()
+  if (Number.isNaN(startMs)) return base
+  return base + Math.max(0, Math.floor((nowMs - startMs) / 1000))
+}
+
 // ===== LIST VIEW =====
 function ListView({
   roomsPage, loadingRooms, filters, schoolOptions,
@@ -189,7 +201,7 @@ function ListView({
 function RoomView({
   currentRoom, members, messages, myElapsed, leaderboard,
   activePeriod, realtimeState, newMessage, sending,
-  user, token, isOwner,
+  user, token, isOwner, tickNow,
   onLeaveRoom, onSendMessage, onMessageChange, onPeriodChange, onSend, onCloseRoom,
 }) {
   const messagesListRef = useRef(null)
@@ -266,8 +278,11 @@ function RoomView({
                   <div key={entry.userId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
                     <span style={{ fontWeight: idx < 3 ? 600 : 400, color: idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : idx === 2 ? '#cd7c2c' : 'inherit' }}>
                       {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}.`} {entry.userName}
+                      {entry.leftAt ? (
+                        <span className="muted" style={{ marginLeft: 6, fontSize: 11 }}>(已离开)</span>
+                      ) : null}
                     </span>
-                    <span className="muted" style={{ fontSize: 13 }}>{formatDuration(entry.totalDurationSeconds || 0)}</span>
+                    <span className="muted" style={{ fontSize: 13, opacity: entry.leftAt ? 0.7 : 1 }}>{formatDuration(leaderboardDisplaySeconds(entry, tickNow))}</span>
                   </div>
                 ))}
               </div>
@@ -352,10 +367,18 @@ export default function StudyRoomPage() {
   const [realtimeState, setRealtimeState] = useState('未连接')
   const [myElapsed, setMyElapsed] = useState(0)
   const [activePeriod, setActivePeriod] = useState('all')
+  // Wall-clock tick used to re-render every leaderboard row once a second
+  // so each user's badge counts up while they're studying.
+  const [tickNow, setTickNow] = useState(() => Date.now())
 
   const timerRef = useRef(null)
   const sseRef = useRef(null)
   const majorDebounceRef = useRef(null)
+  // Tracks the leaderboard period the user is currently viewing, so the
+  // SSE handler can read the freshest value (the closure in connectSSE is
+  // captured once and would otherwise go stale when the user switches
+  // tabs).
+  const activePeriodRef = useRef(activePeriod)
 
   // Load schools for filter dropdown
   useEffect(() => {
@@ -433,16 +456,18 @@ export default function StudyRoomPage() {
     } catch { setLeaderboard([]) }
   }
 
-  // Leaderboard auto-refresh every 60s while in a room
+  // Initial leaderboard fetch when entering a room or switching period.
+  // Real-time updates arrive via the SSE "leaderboard-update" event in
+  // connectSSE, so no polling is needed.
   useEffect(() => {
     if (view !== 'room' || !currentRoom) return
     loadLeaderboard(currentRoom.id, activePeriod)
-    const interval = setInterval(() => {
-      loadLeaderboard(currentRoom.id, activePeriod)
-    }, 60000)
-    return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, currentRoom, activePeriod])
+
+  useEffect(() => {
+    activePeriodRef.current = activePeriod
+  }, [activePeriod])
 
   function connectSSE(roomId) {
     disconnectSSE()
@@ -472,6 +497,16 @@ export default function StudyRoomPage() {
         return
       } else if (payload.type === 'message') {
         setMessages(prev => [...prev, data])
+      } else if (payload.type === 'leaderboard-update') {
+        // Real-time leaderboard pushed by the backend on join/leave/close.
+        // Only apply if the period matches what the user is currently
+        // viewing — otherwise the user is on week/day tab and the "all"
+        // update would clobber it (they can still switch tabs to refresh).
+        // Read the latest activePeriod via the ref so the closure-captured
+        // value can't go stale.
+        if (data.period === activePeriodRef.current) {
+          setLeaderboard(Array.isArray(data.board) ? data.board : [])
+        }
       }
     })
 
@@ -489,6 +524,16 @@ export default function StudyRoomPage() {
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [view, mySessionStartedAt])
+
+  // Tick once per second while in a room so the leaderboard rows refresh
+  // their duration badges in real time (the helper
+  // `leaderboardDisplaySeconds` adds the elapsed time on top of the
+  // backend's session-end snapshot).
+  useEffect(() => {
+    if (view !== 'room') return
+    const id = setInterval(() => setTickNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [view])
 
   function loadMyCreatedRooms() {
     if (!isAuthed) return
@@ -580,6 +625,7 @@ export default function StudyRoomPage() {
               activePeriod={activePeriod} realtimeState={realtimeState}
               newMessage={newMessage} sending={sending}
               user={user} token={token} isOwner={isOwner}
+              tickNow={tickNow}
               onLeaveRoom={handleLeaveRoom} onMessageChange={setNewMessage}
               onSend={handleSend} onPeriodChange={handlePeriodChange}
               onCloseRoom={handleCloseRoom}
