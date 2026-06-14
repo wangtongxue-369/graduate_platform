@@ -6,6 +6,8 @@ import {
 } from '@/lib/stationData.js'
 
 export const materialStatusOptions = ['PENDING', 'APPROVED', 'REJECTED']
+export const materialTypeOptions = ['笔记', '真题', '课件', '模拟卷', '其他']
+export const materialYearOptions = ['2026', '2025', '2024', '2023', '2022', '2021']
 
 export function createKaoyanSchoolLedgerFilters() {
   return {
@@ -107,6 +109,7 @@ export function createKaoyanPlanPreviewRows() {
     startDate: `2026-06-${String(index + 10).padStart(2, '0')}`,
     endDate: `2026-06-${String(index + 11).padStart(2, '0')}`,
     totalDurationHours: 6 + index * 2,
+    plannedDurationHours: 10 + index * 3,
     completionRate: 25 + index * 12,
     status: item.state,
   }))
@@ -116,22 +119,114 @@ export function createKaoyanPlanDetailPreview(planId = '1') {
   const plan = createKaoyanPlanPreviewRows().find((item) => String(item.id) === String(planId))
     || createKaoyanPlanPreviewRows()[0]
 
+  const checkIns = [
+    {
+      id: `${plan.id}-checkin-1`,
+      checkInDate: plan.startDate,
+      durationHours: 2,
+      remark: '完成英语阅读两篇',
+    },
+    {
+      id: `${plan.id}-checkin-2`,
+      checkInDate: plan.endDate,
+      durationHours: 3,
+      remark: '专业课框架回顾',
+    },
+  ]
+
   return {
     ...plan,
-    checkIns: [
-      {
-        id: `${plan.id}-checkin-1`,
-        checkInDate: plan.startDate,
-        durationHours: 2,
-        remark: '完成英语阅读两篇',
-      },
-      {
-        id: `${plan.id}-checkin-2`,
-        checkInDate: plan.endDate,
-        durationHours: 3,
-        remark: '专业课框架回顾',
-      },
-    ],
+    streak: 1,
+    checkedDays: 2,
+    checkIns,
+  }
+}
+
+function toPlanDateKey(date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function parsePlanDate(value) {
+  if (!value) return null
+  const [year, month, day] = String(value).split('-').map(Number)
+  if (!year || !month || !day) return null
+  return new Date(year, month - 1, day, 12, 0, 0)
+}
+
+export function groupCheckInsByDate(checkIns) {
+  return ensureArray(checkIns).reduce((groups, item) => {
+    const key = String(item.checkInDate || '').trim()
+    if (!key) return groups
+    if (!groups[key]) groups[key] = []
+    groups[key].push(item)
+    return groups
+  }, {})
+}
+
+export function getPlanDayStatus(dateKey, { startDate, endDate, checkedDates, todayKey }) {
+  const date = parsePlanDate(dateKey)
+  const start = parsePlanDate(startDate)
+  const end = parsePlanDate(endDate)
+  const today = parsePlanDate(todayKey)
+
+  if (!date || !start || !end || !today) return 'out'
+  if (date < start || date > end) return 'out'
+  if (checkedDates.has(dateKey)) return 'checked'
+  if (dateKey === todayKey) return 'today'
+  if (date < today) return 'missed'
+  return 'future'
+}
+
+export function buildPlanCalendarDays(selectedDateKey, today = new Date()) {
+  const base = parsePlanDate(selectedDateKey) || new Date(today.getFullYear(), today.getMonth(), 1, 12)
+  const year = base.getFullYear()
+  const month = base.getMonth()
+  const firstDay = new Date(year, month, 1, 12)
+  const lastDay = new Date(year, month + 1, 0, 12)
+  const cells = []
+
+  for (let index = 0; index < firstDay.getDay(); index += 1) {
+    cells.push(null)
+  }
+
+  for (let day = 1; day <= lastDay.getDate(); day += 1) {
+    const date = new Date(year, month, day, 12)
+    cells.push({
+      key: toPlanDateKey(date),
+      day,
+      monthKey: `${year}-${String(month + 1).padStart(2, '0')}`,
+    })
+  }
+
+  return cells
+}
+
+export function buildPlanDetailMetrics(plan, checkIns, today = new Date()) {
+  const grouped = groupCheckInsByDate(checkIns)
+  const checkedKeys = Object.keys(grouped).sort()
+  const normalizedToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 0, 0)
+  const todayKey = toPlanDateKey(normalizedToday)
+  let streak = 0
+  let cursor = parsePlanDate(todayKey)
+
+  while (cursor) {
+    const key = toPlanDateKey(cursor)
+    if (!grouped[key]) break
+    streak += 1
+    cursor.setDate(cursor.getDate() - 1)
+  }
+
+  return {
+    streak: Number(plan?.streak || streak || 0),
+    checkedDays: Number(plan?.checkedDays || checkedKeys.length || 0),
+    totalCheckedHours: ensureArray(checkIns).reduce((sum, item) => sum + Number(item.durationHours || 0), 0),
+    plannedHours: Number(plan?.plannedDurationHours || plan?.totalDurationHours || 0),
+    completionRate: Number(plan?.completionRate || 0),
+    checkedDates: new Set(checkedKeys),
+    todayKey,
   }
 }
 
@@ -418,8 +513,11 @@ export function normalizePlanDetail(data) {
     description: data.description || '后端暂未补充计划说明',
     startDate: data.startDate || '',
     endDate: data.endDate || '',
-    totalDurationHours: data.totalDurationHours || '',
+    totalDurationHours: Number(data.totalDurationHours || 0),
+    plannedDurationHours: Number(data.plannedDurationHours ?? data.totalDurationHours ?? 0),
     completionRate: Number(data.completionRate || 0),
+    streak: Number(data.streak || 0),
+    checkedDays: Number(data.checkedDays || 0),
     status: data.status || '进行中',
   }
 }
@@ -482,6 +580,53 @@ export function countMaterialsByStatus(rows) {
     accumulator[status] = rows.filter((item) => item.status === status).length
     return accumulator
   }, {})
+}
+
+export function filterMaterialRows(rows, filters = {}) {
+  const keyword = String(filters.keyword || '').trim().toLowerCase()
+  const school = String(filters.school || '').trim().toLowerCase()
+  const major = String(filters.major || '').trim().toLowerCase()
+  const subject = String(filters.subject || '').trim().toLowerCase()
+  const year = String(filters.year || '').trim()
+  const materialType = String(filters.materialType || '').trim()
+  const status = String(filters.status || '').trim()
+
+  return ensureArray(rows).filter((item) => {
+    const haystack = [
+      item.title,
+      item.school,
+      item.major,
+      item.subject,
+      item.materialType,
+      item.description,
+    ].join(' ').toLowerCase()
+
+    if (keyword && !haystack.includes(keyword)) return false
+    if (school && !String(item.school || '').toLowerCase().includes(school)) return false
+    if (major && !String(item.major || '').toLowerCase().includes(major)) return false
+    if (subject && !String(item.subject || '').toLowerCase().includes(subject)) return false
+    if (year && String(item.year || '') !== year) return false
+    if (materialType && String(item.materialType || '') !== materialType) return false
+    if (status && String(item.status || '') !== status) return false
+    return true
+  })
+}
+
+export function paginateRows(rows, { page = 0, size = 10 } = {}) {
+  const safeSize = Math.max(1, Number(size || 10))
+  const allRows = ensureArray(rows)
+  const totalElements = allRows.length
+  const totalPages = Math.max(1, Math.ceil(totalElements / safeSize))
+  const safePage = Math.min(Math.max(0, Number(page || 0)), totalPages - 1)
+  const startIndex = safePage * safeSize
+
+  return {
+    pageRows: allRows.slice(startIndex, startIndex + safeSize),
+    page: safePage,
+    size: safeSize,
+    totalElements,
+    totalPages,
+  }
 }
 
 export function createEmptyMentorProfileForm() {

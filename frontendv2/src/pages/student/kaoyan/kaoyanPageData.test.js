@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildPlanCalendarDays,
+  buildPlanDetailMetrics,
   buildSchoolLedgerRows,
   createKaoyanSchoolLedgerFilters,
+  getPlanDayStatus,
+  groupCheckInsByDate,
   normalizeFavoriteRows,
+  normalizePlanDetail,
   paginateSchoolLedgerRows,
 } from '@/pages/student/kaoyan/kaoyanPageData.js'
 
@@ -140,5 +145,80 @@ describe('kaoyan school ledger helpers', () => {
       plannedEnrollment: 28,
       favorite: true,
     })
+  })
+
+  it('normalizes optional plan summary fields needed by the old detail flow', () => {
+    expect(
+      normalizePlanDetail({
+        id: 41,
+        name: '7月冲刺计划',
+        description: '英语 + 专业课',
+        startDate: '2026-06-01',
+        endDate: '2026-06-30',
+        totalDurationHours: 90,
+        plannedDurationHours: 120,
+        completionRate: 42,
+        streak: 3,
+        checkedDays: 8,
+      }),
+    ).toMatchObject({
+      id: 41,
+      plannedDurationHours: 120,
+      totalDurationHours: 90,
+      completionRate: 42,
+      streak: 3,
+      checkedDays: 8,
+    })
+  })
+
+  it('builds grouped check-ins and old-frontend summary metrics', () => {
+    const checkIns = [
+      { id: 1, checkInDate: '2026-06-10', durationHours: 1, remark: '单词' },
+      { id: 2, checkInDate: '2026-06-13', durationHours: 3, remark: '阅读' },
+      { id: 3, checkInDate: '2026-06-14', durationHours: 2.5, remark: '专业课' },
+    ]
+
+    expect(groupCheckInsByDate(checkIns)).toEqual({
+      '2026-06-10': [checkIns[0]],
+      '2026-06-13': [checkIns[1]],
+      '2026-06-14': [checkIns[2]],
+    })
+
+    expect(
+      buildPlanDetailMetrics(
+        { plannedDurationHours: 120, totalDurationHours: 90, completionRate: 42 },
+        checkIns,
+        new Date('2026-06-14T12:00:00'),
+      ),
+    ).toMatchObject({
+      streak: 2,
+      checkedDays: 3,
+      totalCheckedHours: 6.5,
+      plannedHours: 120,
+      completionRate: 42,
+    })
+  })
+
+  it('classifies checked, today, missed, future, and out-of-range dates', () => {
+    const base = {
+      startDate: '2026-06-01',
+      endDate: '2026-06-30',
+      checkedDates: new Set(['2026-06-13']),
+      todayKey: '2026-06-14',
+    }
+
+    expect(getPlanDayStatus('2026-05-31', base)).toBe('out')
+    expect(getPlanDayStatus('2026-06-13', base)).toBe('checked')
+    expect(getPlanDayStatus('2026-06-14', base)).toBe('today')
+    expect(getPlanDayStatus('2026-06-12', base)).toBe('missed')
+    expect(getPlanDayStatus('2026-06-20', base)).toBe('future')
+  })
+
+  it('builds calendar cells for the month of the selected date', () => {
+    const cells = buildPlanCalendarDays('2026-06-14')
+
+    expect(cells[0]).toBeNull()
+    expect(cells[1]).toMatchObject({ key: '2026-06-01', day: 1 })
+    expect(cells.at(-1)).toMatchObject({ key: '2026-06-30', day: 30 })
   })
 })

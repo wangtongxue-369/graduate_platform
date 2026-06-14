@@ -2,8 +2,21 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import PageIntro from '@/components/PageIntro.jsx'
-import { createEmptyUploadForm } from '@/pages/student/kaoyan/kaoyanPageData.js'
+import {
+  createEmptyUploadForm,
+  materialTypeOptions,
+  materialYearOptions,
+} from '@/pages/student/kaoyan/kaoyanPageData.js'
 import { canUseRemoteToken } from '@/lib/stationData.js'
+
+const MAX_FILES = 10
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+
+function formatFileSize(bytes) {
+  if (!bytes) return '0 B'
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 export default function KaoyanMaterialUploadPage() {
   const navigate = useNavigate()
@@ -15,13 +28,43 @@ export default function KaoyanMaterialUploadPage() {
   const [saving, setSaving] = useState(false)
   const [progress, setProgress] = useState(0)
 
+  function updateForm(key, value) {
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
+
   function handleFileChange(event) {
-    setFiles(Array.from(event.target.files || []))
+    const nextFiles = Array.from(event.target.files || [])
+    if (!nextFiles.length) return
+
+    if (files.length + nextFiles.length > MAX_FILES) {
+      setNotice(`最多上传 ${MAX_FILES} 个文件`)
+      event.target.value = ''
+      return
+    }
+
+    const oversizedFile = nextFiles.find((item) => item.size > MAX_FILE_SIZE)
+    if (oversizedFile) {
+      setNotice(`文件 ${oversizedFile.name} 超过 10MB 限制`)
+      event.target.value = ''
+      return
+    }
+
+    setFiles((current) => [...current, ...nextFiles])
+    setNotice(canUseRemote ? '' : '当前是预览账号，暂不提交真实上传。')
+    event.target.value = ''
+  }
+
+  function removeFile(index) {
+    setFiles((current) => current.filter((_, fileIndex) => fileIndex !== index))
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
     if (!canUseRemote || !token) return
+
     if (!form.title.trim()) {
       setNotice('请先填写资料标题。')
       return
@@ -53,7 +96,7 @@ export default function KaoyanMaterialUploadPage() {
         xhr.onload = () => {
           const data = JSON.parse(xhr.responseText || '{}')
           if (xhr.status < 200 || xhr.status >= 300 || !data.success) {
-            reject(new Error(data.message || '上传失败'))
+            reject(new Error(data.message || '资料上传失败'))
             return
           }
           resolve(data.data)
@@ -84,7 +127,7 @@ export default function KaoyanMaterialUploadPage() {
             { label: '上传资料' },
           ]}
           title="上传页只处理资料提交，不和公开资料浏览混在一起。"
-          lead="长表单和附件清单拆开摆放，方便处理多附件上传状态。"
+          lead="把旧版的标题、分类、附件约束和上传进度保留下来，再用新版分栏重新组织输入顺序。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -94,25 +137,32 @@ export default function KaoyanMaterialUploadPage() {
             <label className="v2-field">
               <span>资料标题</span>
               <input
+                maxLength={50}
                 type="text"
                 value={form.title}
-                onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
+                onChange={(event) => updateForm('title', event.target.value.slice(0, 50))}
               />
+              <small className="v2-note-text">{`${form.title.length}/50`}</small>
             </label>
+
             <label className="v2-field">
               <span>资料介绍</span>
               <textarea
+                maxLength={500}
+                rows={4}
                 value={form.description}
-                onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
+                onChange={(event) => updateForm('description', event.target.value.slice(0, 500))}
               />
+              <small className="v2-note-text">{`${form.description.length}/500`}</small>
             </label>
+
             <section className="v2-card-grid">
               <label className="v2-field">
                 <span>院校</span>
                 <input
                   type="text"
                   value={form.school}
-                  onChange={(event) => setForm((current) => ({ ...current, school: event.target.value }))}
+                  onChange={(event) => updateForm('school', event.target.value)}
                 />
               </label>
               <label className="v2-field">
@@ -120,7 +170,7 @@ export default function KaoyanMaterialUploadPage() {
                 <input
                   type="text"
                   value={form.major}
-                  onChange={(event) => setForm((current) => ({ ...current, major: event.target.value }))}
+                  onChange={(event) => updateForm('major', event.target.value)}
                 />
               </label>
               <label className="v2-field">
@@ -128,30 +178,41 @@ export default function KaoyanMaterialUploadPage() {
                 <input
                   type="text"
                   value={form.subject}
-                  onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
+                  onChange={(event) => updateForm('subject', event.target.value)}
                 />
               </label>
               <label className="v2-field">
                 <span>年份</span>
-                <input
-                  type="text"
-                  value={form.year}
-                  onChange={(event) => setForm((current) => ({ ...current, year: event.target.value }))}
-                />
+                <select value={form.year} onChange={(event) => updateForm('year', event.target.value)}>
+                  <option value="">请选择</option>
+                  {materialYearOptions.map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
               </label>
             </section>
+
             <label className="v2-field">
               <span>资料类型</span>
-              <input
-                type="text"
-                value={form.materialType}
-                onChange={(event) => setForm((current) => ({ ...current, materialType: event.target.value }))}
-              />
+              <select value={form.materialType} onChange={(event) => updateForm('materialType', event.target.value)}>
+                <option value="">请选择</option>
+                {materialTypeOptions.map((item) => (
+                  <option key={item} value={item}>{item}</option>
+                ))}
+              </select>
             </label>
+
             <label className="v2-field">
-              <span>附件</span>
-              <input multiple type="file" onChange={handleFileChange} />
+              <span>选择附件</span>
+              <input
+                aria-label="选择附件"
+                multiple
+                type="file"
+                onChange={handleFileChange}
+              />
+              <small className="v2-note-text">{`最多 ${MAX_FILES} 个文件，单个文件不超过 10MB。`}</small>
             </label>
+
             <div className="v2-inline-actions">
               <button className="v2-segment-button is-active" disabled={saving || !canUseRemote} type="submit">
                 {saving ? '上传中…' : '提交审核'}
@@ -160,7 +221,7 @@ export default function KaoyanMaterialUploadPage() {
                 返回资料中枢
               </button>
             </div>
-            {saving ? <div className="v2-status-note">上传进度 {progress}%</div> : null}
+            {saving ? <div className="v2-status-note">{`上传进度 ${progress}%`}</div> : null}
           </form>
         </section>
       </div>
@@ -169,10 +230,13 @@ export default function KaoyanMaterialUploadPage() {
         <section className="v2-side-card">
           <p className="v2-kicker">附件清单</p>
           <div className="v2-check-list">
-            {files.map((file) => (
+            {files.map((file, index) => (
               <div className="v2-check-row" key={`${file.name}-${file.size}`}>
                 <strong>{file.name}</strong>
-                <span>{Math.max(1, Math.round(file.size / 1024))} KB</span>
+                <span>{formatFileSize(file.size)}</span>
+                <button className="v2-secondary-link" type="button" onClick={() => removeFile(index)}>
+                  移除
+                </button>
               </div>
             ))}
             {!files.length ? <p>当前还没有选择附件。</p> : null}
@@ -182,4 +246,3 @@ export default function KaoyanMaterialUploadPage() {
     </>
   )
 }
-

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '@/App.jsx'
@@ -212,6 +212,97 @@ describe('admin kaoyan split pages', () => {
     expect(await screen.findByText('政治冲刺笔记')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '待审核' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '通过' })).toBeInTheDocument()
+  })
+
+  it('switches admin materials queues with pagination and review actions', async () => {
+    apiMocks.adminMaterialApi.pending.mockResolvedValueOnce({
+      content: [
+        {
+          id: 11,
+          title: '政治冲刺笔记',
+          status: 'PENDING',
+          school: '华东师范大学',
+          major: '教育学',
+          subject: '政治',
+          attachments: [{ id: 1, originalName: 'notes.pdf', fileSize: 1024 }],
+        },
+      ],
+      totalElements: 12,
+      totalPages: 2,
+    })
+    apiMocks.adminMaterialApi.pending.mockResolvedValueOnce({
+      content: [
+        {
+          id: 21,
+          title: '第二页待审资料',
+          status: 'PENDING',
+          school: '华东师范大学',
+          major: '教育学',
+          subject: '政治',
+          attachments: [],
+        },
+      ],
+      totalElements: 12,
+      totalPages: 2,
+    })
+    apiMocks.adminMaterialApi.listPage
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 31,
+            title: '全部队列资料',
+            status: 'PENDING',
+            school: '华东师范大学',
+            major: '教育学',
+            subject: '政治',
+            attachments: [],
+          },
+        ],
+        totalElements: 20,
+        totalPages: 3,
+      })
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 41,
+            title: '全部队列第二页',
+            status: 'PENDING',
+            school: '华东师范大学',
+            major: '教育学',
+            subject: '政治',
+            attachments: [],
+          },
+        ],
+        totalElements: 20,
+        totalPages: 3,
+      })
+    apiMocks.adminMaterialApi.review.mockResolvedValue({})
+
+    render(
+      <MemoryRouter>
+        <AdminKaoyanMaterialsPage />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('政治冲刺笔记')).toBeInTheDocument()
+    expect(screen.getByText('共 12 条')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '下一页' }))
+    await waitFor(() => {
+      expect(apiMocks.adminMaterialApi.pending).toHaveBeenCalledWith({ page: 1, size: 10 }, 'remote-token')
+    })
+    expect(await screen.findByText('第二页待审资料')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '全部' }))
+    await waitFor(() => {
+      expect(apiMocks.adminMaterialApi.listPage).toHaveBeenCalledWith({ page: 0, size: 10 }, 'remote-token')
+    })
+    expect(await screen.findByText('全部队列资料')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '通过' }))
+    await waitFor(() => {
+      expect(apiMocks.adminMaterialApi.review).toHaveBeenCalledWith(31, 'APPROVED', 'remote-token')
+    })
   })
 
   it('renders school cards and filter controls', async () => {

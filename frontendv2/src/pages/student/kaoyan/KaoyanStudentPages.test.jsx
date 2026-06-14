@@ -3,6 +3,8 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import KaoyanSchoolsPage from '@/pages/student/kaoyan/KaoyanSchoolsPage.jsx'
 import KaoyanSchoolFavoritesPage from '@/pages/student/kaoyan/KaoyanSchoolFavoritesPage.jsx'
+import KaoyanMaterialsPage from '@/pages/student/kaoyan/KaoyanMaterialsPage.jsx'
+import KaoyanMaterialUploadPage from '@/pages/student/kaoyan/KaoyanMaterialUploadPage.jsx'
 import KaoyanPlanDetailPage from '@/pages/student/kaoyan/KaoyanPlanDetailPage.jsx'
 import KaoyanMyMaterialsPage from '@/pages/student/kaoyan/KaoyanMyMaterialsPage.jsx'
 import KaoyanMaterialDetailPage from '@/pages/student/kaoyan/KaoyanMaterialDetailPage.jsx'
@@ -37,6 +39,7 @@ const apiMocks = vi.hoisted(() => ({
     deletePlan: vi.fn(),
   },
   materialApi: {
+    listPage: vi.fn(),
     myMaterials: vi.fn(),
     detail: vi.fn(),
     downloadUrl: vi.fn((materialId, attachmentId) => `/api/kaoyan/materials/${materialId}/attachments/${attachmentId}/download`),
@@ -203,37 +206,244 @@ describe('kaoyan student split pages', () => {
     expect(screen.getByText('6.2:1')).toBeInTheDocument()
   })
 
-  it('renders plan detail and check-ins from backend data', async () => {
-    apiMocks.studyPlanApi.planDetail.mockResolvedValue({
-      id: 41,
-      name: '7月冲刺计划',
-      description: '英语 + 专业课',
-      startDate: '2026-07-01',
-      endDate: '2026-07-31',
-      totalDurationHours: 90,
-      completionRate: 42,
-      status: '进行中',
-    })
-    apiMocks.studyPlanApi.checkIns.mockResolvedValue([
-      {
-        id: 81,
-        checkInDate: '2026-07-03',
-        durationHours: 3,
-        remark: '阅读两篇',
-      },
-    ])
+  it('renders the old-frontend calendar workspace and only exposes check-in on today', async () => {
+    const today = new Date()
+    today.setHours(12, 0, 0, 0)
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const fourDaysAgo = new Date(today)
+    fourDaysAgo.setDate(fourDaysAgo.getDate() - 4)
+    const toDateKey = (value) => {
+      const y = value.getFullYear()
+      const m = String(value.getMonth() + 1).padStart(2, '0')
+      const d = String(value.getDate()).padStart(2, '0')
+      return `${y}-${m}-${d}`
+    }
 
-    renderRoute('/station/kaoyan/plans/41', '/station/kaoyan/plans/:planId', <KaoyanPlanDetailPage />)
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1, 12)
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 12)
+
+    const todayKey = toDateKey(today)
+    const yesterdayKey = toDateKey(yesterday)
+    const fourDaysAgoKey = toDateKey(fourDaysAgo)
+
+    {
+      apiMocks.studyPlanApi.planDetail.mockResolvedValue({
+        id: 41,
+        name: '7月冲刺计划',
+        description: '英语 + 专业课',
+        startDate: toDateKey(firstDayOfMonth),
+        endDate: toDateKey(lastDayOfMonth),
+        totalDurationHours: 90,
+        plannedDurationHours: 120,
+        completionRate: 42,
+        status: '进行中',
+      })
+      apiMocks.studyPlanApi.checkIns.mockResolvedValue([
+        {
+          id: 81,
+          checkInDate: fourDaysAgoKey,
+          durationHours: 1,
+          remark: '单词复盘',
+        },
+        {
+          id: 82,
+          checkInDate: yesterdayKey,
+          durationHours: 3,
+          remark: '阅读两篇',
+        },
+      ])
+
+      renderRoute('/station/kaoyan/plans/41', '/station/kaoyan/plans/:planId', <KaoyanPlanDetailPage />)
+
+      await waitFor(() => {
+        expect(apiMocks.studyPlanApi.planDetail).toHaveBeenCalledWith('41', 'remote-token')
+        expect(apiMocks.studyPlanApi.checkIns).toHaveBeenCalledWith('41', 'remote-token')
+      })
+      expect(await screen.findByRole('heading', { name: '7月冲刺计划' })).toBeInTheDocument()
+      expect(screen.getByText('连续打卡天数')).toBeInTheDocument()
+      expect(screen.getByText('总打卡天数')).toBeInTheDocument()
+      expect(screen.getByText('总打卡时长')).toBeInTheDocument()
+      expect(screen.getByText('完成率')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: `选择 ${yesterdayKey}` }))
+      expect(screen.getByText('阅读两篇')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: '打卡' })).not.toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: `选择 ${todayKey}` }))
+      expect(screen.getByRole('button', { name: '打卡' })).toBeInTheDocument()
+      expect(screen.getByText('暂无打卡记录')).toBeInTheDocument()
+    }
+  })
+
+  it('submits today check-ins through a modal and restores edit/delete actions', async () => {
+    const today = new Date()
+    today.setHours(12, 0, 0, 0)
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1, 12)
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 12)
+    const toDateKey = (value) => {
+      const y = value.getFullYear()
+      const m = String(value.getMonth() + 1).padStart(2, '0')
+      const d = String(value.getDate()).padStart(2, '0')
+      return `${y}-${m}-${d}`
+    }
+
+    const todayKey = toDateKey(today)
+    const yesterdayKey = toDateKey(yesterday)
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    apiMocks.studyPlanApi.planDetail
+      .mockResolvedValueOnce({
+        id: 41,
+        name: '7月冲刺计划',
+        description: '英语 + 专业课',
+        startDate: toDateKey(firstDayOfMonth),
+        endDate: toDateKey(lastDayOfMonth),
+        totalDurationHours: 90,
+        plannedDurationHours: 120,
+        completionRate: 42,
+      })
+      .mockResolvedValueOnce({
+        id: 41,
+        name: '7月冲刺计划',
+        description: '英语 + 专业课',
+        startDate: toDateKey(firstDayOfMonth),
+        endDate: toDateKey(lastDayOfMonth),
+        totalDurationHours: 90,
+        plannedDurationHours: 120,
+        completionRate: 44,
+      })
+      .mockResolvedValueOnce({
+        id: 41,
+        name: '7月冲刺计划（调整）',
+        description: '英语 + 专业课',
+        startDate: toDateKey(firstDayOfMonth),
+        endDate: toDateKey(lastDayOfMonth),
+        totalDurationHours: 90,
+        plannedDurationHours: 150,
+        completionRate: 44,
+      })
+      .mockResolvedValueOnce({
+        id: 41,
+        name: '7月冲刺计划（调整）',
+        description: '英语 + 专业课',
+        startDate: toDateKey(firstDayOfMonth),
+        endDate: toDateKey(lastDayOfMonth),
+        totalDurationHours: 90,
+        plannedDurationHours: 150,
+        completionRate: 44,
+      })
+
+    apiMocks.studyPlanApi.checkIns
+      .mockResolvedValueOnce([
+        {
+          id: 82,
+          checkInDate: yesterdayKey,
+          durationHours: 3,
+          remark: '阅读两篇',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 82,
+          checkInDate: yesterdayKey,
+          durationHours: 3,
+          remark: '阅读两篇',
+        },
+        {
+          id: 84,
+          checkInDate: todayKey,
+          durationHours: 1.5,
+          remark: '英语翻译',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 82,
+          checkInDate: yesterdayKey,
+          durationHours: 3,
+          remark: '阅读两篇',
+        },
+        {
+          id: 84,
+          checkInDate: todayKey,
+          durationHours: 1.5,
+          remark: '英语翻译',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 84,
+          checkInDate: todayKey,
+          durationHours: 1.5,
+          remark: '英语翻译',
+        },
+      ])
+
+    render(
+      <MemoryRouter initialEntries={['/station/kaoyan/plans/41']}>
+        <Routes>
+          <Route path="/station/kaoyan/plans/:planId" element={<KaoyanPlanDetailPage />} />
+          <Route path="/station/kaoyan/plans" element={<div>计划列表占位</div>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: '7月冲刺计划' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: `选择 ${todayKey}` }))
+    fireEvent.click(screen.getByRole('button', { name: '打卡' }))
+    fireEvent.click(screen.getByRole('button', { name: '确认打卡' }))
+    expect(screen.getByText('请输入大于 0 的学习时长')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('学习时长（小时）'), { target: { value: '1.5' } })
+    fireEvent.change(screen.getByLabelText('备注'), { target: { value: '英语翻译' } })
+    fireEvent.click(screen.getByRole('button', { name: '确认打卡' }))
 
     await waitFor(() => {
-      expect(apiMocks.studyPlanApi.planDetail).toHaveBeenCalledWith('41', 'remote-token')
-      expect(apiMocks.studyPlanApi.checkIns).toHaveBeenCalledWith('41', 'remote-token')
+      expect(apiMocks.studyPlanApi.addCheckIn).toHaveBeenCalledWith('41', {
+        checkInDate: todayKey,
+        durationHours: 1.5,
+        remark: '英语翻译',
+      }, 'remote-token')
     })
-    expect(await screen.findByRole('heading', { name: '7月冲刺计划' })).toBeInTheDocument()
-    expect(screen.getByText('42%')).toBeInTheDocument()
-    expect(screen.getByText('阅读两篇')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '保存打卡' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '删除打卡' })).toBeInTheDocument()
+    expect(await screen.findByText('英语翻译')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '编辑计划' }))
+    fireEvent.change(screen.getByLabelText('计划名称'), { target: { value: '7月冲刺计划（调整）' } })
+    fireEvent.change(screen.getByLabelText('计划总时长（小时）'), { target: { value: '150' } })
+    fireEvent.click(screen.getByRole('button', { name: '保存修改' }))
+
+    await waitFor(() => {
+      expect(apiMocks.studyPlanApi.updatePlan).toHaveBeenCalledWith('41', {
+        name: '7月冲刺计划（调整）',
+        description: '英语 + 专业课',
+        startDate: toDateKey(firstDayOfMonth),
+        endDate: toDateKey(lastDayOfMonth),
+        totalDurationHours: 150,
+      }, 'remote-token')
+    })
+    expect(await screen.findByRole('heading', { name: '7月冲刺计划（调整）' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: `选择 ${yesterdayKey}` }))
+    fireEvent.click(screen.getByRole('button', { name: '删除' }))
+
+    await waitFor(() => {
+      expect(confirmSpy).toHaveBeenCalledWith('确定删除该打卡记录？')
+      expect(apiMocks.studyPlanApi.deleteCheckIn).toHaveBeenCalledWith(82, 'remote-token')
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '删除计划' }))
+
+    await waitFor(() => {
+      expect(confirmSpy).toHaveBeenCalledWith('确定删除该计划？')
+      expect(apiMocks.studyPlanApi.deletePlan).toHaveBeenCalledWith('41', 'remote-token')
+    })
+    expect(await screen.findByText('计划列表占位')).toBeInTheDocument()
+
+    confirmSpy.mockRestore()
   })
 
   it('renders my materials by review status from backend data', async () => {
@@ -257,13 +467,135 @@ describe('kaoyan student split pages', () => {
 
     await waitFor(() => {
       expect(apiMocks.materialApi.myMaterials).toHaveBeenCalledWith(
-        { status: 'PENDING', page: 0, size: 12 },
+        { page: 0, size: 10 },
         'remote-token',
       )
     })
     expect(await screen.findByText('政治冲刺笔记')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'PENDING' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '全部' })).toBeInTheDocument()
     expect(screen.getByText('华东师范大学 / 教育学')).toBeInTheDocument()
+  })
+
+  it('supports the old frontend materials query flow with school and major filters plus pagination', async () => {
+    apiMocks.materialApi.listPage
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 101,
+            title: '政治冲刺笔记',
+            status: 'APPROVED',
+            school: '华东师范大学',
+            major: '教育学',
+            subject: '政治',
+            year: '2025',
+            materialType: '笔记',
+            description: '适合 9 月后使用',
+            attachments: [{ id: 1 }],
+            viewCount: 12,
+            downloadCount: 5,
+            createdAt: '2026-06-12T10:00:00',
+          },
+        ],
+        totalElements: 13,
+        totalPages: 2,
+      })
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 101,
+            title: '政治冲刺笔记',
+            status: 'APPROVED',
+            school: '华东师范大学',
+            major: '教育学',
+            subject: '政治',
+            year: '2025',
+            materialType: '笔记',
+            description: '适合 9 月后使用',
+            attachments: [{ id: 1 }],
+            viewCount: 12,
+            downloadCount: 5,
+            createdAt: '2026-06-12T10:00:00',
+          },
+        ],
+        totalElements: 13,
+        totalPages: 2,
+      })
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 102,
+            title: '教育学真题整理',
+            status: 'APPROVED',
+            school: '华东师范大学',
+            major: '教育学',
+            subject: '政治',
+            year: '2025',
+            materialType: '真题',
+            description: '第二页结果',
+            attachments: [{ id: 2 }],
+            viewCount: 8,
+            downloadCount: 3,
+            createdAt: '2026-06-10T10:00:00',
+          },
+        ],
+        totalElements: 13,
+        totalPages: 2,
+      })
+
+    renderPage(<KaoyanMaterialsPage />)
+
+    expect(await screen.findByText('政治冲刺笔记')).toBeInTheDocument()
+    expect(screen.getByLabelText('院校')).toBeInTheDocument()
+    expect(screen.getByLabelText('专业')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('关键词'), { target: { value: '政治' } })
+    fireEvent.change(screen.getByLabelText('院校'), { target: { value: '华东师范大学' } })
+    fireEvent.change(screen.getByLabelText('专业'), { target: { value: '教育学' } })
+    fireEvent.click(screen.getByRole('button', { name: '查询' }))
+
+    await waitFor(() => {
+      expect(apiMocks.materialApi.listPage).toHaveBeenLastCalledWith({
+        keyword: '政治',
+        school: '华东师范大学',
+        major: '教育学',
+        subject: '',
+        year: '',
+        materialType: '',
+        page: 0,
+        size: 10,
+      })
+    })
+    expect(screen.getByText('共 13 条')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '下一页' }))
+
+    await waitFor(() => {
+      expect(apiMocks.materialApi.listPage).toHaveBeenLastCalledWith({
+        keyword: '政治',
+        school: '华东师范大学',
+        major: '教育学',
+        subject: '',
+        year: '',
+        materialType: '',
+        page: 1,
+        size: 10,
+      })
+    })
+    expect(await screen.findByText('教育学真题整理')).toBeInTheDocument()
+  })
+
+  it('validates upload file count before submitting', async () => {
+    renderPage(<KaoyanMaterialUploadPage />)
+
+    const files = Array.from({ length: 11 }, (_, index) => (
+      new File(['demo'], `material-${index + 1}.pdf`, { type: 'application/pdf' })
+    ))
+
+    fireEvent.change(screen.getByLabelText('选择附件'), {
+      target: { files },
+    })
+
+    expect(await screen.findByText('最多上传 10 个文件')).toBeInTheDocument()
   })
 
   it('renders material attachments from backend detail data', async () => {

@@ -3,10 +3,18 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { studyPlanApi } from '@legacy/lib/api.js'
 import PageIntro from '@/components/PageIntro.jsx'
+import KaoyanPlanCalendarCard from '@/components/kaoyan/KaoyanPlanCalendarCard.jsx'
+import KaoyanPlanCheckInModal from '@/components/kaoyan/KaoyanPlanCheckInModal.jsx'
+import KaoyanPlanDayPanel from '@/components/kaoyan/KaoyanPlanDayPanel.jsx'
+import KaoyanPlanEditModal from '@/components/kaoyan/KaoyanPlanEditModal.jsx'
 import {
+  buildPlanCalendarDays,
+  buildPlanDetailMetrics,
   createEmptyCheckInForm,
   createEmptyPlanForm,
   createKaoyanPlanDetailPreview,
+  getPlanDayStatus,
+  groupCheckInsByDate,
   normalizeCheckInRows,
   normalizePlanDetail,
 } from '@/pages/student/kaoyan/kaoyanPageData.js'
@@ -19,44 +27,56 @@ import {
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
+function buildPlanFormState(plan) {
+  return {
+    ...createEmptyPlanForm(),
+    name: plan.name || '',
+    description: plan.description || '',
+    startDate: plan.startDate || '',
+    endDate: plan.endDate || '',
+    totalDurationHours: String(plan.plannedDurationHours || plan.totalDurationHours || ''),
+  }
+}
+
 export default function KaoyanPlanDetailPage() {
   const { planId } = useParams()
   const navigate = useNavigate()
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const preview = createKaoyanPlanDetailPreview(planId)
+
   const [plan, setPlan] = useState(normalizePlanDetail(preview))
   const [checkIns, setCheckIns] = useState(normalizeCheckInRows(preview.checkIns))
   const [notice, setNotice] = useState(previewDataNotice('计划详情'))
   const [loading, setLoading] = useState(false)
   const [savingPlan, setSavingPlan] = useState(false)
   const [savingCheckIn, setSavingCheckIn] = useState(false)
-  const [planForm, setPlanForm] = useState({
-    ...createEmptyPlanForm(),
-    name: preview.name,
-    description: preview.description,
-    startDate: preview.startDate,
-    endDate: preview.endDate,
-    totalDurationHours: preview.totalDurationHours,
-  })
-  const [checkInForm, setCheckInForm] = useState({
-    ...createEmptyCheckInForm(),
-    checkInDate: preview.checkIns[0]?.checkInDate || preview.startDate,
-  })
+  const [selectedDate, setSelectedDate] = useState('')
+  const [displayMonth, setDisplayMonth] = useState(() => new Date())
+  const [checkInModalOpen, setCheckInModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [checkInError, setCheckInError] = useState('')
+  const [planFormError, setPlanFormError] = useState('')
+  const [planForm, setPlanForm] = useState(buildPlanFormState(preview))
+  const [checkInForm, setCheckInForm] = useState(createEmptyCheckInForm())
+
+  useEffect(() => {
+    setSelectedDate('')
+    setDisplayMonth(new Date())
+    setCheckInModalOpen(false)
+    setEditModalOpen(false)
+    setCheckInError('')
+    setPlanFormError('')
+    setCheckInForm(createEmptyCheckInForm())
+  }, [planId])
 
   async function loadPlanWorkspace() {
     if (!canUseRemote) {
       const nextPreview = createKaoyanPlanDetailPreview(planId)
-      setPlan(normalizePlanDetail(nextPreview))
+      const nextPlan = normalizePlanDetail(nextPreview)
+      setPlan(nextPlan)
       setCheckIns(normalizeCheckInRows(nextPreview.checkIns))
-      setPlanForm({
-        ...createEmptyPlanForm(),
-        name: nextPreview.name,
-        description: nextPreview.description,
-        startDate: nextPreview.startDate,
-        endDate: nextPreview.endDate,
-        totalDurationHours: nextPreview.totalDurationHours,
-      })
+      setPlanForm(buildPlanFormState(nextPlan))
       setNotice(previewDataNotice('计划详情'))
       return
     }
@@ -72,22 +92,16 @@ export default function KaoyanPlanDetailPage() {
         '计划详情读取超时，请检查后端服务。',
       )
       const nextPlan = normalizePlanDetail(planData)
-      const nextCheckIns = normalizeCheckInRows(checkInData)
       setPlan(nextPlan)
-      setCheckIns(nextCheckIns)
-      setPlanForm({
-        ...createEmptyPlanForm(),
-        name: nextPlan.name,
-        description: nextPlan.description,
-        startDate: nextPlan.startDate,
-        endDate: nextPlan.endDate,
-        totalDurationHours: nextPlan.totalDurationHours,
-      })
+      setCheckIns(normalizeCheckInRows(checkInData))
+      setPlanForm(buildPlanFormState(nextPlan))
       setNotice(remoteDataNotice('计划详情'))
     } catch (error) {
       const nextPreview = createKaoyanPlanDetailPreview(planId)
-      setPlan(normalizePlanDetail(nextPreview))
+      const nextPlan = normalizePlanDetail(nextPreview)
+      setPlan(nextPlan)
       setCheckIns(normalizeCheckInRows(nextPreview.checkIns))
+      setPlanForm(buildPlanFormState(nextPlan))
       setNotice(fallbackDataNotice('计划详情', error))
     } finally {
       setLoading(false)
@@ -98,18 +112,81 @@ export default function KaoyanPlanDetailPage() {
     loadPlanWorkspace()
   }, [canUseRemote, planId, token])
 
-  function startEditCheckIn(item) {
-    setCheckInForm({
-      id: item.id,
-      checkInDate: item.checkInDate,
-      durationHours: String(item.durationHours || ''),
-      remark: item.remark || '',
-    })
+  function handleCheckInFormChange(key, value) {
+    setCheckInForm((current) => ({
+      ...current,
+      [key]: value,
+    }))
   }
 
-  async function handleSavePlan(event) {
+  function handlePlanFormChange(key, value) {
+    setPlanForm((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
+
+  function openCheckInModal() {
+    setCheckInError('')
+    setCheckInForm({
+      ...createEmptyCheckInForm(),
+      checkInDate: selectedDate,
+    })
+    setCheckInModalOpen(true)
+  }
+
+  function openEditModal() {
+    setPlanFormError('')
+    setPlanForm(buildPlanFormState(plan))
+    setEditModalOpen(true)
+  }
+
+  async function handleSubmitCheckIn(event) {
+    event.preventDefault()
+    if (!canUseRemote || !token || !selectedDate) return
+
+    const hours = Number(checkInForm.durationHours)
+    if (!Number.isFinite(hours) || hours <= 0) {
+      setCheckInError('请输入大于 0 的学习时长')
+      return
+    }
+    if (hours >= 24) {
+      setCheckInError('单次打卡时长必须小于 24 小时')
+      return
+    }
+
+    setCheckInError('')
+    setSavingCheckIn(true)
+    try {
+      await studyPlanApi.addCheckIn(planId, {
+        checkInDate: selectedDate,
+        durationHours: hours,
+        remark: checkInForm.remark.trim(),
+      }, token)
+      setCheckInModalOpen(false)
+      setCheckInForm(createEmptyCheckInForm())
+      await loadPlanWorkspace()
+    } catch (error) {
+      setCheckInError(error.message || '打卡失败')
+    } finally {
+      setSavingCheckIn(false)
+    }
+  }
+
+  async function handleSubmitPlan(event) {
     event.preventDefault()
     if (!canUseRemote || !token) return
+
+    if (!planForm.name.trim() || !planForm.startDate || !planForm.endDate || !planForm.totalDurationHours) {
+      setPlanFormError('请填写完整信息')
+      return
+    }
+    if (planForm.endDate < planForm.startDate) {
+      setPlanFormError('结束日期不能早于开始日期')
+      return
+    }
+
+    setPlanFormError('')
     setSavingPlan(true)
     try {
       await studyPlanApi.updatePlan(planId, {
@@ -119,9 +196,10 @@ export default function KaoyanPlanDetailPage() {
         endDate: planForm.endDate,
         totalDurationHours: Number(planForm.totalDurationHours),
       }, token)
+      setEditModalOpen(false)
       await loadPlanWorkspace()
     } catch (error) {
-      setNotice(error.message || '计划更新失败')
+      setPlanFormError(error.message || '更新失败')
     } finally {
       setSavingPlan(false)
     }
@@ -129,6 +207,8 @@ export default function KaoyanPlanDetailPage() {
 
   async function handleDeletePlan() {
     if (!canUseRemote || !token) return
+    if (!window.confirm('确定删除该计划？')) return
+
     setSavingPlan(true)
     try {
       await studyPlanApi.deletePlan(planId, token)
@@ -139,42 +219,13 @@ export default function KaoyanPlanDetailPage() {
     }
   }
 
-  async function handleSaveCheckIn(event) {
-    event.preventDefault()
+  async function handleDeleteCheckIn(checkInId) {
     if (!canUseRemote || !token) return
-    setSavingCheckIn(true)
-    try {
-      const payload = {
-        checkInDate: checkInForm.checkInDate,
-        durationHours: Number(checkInForm.durationHours),
-        remark: checkInForm.remark.trim(),
-      }
-      if (checkInForm.id) {
-        await studyPlanApi.updateCheckIn(checkInForm.id, payload, token)
-      } else {
-        await studyPlanApi.addCheckIn(planId, payload, token)
-      }
-      setCheckInForm({
-        ...createEmptyCheckInForm(),
-        checkInDate: plan.startDate || '',
-      })
-      await loadPlanWorkspace()
-    } catch (error) {
-      setNotice(error.message || '打卡保存失败')
-    } finally {
-      setSavingCheckIn(false)
-    }
-  }
+    if (!window.confirm('确定删除该打卡记录？')) return
 
-  async function handleDeleteCheckIn() {
-    if (!checkInForm.id || !canUseRemote || !token) return
     setSavingCheckIn(true)
     try {
-      await studyPlanApi.deleteCheckIn(checkInForm.id, token)
-      setCheckInForm({
-        ...createEmptyCheckInForm(),
-        checkInDate: plan.startDate || '',
-      })
+      await studyPlanApi.deleteCheckIn(checkInId, token)
       await loadPlanWorkspace()
     } catch (error) {
       setNotice(error.message || '打卡删除失败')
@@ -182,6 +233,38 @@ export default function KaoyanPlanDetailPage() {
       setSavingCheckIn(false)
     }
   }
+
+  const metrics = buildPlanDetailMetrics(plan, checkIns, new Date())
+  const monthSeed = selectedDate || `${displayMonth.getFullYear()}-${String(displayMonth.getMonth() + 1).padStart(2, '0')}-01`
+  const calendarCells = buildPlanCalendarDays(monthSeed)
+  const statusByDate = Object.fromEntries(
+    calendarCells
+      .filter(Boolean)
+      .map((cell) => [cell.key, getPlanDayStatus(cell.key, {
+        startDate: plan.startDate,
+        endDate: plan.endDate,
+        checkedDates: metrics.checkedDates,
+        todayKey: metrics.todayKey,
+      })]),
+  )
+  const dayGroups = groupCheckInsByDate(checkIns)
+  const dayCheckIns = selectedDate ? (dayGroups[selectedDate] || []) : []
+  const selectedStatus = selectedDate
+    ? getPlanDayStatus(selectedDate, {
+      startDate: plan.startDate,
+      endDate: plan.endDate,
+      checkedDates: metrics.checkedDates,
+      todayKey: metrics.todayKey,
+    })
+    : 'out'
+
+  const selectedStatusLabel = {
+    checked: '已打卡',
+    today: '今日',
+    missed: '未打卡',
+    future: '未来',
+    out: '超出范围',
+  }[selectedStatus] || '未选择'
 
   return (
     <>
@@ -194,151 +277,162 @@ export default function KaoyanPlanDetailPage() {
             { label: plan.name },
           ]}
           title={plan.name}
-          lead={plan.description || '把计划总览、打卡轨迹和维护动作拆进同一个详情工作区。'}
+          lead={plan.description || '把旧版的月历打卡工作流收进新版工作台。'}
+          actions={(
+            <>
+              <button className="v2-segment-button" type="button" onClick={() => navigate('/station/kaoyan/plans')}>
+                返回列表
+              </button>
+              <button
+                className="v2-segment-button"
+                disabled={!canUseRemote || savingPlan}
+                type="button"
+                onClick={openEditModal}
+              >
+                编辑计划
+              </button>
+              <button
+                className="v2-segment-button"
+                disabled={!canUseRemote || savingPlan}
+                type="button"
+                onClick={handleDeletePlan}
+              >
+                删除计划
+              </button>
+            </>
+          )}
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
 
-        <section className="v2-summary-strip" aria-label="计划摘要">
-          <article className="v2-summary-card">
-            <span>完成率</span>
-            <strong>{plan.completionRate ?? 0}%</strong>
-            <p>由后端聚合 check-ins 后返回。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>计划时长</span>
-            <strong>{plan.totalDurationHours || '待补充'}</strong>
-            <p>总时长用于估算当前轨道密度。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>打卡数量</span>
-            <strong>{checkIns.length}</strong>
-            <p>{plan.startDate ? `${formatDateLabel(plan.startDate)} 开始` : '开始时间待补充'}</p>
+        <section className="v2-plan-summary-workbench" aria-label="计划摘要">
+          <article className="v2-plan-summary-hero">
+            <div className="v2-plan-summary-hero__head">
+              <div>
+                <p className="v2-kicker">完成率</p>
+                <h2>{metrics.completionRate}%</h2>
+              </div>
+              <span className="v2-plan-summary-hero__label">当前进度</span>
+            </div>
+
+            <div className="v2-plan-progress-track v2-plan-progress-track--hero">
+              <div className="v2-plan-progress-fill" style={{ width: `${Math.min(metrics.completionRate, 100)}%` }} />
+            </div>
+            <div className="v2-plan-summary-hero__meta">
+              <div className="v2-plan-summary-hero__meta-item">
+                <span>已完成时长</span>
+                <strong>{metrics.totalCheckedHours.toFixed(1)}h</strong>
+              </div>
+              <div className="v2-plan-summary-hero__meta-item">
+                <span>剩余时长</span>
+                <strong>{Math.max(metrics.plannedHours - metrics.totalCheckedHours, 0).toFixed(1)}h</strong>
+              </div>
+            </div>
           </article>
         </section>
 
         {loading ? <div className="v2-status-note">正在同步计划详情…</div> : null}
 
-        <section className="v2-timeline-card" aria-label="打卡记录">
-          {checkIns.map((item) => (
-            <div className="v2-timeline-row" key={item.id}>
-              <div className="v2-timeline-pin">
-                {item.checkInDate ? formatDateLabel(item.checkInDate).slice(5) : '待排期'}
-              </div>
-              <div className="v2-timeline-body">
-                <strong>{item.durationHours} 小时</strong>
-                <p>{item.checkInDate ? formatDateLabel(item.checkInDate) : '打卡日期待补充'}</p>
-                <span>{item.remark || '暂无备注'}</span>
-                <div className="v2-inline-actions">
-                  <button className="v2-segment-button" type="button" onClick={() => startEditCheckIn(item)}>
-                    编辑打卡
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-          {!checkIns.length ? <div className="v2-status-note">当前计划还没有打卡记录。</div> : null}
-        </section>
+        <KaoyanPlanCalendarCard
+          monthLabel={displayMonth.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })}
+          cells={calendarCells}
+          selectedDate={selectedDate}
+          statusByDate={statusByDate}
+          onPrevMonth={() => setDisplayMonth((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1, 12))}
+          onNextMonth={() => setDisplayMonth((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1, 12))}
+          onSelectDate={setSelectedDate}
+        />
+
+        <KaoyanPlanDayPanel
+          canCheckIn={selectedStatus === 'today' && canUseRemote}
+          canDelete={canUseRemote}
+          dayCheckIns={dayCheckIns}
+          deleting={savingCheckIn}
+          selectedDate={selectedDate}
+          selectedStatus={selectedStatus}
+          onDeleteCheckIn={handleDeleteCheckIn}
+          onOpenCheckIn={openCheckInModal}
+        />
       </div>
 
       <aside className="v2-side-column">
         <section className="v2-side-card">
-          <p className="v2-kicker">快捷打卡</p>
-          <form className="v2-filter-form" onSubmit={handleSaveCheckIn}>
-            <label className="v2-field">
-              <span>打卡日期</span>
-              <input
-                type="date"
-                value={checkInForm.checkInDate}
-                onChange={(event) => setCheckInForm((current) => ({ ...current, checkInDate: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>学习时长（小时）</span>
-              <input
-                type="number"
-                value={checkInForm.durationHours}
-                onChange={(event) => setCheckInForm((current) => ({ ...current, durationHours: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>备注</span>
-              <textarea
-                value={checkInForm.remark}
-                onChange={(event) => setCheckInForm((current) => ({ ...current, remark: event.target.value }))}
-              />
-            </label>
-            <button className="v2-segment-button is-active" disabled={savingCheckIn || !canUseRemote} type="submit">
-              {savingCheckIn ? '保存中…' : '保存打卡'}
-            </button>
-            <button
-              className="v2-segment-button"
-              disabled={savingCheckIn || !checkInForm.id || !canUseRemote}
-              type="button"
-              onClick={handleDeleteCheckIn}
-            >
-              删除打卡
-            </button>
-          </form>
+          <p className="v2-kicker">计划区间</p>
+          <div className="v2-side-section">
+            <strong>{plan.startDate || '待补充'} - {plan.endDate || '待补充'}</strong>
+            <p className="v2-note-text">先在主区切日期，再查看当天记录。旧版规则仍然是只有今天可以新增打卡。</p>
+          </div>
         </section>
 
         <section className="v2-side-card">
-          <p className="v2-kicker">计划设置</p>
-          <form className="v2-filter-form" onSubmit={handleSavePlan}>
-            <label className="v2-field">
-              <span>计划名称</span>
-              <input
-                type="text"
-                value={planForm.name}
-                onChange={(event) => setPlanForm((current) => ({ ...current, name: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>计划说明</span>
-              <textarea
-                value={planForm.description}
-                onChange={(event) => setPlanForm((current) => ({ ...current, description: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>开始日期</span>
-              <input
-                type="date"
-                value={planForm.startDate}
-                onChange={(event) => setPlanForm((current) => ({ ...current, startDate: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>结束日期</span>
-              <input
-                type="date"
-                value={planForm.endDate}
-                onChange={(event) => setPlanForm((current) => ({ ...current, endDate: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>总时长（小时）</span>
-              <input
-                type="number"
-                value={planForm.totalDurationHours}
-                onChange={(event) => setPlanForm((current) => ({ ...current, totalDurationHours: event.target.value }))}
-              />
-            </label>
-            <button className="v2-segment-button is-active" disabled={savingPlan || !canUseRemote} type="submit">
-              {savingPlan ? '保存中…' : '更新计划'}
-            </button>
-            <button
-              className="v2-segment-button"
-              disabled={savingPlan || !canUseRemote}
-              type="button"
-              onClick={handleDeletePlan}
-            >
-              删除计划
-            </button>
-          </form>
+          <p className="v2-kicker">执行信息</p>
+          <div className="v2-side-section">
+            <div className="v2-plan-side-facts">
+              <div className="v2-plan-side-fact">
+                <span>连续打卡天数</span>
+                <strong>{metrics.streak}</strong>
+              </div>
+              <div className="v2-plan-side-fact">
+                <span>总打卡天数</span>
+                <strong>{metrics.checkedDays}</strong>
+              </div>
+              <div className="v2-plan-side-fact">
+                <span>计划总时长</span>
+                <strong>{metrics.plannedHours}h</strong>
+              </div>
+              <div className="v2-plan-side-fact">
+                <span>总打卡时长</span>
+                <strong>{metrics.totalCheckedHours.toFixed(1)}h</strong>
+              </div>
+              <div className="v2-plan-side-fact">
+                <span>计划起点</span>
+                <strong>{plan.startDate ? formatDateLabel(plan.startDate) : '待补充'}</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="v2-side-card">
+          <p className="v2-kicker">当前选中日期</p>
+          <div className="v2-side-section">
+            <strong>{selectedDate || '未选择日期'}</strong>
+            <p className="v2-note-text">
+              {selectedDate
+                ? `当前状态：${selectedStatusLabel}`
+                : '点击月历中的日期后，这里会显示当天状态。'}
+            </p>
+          </div>
         </section>
       </aside>
+
+      {checkInModalOpen ? (
+        <KaoyanPlanCheckInModal
+          dateLabel={selectedDate}
+          error={checkInError}
+          form={checkInForm}
+          saving={savingCheckIn}
+          onChange={handleCheckInFormChange}
+          onClose={() => {
+            setCheckInModalOpen(false)
+            setCheckInError('')
+          }}
+          onSubmit={handleSubmitCheckIn}
+        />
+      ) : null}
+
+      {editModalOpen ? (
+        <KaoyanPlanEditModal
+          error={planFormError}
+          form={planForm}
+          saving={savingPlan}
+          onChange={handlePlanFormChange}
+          onClose={() => {
+            setEditModalOpen(false)
+            setPlanFormError('')
+          }}
+          onSubmit={handleSubmitPlan}
+        />
+      ) : null}
     </>
   )
 }
-
