@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
-import MarkdownContent from '@legacy/components/MarkdownContent.jsx'
 import { communityApi } from '@legacy/lib/api.js'
 import CommunityCommentComposer from '@/components/community/CommunityCommentComposer.jsx'
 import CommunityCommentThread from '@/components/community/CommunityCommentThread.jsx'
 import CommunityPostActions from '@/components/community/CommunityPostActions.jsx'
+import FrontendV2MarkdownContent from '@/components/markdown/FrontendV2MarkdownContent.jsx'
 import PageIntro from '@/components/PageIntro.jsx'
 import SubnavTabs from '@/components/SubnavTabs.jsx'
 import {
@@ -17,6 +17,7 @@ import {
 import {
   cloneCommentTree,
   countComments,
+  flattenCommentThreadForDisplay,
   findCommentInTree,
   formatFileSize,
   insertCommentIntoTree,
@@ -135,6 +136,7 @@ export default function CommunityPostPage() {
     { label: '点赞', value: post?.likeCount ?? 0 },
     { label: '收藏', value: post?.favoriteCount ?? 0 },
   ]), [post?.commentCount, post?.favoriteCount, post?.likeCount])
+  const displayComments = useMemo(() => flattenCommentThreadForDisplay(comments), [comments])
 
   function syncPreviewComments(nextComments) {
     const normalized = cloneCommentTree(nextComments)
@@ -191,6 +193,11 @@ export default function CommunityPostPage() {
 
   async function handleSubmitComposer() {
     const content = composer.value.trim()
+    const replyParentId = composer.mode === 'reply' ? (composer.target?.rootId ?? composer.target?.id ?? null) : null
+    const replyTargetId = composer.mode === 'reply'
+      && String(composer.target?.rootId ?? composer.target?.id ?? '') !== String(composer.target?.id ?? '')
+      ? composer.target?.id ?? null
+      : null
 
     if (!ensureAuthForAction('请先登录后再发表评论。')) return
     if (!content) {
@@ -219,7 +226,10 @@ export default function CommunityPostPage() {
             authorId: currentUserId,
             authorName: user?.name || '演示用户',
             content,
-            parentId: composer.mode === 'reply' ? composer.target?.id : null,
+            parentId: replyParentId,
+            replyToId: replyTargetId,
+            replyToAuthorId: replyTargetId ? composer.target?.authorId ?? null : null,
+            replyToAuthorName: replyTargetId ? composer.target?.authorName || '' : '',
             status: 'PUBLISHED',
             editable: true,
             deleted: false,
@@ -243,7 +253,8 @@ export default function CommunityPostPage() {
       } else {
         await communityApi.createComment(postId, {
           content,
-          parentId: composer.mode === 'reply' ? composer.target?.id ?? null : null,
+          parentId: replyParentId,
+          replyToId: replyTargetId,
         }, token)
         const latest = await communityApi.comments(postId, token)
         const normalized = (latest || []).map(normalizeCommunityComment)
@@ -441,10 +452,7 @@ export default function CommunityPostPage() {
             { label: '帖子详情' },
           ]}
           actions={(
-            <>
-              <Link className="v2-secondary-link" to={returnTo}>返回社区目录</Link>
-              <Link className="v2-ghost-link" to="/community/notifications">查看通知</Link>
-            </>
+            <Link className="v2-secondary-link" to={returnTo}>{'\u8fd4\u56de\u793e\u533a\u76ee\u5f55'}</Link>
           )}
         />
 
@@ -458,7 +466,7 @@ export default function CommunityPostPage() {
           <div className="v2-article-card">正在加载帖子内容...</div>
         ) : post ? (
           <>
-            <section className="v2-article-card">
+            <section className="v2-article-card v2-post-detail-card">
               <div className="v2-post-header">
                 <div className="v2-article-meta">
                   <span>{post.category?.name || '社区'}</span>
@@ -473,7 +481,7 @@ export default function CommunityPostPage() {
                 </div>
               </div>
               <div className="v2-post-markdown">
-                <MarkdownContent content={post.content || ''} />
+                <FrontendV2MarkdownContent content={post.content || ''} />
               </div>
             </section>
 
@@ -498,7 +506,7 @@ export default function CommunityPostPage() {
               </div>
 
               <CommunityCommentThread
-                comments={comments}
+                comments={displayComments}
                 activeCommentId={activeCommentId}
                 currentUserId={currentUserId}
                 isAdmin={isAdmin}
@@ -510,6 +518,7 @@ export default function CommunityPostPage() {
 
               <CommunityCommentComposer
                 mode={composer.mode}
+                variant="dock"
                 target={composer.target ? {
                   ...composer.target,
                   authorName: getCommentAuthorLabel(composer.target),

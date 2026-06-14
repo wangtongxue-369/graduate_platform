@@ -24,7 +24,7 @@ const initialForm = {
   categoryCode: '',
   visibility: 'public',
   anonymous: false,
-  tags: '',
+  tags: [''],
   content: '',
   attachmentNote: '',
   attachments: [],
@@ -33,6 +33,10 @@ const initialForm = {
 
 function normalizeFileList(fileList) {
   return Array.from(fileList || [])
+}
+
+function normalizeTagValue(value) {
+  return Array.from(String(value || '')).slice(0, 10).join('')
 }
 
 export default function CommunityComposerPage() {
@@ -83,7 +87,6 @@ export default function CommunityComposerPage() {
 
   const canSubmitForReal = isAuthed && token && token !== 'dev-token'
   const estimatedTagList = form.tags
-    .split(',')
     .map((item) => item.trim())
     .filter(Boolean)
   const identitySummary = !isAuthed
@@ -101,6 +104,37 @@ export default function CommunityComposerPage() {
     setMessage('')
     setError('')
     setForm((current) => ({ ...current, [name]: value }))
+  }
+
+  function updateTagAt(index, value) {
+    const nextValue = normalizeTagValue(value)
+    setMessage('')
+    setError('')
+    setForm((current) => ({
+      ...current,
+      tags: current.tags.map((item, itemIndex) => (itemIndex === index ? nextValue : item)),
+    }))
+  }
+
+  function appendTagField() {
+    setMessage('')
+    setError('')
+    setForm((current) => ({
+      ...current,
+      tags: [...current.tags, ''],
+    }))
+  }
+
+  function removeTagAt(index) {
+    setMessage('')
+    setError('')
+    setForm((current) => {
+      const nextTags = current.tags.filter((_, itemIndex) => itemIndex !== index)
+      return {
+        ...current,
+        tags: nextTags.length ? nextTags : [''],
+      }
+    })
   }
 
   async function handleSubmit(submitAction) {
@@ -261,15 +295,44 @@ export default function CommunityComposerPage() {
           </div>
 
           <div className="v2-form-grid v2-form-grid--single">
-            <label className="v2-field">
+            <div className="v2-field">
               <span>标签</span>
-              <input
-                type="text"
-                value={form.tags}
-                placeholder="用英文逗号分隔，例如：复试,资料整理,时间线"
-                onChange={(event) => updateField('tags', event.target.value)}
-              />
-            </label>
+              <div className="v2-tag-input-list" role="group" aria-label="标签">
+                {form.tags.map((tag, index) => (
+                  <div className="v2-tag-input-row" key={`tag-slot-${index}`}>
+                    <input
+                      type="text"
+                      value={tag}
+                      maxLength={10}
+                      aria-label={`标签 ${index + 1}`}
+                      placeholder="一个空格填一个标签"
+                      onChange={(event) => updateTagAt(index, event.target.value)}
+                    />
+                    <button
+                      className="v2-tag-input-action"
+                      type="button"
+                      aria-label="新增标签输入框"
+                      title="新增标签输入框"
+                      onClick={appendTagField}
+                    >
+                      +
+                    </button>
+                    {form.tags.length > 1 ? (
+                      <button
+                        className="v2-tag-input-action v2-tag-input-action--muted"
+                        type="button"
+                        aria-label={`删除标签 ${index + 1}`}
+                        title={`删除标签 ${index + 1}`}
+                        onClick={() => removeTagAt(index)}
+                      >
+                        ×
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+              <small className="v2-field-hint">每个标签最多 10 个字，点击 + 新增下一个标签。</small>
+            </div>
 
             <label className="v2-field">
               <span>正文内容</span>

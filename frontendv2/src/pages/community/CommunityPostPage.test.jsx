@@ -31,8 +31,8 @@ vi.mock('@legacy/lib/api.js', () => ({
   },
 }))
 
-vi.mock('@legacy/components/MarkdownContent.jsx', () => ({
-  default: function MarkdownContentMock({ content }) {
+vi.mock('@/components/markdown/FrontendV2MarkdownContent.jsx', () => ({
+  default: function FrontendV2MarkdownContentMock({ content }) {
     return <div>{content}</div>
   },
 }))
@@ -96,7 +96,8 @@ describe('CommunityPostPage', () => {
       <MemoryRouter initialEntries={[{
         pathname: '/community/9',
         state: { returnTo: '/community?category=job&sort=hot' },
-      }]}>
+      }]}
+      >
         <Routes>
           <Route path="/community/:postId" element={<CommunityPostPage />} />
         </Routes>
@@ -108,7 +109,7 @@ describe('CommunityPostPage', () => {
     expect(links.some((link) => link.getAttribute('href') === '/community?category=job&sort=hot')).toBe(true)
   })
 
-  it('shows the active reply target inside the composer', async () => {
+  it('reuses the dock composer when replying to a comment', async () => {
     commentsMock.mockResolvedValueOnce([
       {
         id: 11,
@@ -133,9 +134,10 @@ describe('CommunityPostPage', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: '回复' }))
 
-    expect(screen.getByText('回复目标')).toBeInTheDocument()
-    expect(screen.getByText('当前目标：Commenter')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: '输入评论' })).toBeInTheDocument()
+    expect(screen.getByText('回复 Commenter')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '取消回复' })).toBeInTheDocument()
+    expect(screen.queryByText('回复目标')).not.toBeInTheDocument()
   })
 
   it('keeps post actions grouped in a dedicated panel', async () => {
@@ -151,5 +153,21 @@ describe('CommunityPostPage', () => {
     expect(screen.getByRole('button', { name: '点赞帖子' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '收藏帖子' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '举报帖子' })).toBeInTheDocument()
+  })
+
+  it('uses a compact dock composer for new top-level comments', async () => {
+    render(
+      <MemoryRouter initialEntries={['/community/9']}>
+        <Routes>
+          <Route path="/community/:postId" element={<CommunityPostPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    await screen.findByText('Detail Post')
+    expect(screen.getByRole('textbox', { name: '输入评论' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '发布评论' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '写评论' })).not.toBeInTheDocument()
+    expect(screen.queryByText('评论编辑器')).not.toBeInTheDocument()
   })
 })

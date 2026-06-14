@@ -11,4 +11,7 @@ public class CreateCommentRequest {
 
     @Positive(message = "parentId must be greater than 0")
     private Long parentId;
+
+    @Positive(message = "replyToId must be greater than 0")
+    private Long replyToId;
 }

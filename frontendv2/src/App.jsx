@@ -53,6 +53,7 @@ import {
 } from '@/pages/admin/AdminMainPage.jsx'
 import SettingsProfilePage from '@/pages/settings/SettingsProfilePage.jsx'
 import SettingsPostsPage from '@/pages/settings/SettingsPostsPage.jsx'
+import SettingsPostEditPage from '@/pages/settings/SettingsPostEditPage.jsx'
 import SettingsCommentsPage from '@/pages/settings/SettingsCommentsPage.jsx'
 import SettingsPracticePage from '@/pages/settings/SettingsPracticePage.jsx'
 import SettingsSecurityPage from '@/pages/settings/SettingsSecurityPage.jsx'
@@ -176,6 +177,7 @@ export default function App() {
         >
           <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/settings/posts" element={<SettingsPostsPage />} />
+          <Route path="/settings/posts/:postId/edit" element={<SettingsPostEditPage />} />
           <Route path="/settings/comments" element={<SettingsCommentsPage />} />
           <Route path="/settings/practice" element={<SettingsPracticePage />} />
           <Route path="/settings/security" element={<SettingsSecurityPage />} />

@@ -179,6 +179,12 @@ vi.mock('@/pages/settings/SettingsPostsPage.jsx', () => ({
   },
 }))
 
+vi.mock('@/pages/settings/SettingsPostEditPage.jsx', () => ({
+  default: function SettingsPostEditPageMock() {
+    return <h1>帖子编辑</h1>
+  },
+}))
+
 vi.mock('@/pages/settings/SettingsCommentsPage.jsx', () => ({
   default: function SettingsCommentsPageMock() {
     return <h1>我的评论</h1>
@@ -225,5 +231,14 @@ describe('frontendv2 route gating', () => {
     renderApp(['/community/new'])
 
     expect(screen.getByRole('heading', { name: '发布帖子' })).toBeInTheDocument()
+  })
+
+  it('allows authenticated users to open the settings post editor route', () => {
+    authState.isAuthed = true
+    authState.user = { id: 1, name: '测试用户', role: 'user', target: 'kaoyan' }
+
+    renderApp(['/settings/posts/101/edit'])
+
+    expect(screen.getByRole('heading', { name: '帖子编辑' })).toBeInTheDocument()
   })
 })

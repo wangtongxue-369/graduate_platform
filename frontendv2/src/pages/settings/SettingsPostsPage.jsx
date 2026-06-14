@@ -41,14 +41,14 @@ export default function SettingsPostsPage() {
           { label: '我的发帖' },
         ]}
         title="我的发帖"
-        lead="列表优先显示状态、分类和回链。"
+        lead="在设置域里统一管理自己的帖子，先筛查状态，再进入独立编辑页。"
       />
 
       {notice ? <div className="v2-status-note">{notice}</div> : null}
 
       <section className="v2-feed-list" aria-label="我的发帖列表">
         {posts.map((post) => (
-          <Link className="v2-feed-item" key={post.id} to={`/community/${post.id}`}>
+          <Link className="v2-feed-item" key={post.id} to={`/settings/posts/${post.id}/edit`}>
             <div className="v2-feed-index">P</div>
             <div className="v2-feed-body">
               <strong>{post.title}</strong>

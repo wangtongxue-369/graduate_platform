@@ -11,6 +11,7 @@ import com.graduateplatform.community.entity.PostAttachment;
 import com.graduateplatform.community.entity.PostCategory;
 import com.graduateplatform.community.entity.PostInteraction;
 import com.graduateplatform.community.entity.PostReport;
+import com.graduateplatform.community.repository.CommentRepository;
 import com.graduateplatform.community.repository.PostAttachmentRepository;
 import com.graduateplatform.community.repository.PostCategoryRepository;
 import com.graduateplatform.community.repository.PostInteractionRepository;
@@ -52,6 +53,7 @@ public class PostService {
     private final PostAttachmentRepository postAttachmentRepository;
     private final PostCategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
     private final PostInteractionRepository interactionRepository;
     private final PostReportRepository reportRepository;
     private final CosService cosService;
@@ -62,6 +64,7 @@ public class PostService {
                        PostAttachmentRepository postAttachmentRepository,
                        PostCategoryRepository categoryRepository,
                        UserRepository userRepository,
+                       CommentRepository commentRepository,
                        PostInteractionRepository interactionRepository,
                        PostReportRepository reportRepository,
                        CosService cosService,
@@ -71,6 +74,7 @@ public class PostService {
         this.postAttachmentRepository = postAttachmentRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
+        this.commentRepository = commentRepository;
         this.interactionRepository = interactionRepository;
         this.reportRepository = reportRepository;
         this.cosService = cosService;
@@ -352,7 +356,7 @@ public class PostService {
         map.put("reviewedById", post.getReviewedById());
         map.put("reviewedAt", post.getReviewedAt() != null ? post.getReviewedAt().toString() : null);
         map.put("viewCount", post.getViewCount());
-        map.put("commentCount", post.getCommentCount());
+        map.put("commentCount", commentRepository.countByPostIdAndStatusIn(post.getId(), List.of("PUBLISHED")));
         map.put("likeCount", post.getLikeCount());
         map.put("favoriteCount", post.getFavoriteCount());
         map.put("reportCount", post.getReportCount());

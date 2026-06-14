@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CommunityHubPage from './CommunityHubPage.jsx'
@@ -154,5 +154,185 @@ describe('CommunityHubPage', () => {
     )
 
     expect(await screen.findByRole('button', { name: 'reset-filters' })).toBeInTheDocument()
+  })
+
+  it('moves category and sort controls into the sidebar filter panel', async () => {
+    render(
+      <MemoryRouter initialEntries={['/community']}>
+        <CommunityHubPage />
+      </MemoryRouter>,
+    )
+
+    await screen.findAllByText('Roadmap Post')
+
+    expect(screen.queryByLabelText('社区目录控制')).not.toBeInTheDocument()
+    expect(screen.getByText('目录控制')).toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: '分类筛选' })).getByText('全部')).toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: '排序方式' })).getByText('最新发布')).toBeInTheDocument()
+  })
+
+  it('compresses the sidebar helpers into one quick clues card', async () => {
+    render(
+      <MemoryRouter initialEntries={['/community']}>
+        <CommunityHubPage />
+      </MemoryRouter>,
+    )
+
+    await screen.findAllByText('Roadmap Post')
+
+    expect(screen.getByText('快速线索')).toBeInTheDocument()
+    expect(screen.queryByText('最近讨论重点')).not.toBeInTheDocument()
+    expect(screen.queryByText('常见标签')).not.toBeInTheDocument()
+    expect(screen.queryByText('进入方式')).not.toBeInTheDocument()
+  })
+
+  it('keeps quick clues focused to two recent discussions and one compact note', async () => {
+    postsMock.mockResolvedValueOnce({
+      content: [
+        {
+          id: 9,
+          title: 'Roadmap Post',
+          content: 'A focused workflow post body',
+          category: { id: 'job', code: 'job', name: 'Job' },
+          tags: ['tag-a'],
+          hasAttachment: true,
+          attachmentCount: 1,
+          commentCount: 2,
+          likeCount: 3,
+          favoriteCount: 1,
+          viewCount: 20,
+          createdAt: '2026-06-12T10:00:00',
+          updatedAt: '2026-06-12T10:00:00',
+        },
+        {
+          id: 10,
+          title: 'Second Post',
+          content: 'Second body',
+          category: { id: 'job', code: 'job', name: 'Job' },
+          tags: ['tag-b'],
+          hasAttachment: false,
+          attachmentCount: 0,
+          commentCount: 1,
+          likeCount: 1,
+          favoriteCount: 0,
+          viewCount: 8,
+          createdAt: '2026-06-12T09:00:00',
+          updatedAt: '2026-06-12T09:00:00',
+        },
+        {
+          id: 11,
+          title: 'Third Post',
+          content: 'Third body',
+          category: { id: 'job', code: 'job', name: 'Job' },
+          tags: ['tag-c'],
+          hasAttachment: false,
+          attachmentCount: 0,
+          commentCount: 0,
+          likeCount: 0,
+          favoriteCount: 0,
+          viewCount: 4,
+          createdAt: '2026-06-12T08:00:00',
+          updatedAt: '2026-06-12T08:00:00',
+        },
+      ],
+      page: 0,
+      size: 8,
+      totalPages: 1,
+      totalElements: 3,
+    })
+
+    render(
+      <MemoryRouter initialEntries={['/community']}>
+        <CommunityHubPage />
+      </MemoryRouter>,
+    )
+
+    const quickCluesSection = screen.getByText('快速线索').closest('section')
+    expect(quickCluesSection).not.toBeNull()
+
+    const quickCluesScope = within(quickCluesSection)
+    expect(await quickCluesScope.findByText('Roadmap Post')).toBeInTheDocument()
+    expect(quickCluesScope.getByText('Second Post')).toBeInTheDocument()
+    expect(quickCluesScope.queryByText('Third Post')).not.toBeInTheDocument()
+    expect(quickCluesScope.getByText(/先在右侧缩小范围/)).toBeInTheDocument()
+  })
+
+  it('shows only four hot tags until the user expands them', async () => {
+    postsMock.mockResolvedValueOnce({
+      content: [
+        {
+          id: 9,
+          title: 'Roadmap Post',
+          content: 'A focused workflow post body',
+          category: { id: 'job', code: 'job', name: 'Job' },
+          tags: ['tag-a', 'tag-b', 'tag-c', 'tag-d', 'tag-e'],
+          hasAttachment: true,
+          attachmentCount: 1,
+          commentCount: 2,
+          likeCount: 3,
+          favoriteCount: 1,
+          viewCount: 20,
+          createdAt: '2026-06-12T10:00:00',
+          updatedAt: '2026-06-12T10:00:00',
+        },
+        {
+          id: 10,
+          title: 'Second Post',
+          content: 'Second body',
+          category: { id: 'job', code: 'job', name: 'Job' },
+          tags: ['tag-a', 'tag-b', 'tag-c', 'tag-d'],
+          hasAttachment: false,
+          attachmentCount: 0,
+          commentCount: 1,
+          likeCount: 1,
+          favoriteCount: 0,
+          viewCount: 8,
+          createdAt: '2026-06-12T09:00:00',
+          updatedAt: '2026-06-12T09:00:00',
+        },
+      ],
+      page: 0,
+      size: 8,
+      totalPages: 1,
+      totalElements: 2,
+    })
+
+    render(
+      <MemoryRouter initialEntries={['/community']}>
+        <CommunityHubPage />
+      </MemoryRouter>,
+    )
+
+    const quickCluesSection = screen.getByText('快速线索').closest('section')
+    expect(quickCluesSection).not.toBeNull()
+
+    const quickCluesScope = within(quickCluesSection)
+    await quickCluesScope.findByText('Roadmap Post')
+
+    expect(quickCluesScope.getByText('#tag-a')).toBeInTheDocument()
+    expect(quickCluesScope.getByText('#tag-d')).toBeInTheDocument()
+    expect(quickCluesScope.queryByText('#tag-e')).not.toBeInTheDocument()
+
+    fireEvent.click(quickCluesScope.getByRole('button', { name: '更多标签' }))
+
+    expect(quickCluesScope.getByText('#tag-e')).toBeInTheDocument()
+  })
+
+  it('keeps attachment filters collapsed until the user opens more filters', async () => {
+    render(
+      <MemoryRouter initialEntries={['/community']}>
+        <CommunityHubPage />
+      </MemoryRouter>,
+    )
+
+    await screen.findAllByText('Roadmap Post')
+
+    expect(screen.queryByRole('button', { name: '仅看有附件' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '更多筛选' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '更多筛选' }))
+
+    expect(screen.getByRole('button', { name: '仅看有附件' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '收起筛选' })).toBeInTheDocument()
   })
 })

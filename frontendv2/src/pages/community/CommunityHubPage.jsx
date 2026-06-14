@@ -15,7 +15,6 @@ import {
 import {
   buildCommunityReturnTo,
   buildSearchParams,
-  communitySortOptions,
   extractPagePayload,
   fallbackCommunityCategories,
   normalizeCommunityCategory,
@@ -61,6 +60,7 @@ export default function CommunityHubPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [showAllHotTags, setShowAllHotTags] = useState(false)
   const [keywordInput, setKeywordInput] = useState(searchParams.get('keyword') || '')
 
   const activeCategory = searchParams.get('category') || ''
@@ -196,8 +196,10 @@ export default function CommunityHubPage() {
       .map(([tag]) => tag)
   }, [posts])
 
+  const visibleHotTags = showAllHotTags ? hotTags : hotTags.slice(0, 4)
+
   const highlights = useMemo(() => (
-    posts.slice(0, 4).map((post) => ({
+    posts.slice(0, 2).map((post) => ({
       id: post.id,
       title: post.title,
       note: `${post.category?.name || '社区'} · 评论 ${post.commentCount} · 点赞 ${post.likeCount}`,
@@ -244,10 +246,7 @@ export default function CommunityHubPage() {
             ? '登录后可直接从目录进入发帖、通知与评论互动。'
             : '游客只浏览公开社区内容，登录后再进入发帖与互动流程。'}
           actions={(
-            <>
-              <Link className="v2-primary-link" to="/community/new">发布帖子</Link>
-              <Link className="v2-secondary-link" to="/community/notifications">消息通知</Link>
-            </>
+            <Link className="v2-primary-link" to="/community/new">发布帖子</Link>
           )}
         />
 
@@ -264,53 +263,6 @@ export default function CommunityHubPage() {
               <p>{item.note}</p>
             </article>
           ))}
-        </section>
-
-        <section className="v2-toolbar-card" aria-label="社区目录控制">
-          <div className="v2-toolbar-row">
-            <div className="v2-toolbar-copy">
-              <strong>分类入口</strong>
-              <p>先缩小范围，再进入具体帖子。</p>
-            </div>
-            <div className="v2-chip-group">
-              <button
-                className={`v2-filter-chip ${activeCategory === '' ? 'is-active' : ''}`}
-                type="button"
-                onClick={() => updateQuery({ category: '', page: 0 })}
-              >
-                全部
-              </button>
-              {categories.map((item) => (
-                <button
-                  key={item.id || item.code}
-                  className={`v2-filter-chip ${activeCategory === item.code ? 'is-active' : ''}`}
-                  type="button"
-                  onClick={() => updateQuery({ category: item.code, page: 0 })}
-                >
-                  {item.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="v2-toolbar-row">
-            <div className="v2-toolbar-copy">
-              <strong>排序方式</strong>
-              <p>最新和热度分开看，避免把结果堆成一团。</p>
-            </div>
-            <div className="v2-segment-group">
-              {communitySortOptions.map((item) => (
-                <button
-                  key={item.value}
-                  className={`v2-segment-button ${activeSort === item.value ? 'is-active' : ''}`}
-                  type="button"
-                  onClick={() => updateQuery({ sort: item.value, page: 0 })}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
         </section>
 
         {loading ? (
@@ -360,16 +312,22 @@ export default function CommunityHubPage() {
 
       <aside className="v2-side-column">
         <CommunityFilterPanel
+          categories={categories}
+          activeCategory={activeCategory}
+          activeSort={activeSort}
           keywordInput={keywordInput}
           activeAttachment={activeAttachment}
           onKeywordChange={setKeywordInput}
           onSubmit={handleSearch}
+          onCategoryChange={(value) => updateQuery({ category: value, page: 0 })}
+          onSortChange={(value) => updateQuery({ sort: value, page: 0 })}
           onAttachmentChange={(value) => updateQuery({ hasAttachment: value, page: 0 })}
         />
 
-        {highlights.length ? (
-          <section className="v2-side-card">
-            <p className="v2-kicker">最近讨论重点</p>
+        <section className="v2-side-card">
+          <p className="v2-kicker">快速线索</p>
+
+          {highlights.length ? (
             <div className="v2-check-list">
               {highlights.map((item) => (
                 <Link className="v2-check-row" key={item.id} to={`/community/${item.id}`} state={{ returnTo }}>
@@ -378,14 +336,11 @@ export default function CommunityHubPage() {
                 </Link>
               ))}
             </div>
-          </section>
-        ) : null}
+          ) : null}
 
-        {hotTags.length ? (
-          <section className="v2-side-card">
-            <p className="v2-kicker">常见标签</p>
+          {hotTags.length ? (
             <div className="v2-tag-row">
-              {hotTags.map((tag) => (
+              {visibleHotTags.map((tag) => (
                 <button
                   key={tag}
                   type="button"
@@ -395,26 +350,19 @@ export default function CommunityHubPage() {
                   #{tag}
                 </button>
               ))}
+              {hotTags.length > 4 ? (
+                <button
+                  type="button"
+                  className="v2-filter-chip"
+                  onClick={() => setShowAllHotTags((current) => !current)}
+                >
+                  {showAllHotTags ? '收起标签' : '更多标签'}
+                </button>
+              ) : null}
             </div>
-          </section>
-        ) : null}
+          ) : null}
 
-        <section className="v2-side-card">
-          <p className="v2-kicker">进入方式</p>
-          <div className="v2-check-list">
-            <div className="v2-check-row">
-              <strong>先看目录</strong>
-              <span>缩小分类和关键词范围，再进入单帖。</span>
-            </div>
-            <div className="v2-check-row">
-              <strong>再看详情</strong>
-              <span>评论、附件、举报都在帖子详情页完成。</span>
-            </div>
-            <div className="v2-check-row">
-              <strong>最后处理互动</strong>
-              <span>通知页只保留消息处理，不和目录混放。</span>
-            </div>
-          </div>
+          <p className="v2-note-text">先在右侧缩小范围，再进入帖子正文；评论、附件和通知回链都留在详情页闭环处理。</p>
         </section>
       </aside>
     </>

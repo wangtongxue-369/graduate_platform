@@ -296,7 +296,7 @@ public class AdminService {
         map.put("reviewedById", post.getReviewedById());
         map.put("reviewedAt", post.getReviewedAt() != null ? post.getReviewedAt().toString() : null);
         map.put("viewCount", post.getViewCount());
-        map.put("commentCount", post.getCommentCount());
+        map.put("commentCount", commentRepository.countByPostIdAndStatusIn(post.getId(), List.of("PUBLISHED")));
         map.put("reportCount", post.getReportCount());
         map.put("createdAt", post.getCreatedAt().toString());
         return map;

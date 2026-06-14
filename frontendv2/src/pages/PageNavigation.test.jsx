@@ -29,8 +29,8 @@ vi.mock('@legacy/lib/api.js', () => ({
   },
 }))
 
-vi.mock('@legacy/components/MarkdownContent.jsx', () => ({
-  default: function MarkdownContentMock({ content }) {
+vi.mock('@/components/markdown/FrontendV2MarkdownContent.jsx', () => ({
+  default: function FrontendV2MarkdownContentMock({ content }) {
     return <div>{content}</div>
   },
 }))
