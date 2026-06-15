@@ -2732,6 +2732,19 @@ html[data-theme="dark"] .v2-plan-side-fact {
   color: var(--v2-soft-strong);
 }
 
+.v2-mentor-apply-strip {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.25fr);
+}
+
+.v2-mentor-apply-form-card {
+  display: grid;
+  gap: 20px;
+}
+
+.v2-mentor-apply-form {
+  gap: 18px;
+}
+
 .v2-side-card__head {
   display: flex;
   align-items: start;

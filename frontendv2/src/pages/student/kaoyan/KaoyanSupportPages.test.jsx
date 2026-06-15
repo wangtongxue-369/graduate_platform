@@ -306,7 +306,7 @@ describe('kaoyan support split pages', () => {
     expect(await screen.findByText('咨询消息占位')).toBeInTheDocument()
   })
 
-  it('loads my mentor profile and shows the apply form', async () => {
+  it('loads my mentor profile and keeps the apply form in the main workspace', async () => {
     apiMocks.mentorApi.myProfile.mockResolvedValue(null)
 
     render(
@@ -318,7 +318,11 @@ describe('kaoyan support split pages', () => {
     await waitFor(() => {
       expect(apiMocks.mentorApi.myProfile).toHaveBeenCalledWith('remote-token')
     })
-    expect(await screen.findByLabelText('昵称')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '完善入驻信息' })).toBeInTheDocument()
+    expect(await screen.findByRole('textbox', { name: /昵称/ })).toBeInTheDocument()
+    expect(screen.getByText('展示给谁看')).toBeInTheDocument()
+    expect(document.querySelector('.v2-main-column form')).not.toBeNull()
+    expect(document.querySelector('.v2-side-column form')).toBeNull()
     expect(screen.getByRole('button', { name: '提交入驻申请' })).toBeInTheDocument()
   })
 

@@ -98,6 +98,15 @@ export default function KaoyanMentorApplyPage() {
     }
   }
 
+  const currentStatus = profile ? '已入驻' : '未入驻'
+  const profilePreviewRows = [
+    { label: '展示昵称', value: form.nickname || '待填写' },
+    { label: '毕业院校', value: form.graduateSchool || '待填写' },
+    { label: '专业方向', value: form.major || '待填写' },
+    { label: '擅长科目', value: form.expertiseSubjects || '待填写' },
+    { label: '考试科目', value: form.examSubjects || '待填写' },
+  ]
+
   return (
     <>
       <div className="v2-main-column">
@@ -121,97 +130,158 @@ export default function KaoyanMentorApplyPage() {
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         {loading ? <div className="v2-status-note">正在同步入驻资料…</div> : null}
 
-        <section className="v2-summary-strip" aria-label="入驻摘要">
+        <section className="v2-split-board v2-mentor-apply-strip" aria-label="入驻概览">
           <article className="v2-summary-card">
             <span>当前状态</span>
-            <strong>{profile ? '已入驻' : '未入驻'}</strong>
+            <strong>{currentStatus}</strong>
             <p>保存后即可出现在 1v1咨询的学长学姐列表中。</p>
           </article>
           <article className="v2-summary-card">
-            <span>展示院校</span>
-            <strong>{form.graduateSchool || '待补充'}</strong>
-            <p>建议填写你最有把握回答问题的学校和专业方向。</p>
+            <span>当前展示重点</span>
+            <strong>{form.graduateSchool || form.expertiseSubjects || '待补充'}</strong>
+            <p>优先补齐院校、专业方向和擅长科目，方便被检索命中。</p>
           </article>
-          <article className="v2-summary-card">
-            <span>擅长科目</span>
-            <strong>{form.expertiseSubjects || '待补充'}</strong>
-            <p>尽量写清楚是公共课还是专业课，方便别人筛选。</p>
-          </article>
+        </section>
+
+        <section className="v2-article-card v2-mentor-apply-form-card">
+          <div className="v2-settings-section-head">
+            <p className="v2-kicker">入驻表单</p>
+            <h3>完善入驻信息</h3>
+            <p>把公开展示字段一次填完整，后续有人检索到你时，会优先看到院校、专业方向、擅长科目和个人简介。</p>
+          </div>
+
+          <form className="v2-filter-form v2-mentor-apply-form" onSubmit={handleSubmit}>
+            <div className="v2-form-grid">
+              <label className="v2-field">
+                <span>昵称</span>
+                <input
+                  type="text"
+                  value={form.nickname}
+                  onChange={(event) => setForm((current) => ({ ...current, nickname: event.target.value }))}
+                />
+                <small className="v2-field-hint">建议填写在咨询区希望别人看到的称呼。</small>
+              </label>
+              <label className="v2-field">
+                <span>毕业院校</span>
+                <input
+                  type="text"
+                  value={form.graduateSchool}
+                  onChange={(event) => setForm((current) => ({ ...current, graduateSchool: event.target.value }))}
+                />
+                <small className="v2-field-hint">这是搜索结果里最先被看到的院校信息。</small>
+              </label>
+              <label className="v2-field">
+                <span>入学年份</span>
+                <input
+                  type="text"
+                  value={form.enrollmentYear}
+                  onChange={(event) => setForm((current) => ({ ...current, enrollmentYear: event.target.value }))}
+                />
+                <small className="v2-field-hint">方便学弟学妹判断你的经验年份是否足够接近。</small>
+              </label>
+              <label className="v2-field">
+                <span>专业方向</span>
+                <input
+                  type="text"
+                  value={form.major}
+                  onChange={(event) => setForm((current) => ({ ...current, major: event.target.value }))}
+                />
+                <small className="v2-field-hint">尽量写到专业或研究方向，不要只写大类。</small>
+              </label>
+              <label className="v2-field">
+                <span>擅长科目</span>
+                <input
+                  type="text"
+                  value={form.expertiseSubjects}
+                  onChange={(event) => setForm((current) => ({ ...current, expertiseSubjects: event.target.value }))}
+                />
+                <small className="v2-field-hint">建议直接写别人会搜的关键词，例如英语复试、政治背诵、调剂规划。</small>
+              </label>
+              <label className="v2-field">
+                <span>考试科目</span>
+                <input
+                  type="text"
+                  value={form.examSubjects}
+                  onChange={(event) => setForm((current) => ({ ...current, examSubjects: event.target.value }))}
+                />
+                <small className="v2-field-hint">补充你实际备考过的科目，帮助别人判断咨询匹配度。</small>
+              </label>
+            </div>
+
+            <label className="v2-field">
+              <span>个人简介</span>
+              <textarea
+                rows={6}
+                value={form.bio}
+                onChange={(event) => setForm((current) => ({ ...current, bio: event.target.value }))}
+              />
+              <small className="v2-field-hint">可以重点写上岸经历、擅长回答的问题，以及适合来咨询你的同学类型。</small>
+            </label>
+
+            <div className="v2-form-actions">
+              <button className="v2-segment-button is-active" disabled={saving || !canUseRemote} type="submit">
+                {saving ? '提交中…' : '提交入驻申请'}
+              </button>
+              <button
+                className="v2-segment-button"
+                disabled={saving || !profile || !canUseRemote}
+                type="button"
+                onClick={handleDeleteProfile}
+              >
+                注销入驻
+              </button>
+            </div>
+          </form>
         </section>
       </div>
 
       <aside className="v2-side-column">
         <section className="v2-side-card">
-          <p className="v2-kicker">入驻表单</p>
-          <form className="v2-filter-form" onSubmit={handleSubmit}>
-            <label className="v2-field">
-              <span>昵称</span>
-              <input
-                type="text"
-                value={form.nickname}
-                onChange={(event) => setForm((current) => ({ ...current, nickname: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>毕业院校</span>
-              <input
-                type="text"
-                value={form.graduateSchool}
-                onChange={(event) => setForm((current) => ({ ...current, graduateSchool: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>入学年份</span>
-              <input
-                type="text"
-                value={form.enrollmentYear}
-                onChange={(event) => setForm((current) => ({ ...current, enrollmentYear: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>专业方向</span>
-              <input
-                type="text"
-                value={form.major}
-                onChange={(event) => setForm((current) => ({ ...current, major: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>擅长科目</span>
-              <input
-                type="text"
-                value={form.expertiseSubjects}
-                onChange={(event) => setForm((current) => ({ ...current, expertiseSubjects: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>考试科目</span>
-              <input
-                type="text"
-                value={form.examSubjects}
-                onChange={(event) => setForm((current) => ({ ...current, examSubjects: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>个人简介</span>
-              <textarea
-                rows={5}
-                value={form.bio}
-                onChange={(event) => setForm((current) => ({ ...current, bio: event.target.value }))}
-              />
-            </label>
-            <button className="v2-segment-button is-active" disabled={saving || !canUseRemote} type="submit">
-              {saving ? '提交中…' : '提交入驻申请'}
-            </button>
-            <button
-              className="v2-segment-button"
-              disabled={saving || !profile || !canUseRemote}
-              type="button"
-              onClick={handleDeleteProfile}
-            >
-              注销入驻
-            </button>
-          </form>
+          <div className="v2-side-card__head">
+            <div>
+              <p className="v2-kicker">当前状态</p>
+              <h3>{currentStatus}</h3>
+            </div>
+          </div>
+          <div className="v2-check-list">
+            <div className="v2-check-row">
+              <strong>展示院校</strong>
+              <span>{form.graduateSchool || '待填写'}</span>
+            </div>
+            <div className="v2-check-row">
+              <strong>擅长科目</strong>
+              <span>{form.expertiseSubjects || '待填写'}</span>
+            </div>
+            <div className="v2-check-row">
+              <strong>最近动作</strong>
+              <span>{profile ? '可继续更新档案，或选择注销入驻。' : '完成主区表单后即可提交入驻。'}</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="v2-side-card">
+          <p className="v2-kicker">展示给谁看</p>
+          <ul>
+            <li>1v1咨询检索页会优先展示你的院校、专业方向和擅长科目。</li>
+            <li>个人简介更适合写你能回答什么问题，而不是只写结果分数。</li>
+            <li>如果你主要帮助复试、调剂或跨考，建议在擅长科目里直接写出来。</li>
+          </ul>
+        </section>
+
+        <section className="v2-side-card">
+          <p className="v2-kicker">当前档案预览</p>
+          <div className="v2-check-list">
+            {profilePreviewRows.map((item) => (
+              <div className="v2-check-row" key={item.label}>
+                <strong>{item.label}</strong>
+                <span>{item.value}</span>
+              </div>
+            ))}
+            <div className="v2-check-row">
+              <strong>个人简介</strong>
+              <span>{form.bio || '待填写'}</span>
+            </div>
+          </div>
         </section>
       </aside>
     </>
