@@ -8,7 +8,7 @@ const roleOptions = [
     key: 'kaoyan',
     label: '考研',
     eyebrow: 'study planning',
-    desc: '进入考研主站，查看院校比较、学习计划、资料架和陪跑协同。',
+    desc: '进入考研主站，查看院校比较、学习计划、资料架、1v1咨询和同频自习室。',
   },
   {
     key: 'kaogong',

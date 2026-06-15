@@ -135,7 +135,7 @@ export default function KaoyanStudyRoomPage() {
     if (!canUseRemote || !token) return
     try {
       await studyRoomApi.leaveRoom(token)
-      navigate('/station/kaoyan/support')
+      navigate('/station/kaoyan/support/rooms')
     } catch (error) {
       setNotice(error.message || '退出房间失败')
     }
@@ -145,7 +145,7 @@ export default function KaoyanStudyRoomPage() {
     if (!canUseRemote || !token) return
     try {
       await studyRoomApi.closeRoom(roomId, token)
-      navigate('/station/kaoyan/support')
+      navigate('/station/kaoyan/support/rooms')
     } catch (error) {
       setNotice(error.message || '关闭房间失败')
     }
@@ -178,12 +178,12 @@ export default function KaoyanStudyRoomPage() {
           kicker="同频自习室"
           pathItems={[
             { label: '考研主站', to: '/station/kaoyan' },
-            { label: '陪跑协同', to: '/station/kaoyan/support' },
+            { label: '同频自习室', to: '/station/kaoyan/support/rooms' },
             { label: room.name || '自习室' },
           ]}
           title={room.name || '同频自习室'}
-          lead="房间页只处理实时讨论、房间加入与排行协作，房间筛选和新建仍留在协同总览。"
-          actions={<Link className="v2-secondary-link" to="/station/kaoyan/support">返回协同总览</Link>}
+          lead="房间页只处理实时讨论、房间加入与排行协作，筛选和建房仍留在同频自习室大厅。"
+          actions={<Link className="v2-secondary-link" to="/station/kaoyan/support/rooms">返回同频自习室</Link>}
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}

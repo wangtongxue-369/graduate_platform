@@ -18,7 +18,8 @@ const directionNavMap = {
     { label: '择校账本', to: '/station/kaoyan/schools' },
     { label: '计划轨道', to: '/station/kaoyan/plans' },
     { label: '资料中枢', to: '/station/kaoyan/materials' },
-    { label: '陪跑协同', to: '/station/kaoyan/support' },
+    { label: '1v1咨询', to: '/station/kaoyan/support/mentors' },
+    { label: '同频自习室', to: '/station/kaoyan/support/rooms' },
   ],
   kaogong: [
     { label: '考公总览', to: '/station/kaogong' },

@@ -1,10 +1,13 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '@/App.jsx'
+import KaoyanOverviewPage from '@/pages/student/kaoyan/KaoyanOverviewPage.jsx'
 import KaoyanSupportOverviewPage from '@/pages/student/kaoyan/KaoyanSupportOverviewPage.jsx'
+import KaoyanMentorHallPage from '@/pages/student/kaoyan/KaoyanMentorHallPage.jsx'
 import KaoyanMentorApplyPage from '@/pages/student/kaoyan/KaoyanMentorApplyPage.jsx'
 import KaoyanMessagesPage from '@/pages/student/kaoyan/KaoyanMessagesPage.jsx'
+import KaoyanStudyRoomsPage from '@/pages/student/kaoyan/KaoyanStudyRoomsPage.jsx'
 import KaoyanStudyRoomPage from '@/pages/student/kaoyan/KaoyanStudyRoomPage.jsx'
 
 const authState = vi.hoisted(() => ({
@@ -92,6 +95,8 @@ function renderRoute(initialEntry, routePath, element) {
     <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path={routePath} element={element} />
+        <Route path="/station/kaoyan/support/messages" element={<div>咨询消息占位</div>} />
+        <Route path="/station/kaoyan/support/rooms/:roomId" element={<div>房间占位</div>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -115,6 +120,7 @@ describe('kaoyan support split pages', () => {
       })
     })
 
+    apiMocks.kaoyanApi.schoolsPage.mockResolvedValue({ content: [], totalElements: 0, totalPages: 1 })
     apiMocks.mentorApi.mentorsPage.mockResolvedValue({ content: [], totalElements: 0, totalPages: 1 })
     apiMocks.mentorApi.unreadCount.mockResolvedValue({ count: 0 })
     apiMocks.studyRoomApi.roomList.mockResolvedValue({ content: [], totalElements: 0, totalPages: 1 })
@@ -123,57 +129,56 @@ describe('kaoyan support split pages', () => {
     apiMocks.mentorApi.receivedSessions.mockResolvedValue({ content: [], totalElements: 0, totalPages: 1 })
     apiMocks.mentorApi.markAsRead.mockResolvedValue(undefined)
     apiMocks.mentorApi.sendMessage.mockResolvedValue(undefined)
-    apiMocks.studyRoomApi.roomDetail.mockResolvedValue({ id: 7, name: '晨间背书房', schoolName: '华东师范大学', major: '教育学', memberCount: 18, members: [], isOwner: false })
+    apiMocks.studyRoomApi.roomDetail.mockResolvedValue({
+      id: 7,
+      name: '晨间背书房',
+      schoolName: '华东师范大学',
+      major: '教育学',
+      memberCount: 18,
+      members: [],
+      isOwner: false,
+    })
     apiMocks.studyRoomApi.messagesAfter.mockResolvedValue([])
     apiMocks.studyRoomApi.leaderboard.mockResolvedValue([])
     apiMocks.studyRoomApi.myCurrentRoom.mockResolvedValue(null)
     apiMocks.studyRoomApi.myCreatedRooms.mockResolvedValue([])
   })
 
-  it('renders support deep route headings from the app router', async () => {
+  it('renders the mentor hall route from the app router', async () => {
     render(
-      <MemoryRouter initialEntries={['/station/kaoyan/support/messages']}>
+      <MemoryRouter initialEntries={['/station/kaoyan/support/mentors']}>
         <App />
       </MemoryRouter>,
     )
 
     expect(
       await screen.findByRole('heading', {
-        name: '把发起中的咨询、收到的回复和继续追问放在一条连续消息流里。',
+        name: '先筛选学长学姐，再决定查看资料、发起咨询还是申请入驻。',
       }),
     ).toBeInTheDocument()
   })
 
-  it('renders support overview with mentor and room data', async () => {
-    apiMocks.mentorApi.mentorsPage.mockResolvedValue({
-      content: [
-        {
-          id: 1,
-          nickname: '林学姐',
-          graduateSchool: '华东师范大学',
-          major: '教育学',
-          expertiseSubjects: '复试结构化',
-          bio: '复试经验和调剂路径都可以聊。',
-        },
-      ],
-      totalElements: 1,
-      totalPages: 1,
-    })
-    apiMocks.studyRoomApi.roomList.mockResolvedValue({
-      content: [
-        {
-          id: 7,
-          name: '晨间背书房',
-          schoolName: '华东师范大学',
-          major: '教育学',
-          memberCount: 18,
-          createdByName: '阿周',
-          createdAt: '2026-06-12T09:00:00',
-        },
-      ],
-      totalElements: 1,
-      totalPages: 1,
-    })
+  it('shows 1v1咨询 and 同频自习室 as separate modules on the kaoyan overview page', () => {
+    render(
+      <MemoryRouter>
+        <KaoyanOverviewPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('link', { name: /1v1咨询/ })).toHaveAttribute(
+      'href',
+      '/station/kaoyan/support/mentors',
+    )
+    expect(screen.getByRole('link', { name: /同频自习室/ })).toHaveAttribute(
+      'href',
+      '/station/kaoyan/support/rooms',
+    )
+  })
+
+  it('keeps the legacy support route as a neutral split page instead of a primary module name', async () => {
+    apiMocks.mentorApi.unreadCount.mockResolvedValue({ count: 3 })
+    apiMocks.studyRoomApi.myCurrentRoom.mockResolvedValue({ id: 19, name: '政治晨读房' })
+    apiMocks.studyRoomApi.myCreatedRooms.mockResolvedValue([{ id: 7, name: '晨间背书房' }])
 
     render(
       <MemoryRouter>
@@ -181,12 +186,124 @@ describe('kaoyan support split pages', () => {
       </MemoryRouter>,
     )
 
-    await waitFor(() => {
-      expect(apiMocks.mentorApi.mentorsPage).toHaveBeenCalled()
-      expect(apiMocks.studyRoomApi.roomList).toHaveBeenCalled()
+    expect(await screen.findByRole('heading', { name: '进入 1v1咨询，或直接进入同频自习室。' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '进入 1v1咨询' })).toHaveAttribute(
+      'href',
+      '/station/kaoyan/support/mentors',
+    )
+    expect(screen.getByRole('link', { name: '进入同频自习室' })).toHaveAttribute(
+      'href',
+      '/station/kaoyan/support/rooms',
+    )
+    expect(screen.queryByText('陪跑协同')).not.toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
+    expect(screen.getByText('政治晨读房')).toBeInTheDocument()
+  })
+
+  it('supports mentor hall filters, pagination, and create-session actions', async () => {
+    apiMocks.kaoyanApi.schoolsPage.mockResolvedValue({
+      content: [{ id: 1, name: '华东师范大学' }],
+      totalElements: 1,
+      totalPages: 1,
     })
+    apiMocks.mentorApi.unreadCount.mockResolvedValue({ count: 2 })
+    apiMocks.mentorApi.myProfile.mockResolvedValue({
+      id: 88,
+      nickname: '岸上学姐',
+      graduateSchool: '复旦大学',
+    })
+    apiMocks.mentorApi.mentorsPage
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 11,
+            nickname: '林学姐',
+            graduateSchool: '华东师范大学',
+            enrollmentYear: '2024',
+            major: '教育学',
+            expertiseSubjects: '复试结构化',
+            bio: '擅长复试和调剂规划',
+          },
+        ],
+        totalElements: 12,
+        totalPages: 2,
+      })
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 11,
+            nickname: '林学姐',
+            graduateSchool: '华东师范大学',
+            enrollmentYear: '2024',
+            major: '教育学',
+            expertiseSubjects: '复试结构化',
+            bio: '擅长复试和调剂规划',
+          },
+        ],
+        totalElements: 12,
+        totalPages: 2,
+      })
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 12,
+            nickname: '周学长',
+            graduateSchool: '华东师范大学',
+            enrollmentYear: '2023',
+            major: '教育学',
+            expertiseSubjects: '英语复试',
+            bio: '第二页结果',
+          },
+        ],
+        totalElements: 12,
+        totalPages: 2,
+      })
+    apiMocks.mentorApi.createSession.mockResolvedValue({ id: 501 })
+
+    renderRoute('/station/kaoyan/support/mentors', '/station/kaoyan/support/mentors', <KaoyanMentorHallPage />)
+
     expect(await screen.findByText('林学姐')).toBeInTheDocument()
-    expect(screen.getByText('晨间背书房')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('目标院校'), {
+      target: { value: '华东师范大学' },
+    })
+    fireEvent.change(screen.getByLabelText('擅长科目'), {
+      target: { value: '复试' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '查询' }))
+
+    await waitFor(() => {
+      expect(apiMocks.mentorApi.mentorsPage).toHaveBeenLastCalledWith({
+        graduateSchool: '华东师范大学',
+        enrollmentYear: '',
+        major: '',
+        expertiseSubjects: '复试',
+        page: 0,
+        size: 10,
+      })
+    })
+    expect(screen.getByText('共 12 位')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '下一页' }))
+
+    await waitFor(() => {
+      expect(apiMocks.mentorApi.mentorsPage).toHaveBeenLastCalledWith({
+        graduateSchool: '华东师范大学',
+        enrollmentYear: '',
+        major: '',
+        expertiseSubjects: '复试',
+        page: 1,
+        size: 10,
+      })
+    })
+    expect(await screen.findByText('周学长')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '发起咨询' }))
+
+    await waitFor(() => {
+      expect(apiMocks.mentorApi.createSession).toHaveBeenCalledWith({ mentorId: 12 }, 'remote-token')
+    })
+    expect(await screen.findByText('咨询消息占位')).toBeInTheDocument()
   })
 
   it('loads my mentor profile and shows the apply form', async () => {
@@ -205,17 +322,57 @@ describe('kaoyan support split pages', () => {
     expect(screen.getByRole('button', { name: '提交入驻申请' })).toBeInTheDocument()
   })
 
-  it('renders sessions on the left and messages on the right', async () => {
-    apiMocks.mentorApi.sentSessions.mockResolvedValue({
-      content: [
-        { id: 51, subject: '复试准备', mentorName: '林学姐', unreadCount: 1, createdAt: '2026-06-12T10:00:00' },
-      ],
-      totalElements: 1,
-      totalPages: 1,
-    })
-    apiMocks.mentorApi.sessionMessages.mockResolvedValue([
-      { id: 91, senderName: '林学姐', content: '先把复试材料列出来。', createdAt: '2026-06-12T10:00:00' },
-    ])
+  it('renders sessions with pagination and sends messages in the active thread', async () => {
+    apiMocks.mentorApi.sentSessions
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 51,
+            subject: '复试准备',
+            mentorName: '林学姐',
+            unreadCount: 1,
+            createdAt: '2026-06-12T10:00:00',
+          },
+        ],
+        totalElements: 11,
+        totalPages: 2,
+      })
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 61,
+            subject: '调剂咨询',
+            mentorName: '周学长',
+            unreadCount: 0,
+            createdAt: '2026-06-13T10:00:00',
+          },
+        ],
+        totalElements: 11,
+        totalPages: 2,
+      })
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 61,
+            subject: '调剂咨询',
+            mentorName: '周学长',
+            unreadCount: 0,
+            createdAt: '2026-06-13T10:00:00',
+          },
+        ],
+        totalElements: 11,
+        totalPages: 2,
+      })
+    apiMocks.mentorApi.sessionMessages
+      .mockResolvedValueOnce([
+        { id: 91, senderName: '林学姐', content: '先把复试材料列出来。', createdAt: '2026-06-12T10:00:00' },
+      ])
+      .mockResolvedValueOnce([
+        { id: 101, senderName: '周学长', content: '先确认调剂窗口。', createdAt: '2026-06-13T10:00:00' },
+      ])
+      .mockResolvedValueOnce([
+        { id: 101, senderName: '周学长', content: '先确认调剂窗口。', createdAt: '2026-06-13T10:00:00' },
+      ])
 
     render(
       <MemoryRouter>
@@ -223,13 +380,141 @@ describe('kaoyan support split pages', () => {
       </MemoryRouter>,
     )
 
+    expect(await screen.findByText('先把复试材料列出来。')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '下一页' }))
+
     await waitFor(() => {
-      expect(apiMocks.mentorApi.sentSessions).toHaveBeenCalled()
-      expect(apiMocks.mentorApi.sessionMessages).toHaveBeenCalledWith('51', 'remote-token')
+      expect(apiMocks.mentorApi.sentSessions).toHaveBeenLastCalledWith({ page: 1, size: 10 }, 'remote-token')
     })
-    expect(await screen.findAllByText('复试准备')).toHaveLength(2)
-    expect(screen.getByText('先把复试材料列出来。')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '发送消息' })).toBeInTheDocument()
+    expect(await screen.findByText('调剂咨询')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('发送消息'), {
+      target: { value: '收到，我先整理名单。' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '发送消息' }))
+
+    await waitFor(() => {
+      expect(apiMocks.mentorApi.sendMessage).toHaveBeenCalledWith(61, '收到，我先整理名单。', 'remote-token')
+    })
+  })
+
+  it('supports room hall filters, current-room resume, and room creation', async () => {
+    apiMocks.kaoyanApi.schoolsPage.mockResolvedValue({
+      content: [{ id: 1, name: '华东师范大学' }],
+      totalElements: 1,
+      totalPages: 1,
+    })
+    apiMocks.studyRoomApi.myCurrentRoom.mockResolvedValue({
+      id: 19,
+      roomId: 19,
+      name: '政治晨读房',
+    })
+    apiMocks.studyRoomApi.myCreatedRooms.mockResolvedValue([
+      { id: 31, name: '教育学晚自习', schoolName: '华东师范大学', major: '教育学', createdAt: '2026-06-12T21:00:00' },
+    ])
+    apiMocks.studyRoomApi.roomList
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 7,
+            name: '晨间背书房',
+            schoolName: '华东师范大学',
+            major: '教育学',
+            memberCount: 18,
+            createdByName: '阿周',
+            createdAt: '2026-06-12T09:00:00',
+          },
+        ],
+        totalElements: 15,
+        totalPages: 2,
+      })
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 7,
+            name: '晨间背书房',
+            schoolName: '华东师范大学',
+            major: '教育学',
+            memberCount: 18,
+            createdByName: '阿周',
+            createdAt: '2026-06-12T09:00:00',
+          },
+        ],
+        totalElements: 15,
+        totalPages: 2,
+      })
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 8,
+            name: '晚间刷题房',
+            schoolName: '华东师范大学',
+            major: '教育学',
+            memberCount: 12,
+            createdByName: '小林',
+            createdAt: '2026-06-12T20:00:00',
+          },
+        ],
+        totalElements: 15,
+        totalPages: 2,
+      })
+    apiMocks.studyRoomApi.createRoom.mockResolvedValue({ id: 41 })
+
+    renderRoute('/station/kaoyan/support/rooms', '/station/kaoyan/support/rooms', <KaoyanStudyRoomsPage />)
+
+    expect(await screen.findByText('晨间背书房')).toBeInTheDocument()
+    expect(screen.getByText('政治晨读房')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('院校筛选'), {
+      target: { value: '1' },
+    })
+    fireEvent.change(screen.getByLabelText('专业方向'), {
+      target: { value: '教育学' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '查询' }))
+
+    await waitFor(() => {
+      expect(apiMocks.studyRoomApi.roomList).toHaveBeenLastCalledWith({
+        schoolId: '1',
+        major: '教育学',
+        page: 0,
+        size: 10,
+      })
+    })
+    expect(screen.getByText('共 15 间')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '下一页' }))
+
+    await waitFor(() => {
+      expect(apiMocks.studyRoomApi.roomList).toHaveBeenLastCalledWith({
+        schoolId: '1',
+        major: '教育学',
+        page: 1,
+        size: 10,
+      })
+    })
+    expect(await screen.findByText('晚间刷题房')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('房间名称'), {
+      target: { value: '新建冲刺房' },
+    })
+    fireEvent.change(screen.getByLabelText('创建院校'), {
+      target: { value: '1' },
+    })
+    fireEvent.change(screen.getByLabelText('创建专业'), {
+      target: { value: '教育学' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '创建并进入' }))
+
+    await waitFor(() => {
+      expect(apiMocks.studyRoomApi.createRoom).toHaveBeenCalledWith({
+        name: '新建冲刺房',
+        schoolId: 1,
+        major: '教育学',
+      }, 'remote-token')
+    })
+    expect(await screen.findByText('房间占位')).toBeInTheDocument()
   })
 
   it('renders room detail, chat, and leaderboard data', async () => {

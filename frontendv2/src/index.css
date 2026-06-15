@@ -2715,6 +2715,11 @@ html[data-theme="dark"] .v2-plan-side-fact {
   color: var(--v2-link);
 }
 
+.v2-check-row--selectable.is-active strong,
+.v2-check-row--selectable.is-active span {
+  color: inherit;
+}
+
 .v2-check-row--action {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -2753,6 +2758,50 @@ html[data-theme="dark"] .v2-plan-side-fact {
 
 .v2-pagination-note {
   color: var(--v2-soft-strong);
+}
+
+.v2-support-route-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.v2-support-route-card {
+  gap: 18px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--v2-paper-strong) 78%, var(--v2-paper)) 0%,
+      var(--v2-paper) 56%,
+      var(--v2-paper-soft) 100%
+    );
+}
+
+.v2-support-route-card h3,
+.v2-counseling-session-card h3,
+.v2-counseling-message-card h3 {
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.v2-support-route-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.v2-counseling-board {
+  align-items: start;
+  grid-template-columns: minmax(300px, 0.95fr) minmax(0, 1.45fr);
+}
+
+.v2-counseling-session-card,
+.v2-counseling-message-card {
+  display: grid;
+  gap: 16px;
+}
+
+.v2-counseling-message-list {
+  min-height: 240px;
 }
 
 .v2-feed-item--notification {

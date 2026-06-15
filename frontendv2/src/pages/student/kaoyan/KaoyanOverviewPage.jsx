@@ -9,7 +9,7 @@ export default function KaoyanOverviewPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="考研主站"
-        title="把择校、计划、资料和协同收进一张考研推进台。"
+        title="把择校、计划、资料、1v1咨询和同频自习室收进一张考研推进台。"
         lead="主站只做任务判断和入口分发，复杂动作进入各自深层页完成。"
       />
 
@@ -23,7 +23,7 @@ export default function KaoyanOverviewPage() {
         ))}
       </section>
 
-      <section className="v2-overview-grid" aria-label="考研核心入口">
+      <section className="v2-card-grid--dense" aria-label="考研主流程">
         <Link className="v2-preview-panel" to="/station/kaoyan/schools">
           <div className="v2-preview-panel__head">
             <div>
@@ -61,9 +61,7 @@ export default function KaoyanOverviewPage() {
             ))}
           </div>
         </Link>
-      </section>
 
-      <section className="v2-overview-grid" aria-label="考研支撑入口">
         <Link className="v2-preview-panel" to="/station/kaoyan/materials">
           <div className="v2-preview-panel__head">
             <div>
@@ -82,14 +80,16 @@ export default function KaoyanOverviewPage() {
             ))}
           </div>
         </Link>
+      </section>
 
-        <Link className="v2-preview-panel" to="/station/kaoyan/support">
+      <section className="v2-card-grid" aria-label="考研专项支持">
+        <Link className="v2-preview-panel" to="/station/kaoyan/support/mentors">
           <div className="v2-preview-panel__head">
             <div>
-              <p className="v2-kicker">陪跑协同</p>
-              <strong>学长学姐咨询和自习室协同作为一组支持能力单独展开。</strong>
+              <p className="v2-kicker">1v1咨询</p>
+              <strong>先锁定能回答你当前问题的学长学姐，再进入一对一沟通。</strong>
             </div>
-            <span className="v2-feed-action">进入</span>
+            <span className="v2-feed-action">开始咨询</span>
           </div>
           <div className="v2-preview-panel__rows">
             {overview.seniors.map((item) => (
@@ -99,6 +99,18 @@ export default function KaoyanOverviewPage() {
                 <small>{item.expertiseSubjects}</small>
               </div>
             ))}
+          </div>
+        </Link>
+
+        <Link className="v2-preview-panel" to="/station/kaoyan/support/rooms">
+          <div className="v2-preview-panel__head">
+            <div>
+              <p className="v2-kicker">同频自习室</p>
+              <strong>找到合适房间后直接进房学习，把筛选和实时陪伴分开处理。</strong>
+            </div>
+            <span className="v2-feed-action">进入房间</span>
+          </div>
+          <div className="v2-preview-panel__rows">
             {overview.rooms.map((item) => (
               <div className="v2-preview-row" key={item.id}>
                 <strong>{item.name}</strong>
@@ -112,4 +124,3 @@ export default function KaoyanOverviewPage() {
     </div>
   )
 }
-

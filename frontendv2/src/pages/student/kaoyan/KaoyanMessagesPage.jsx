@@ -16,17 +16,23 @@ import {
   remoteDataNotice,
 } from '@/lib/stationData.js'
 
+const PAGE_SIZE = 10
+
 export default function KaoyanMessagesPage() {
   const location = useLocation()
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [activeTab, setActiveTab] = useState('sent')
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalElements, setTotalElements] = useState(0)
   const [sessions, setSessions] = useState([])
   const [selectedSessionId, setSelectedSessionId] = useState('')
   const [messages, setMessages] = useState([])
   const [draft, setDraft] = useState('')
   const [notice, setNotice] = useState(previewDataNotice('咨询消息'))
-  const [loading, setLoading] = useState(false)
+  const [loadingSessions, setLoadingSessions] = useState(false)
+  const [loadingMessages, setLoadingMessages] = useState(false)
   const [sending, setSending] = useState(false)
 
   const selectedSession = useMemo(
@@ -34,82 +40,117 @@ export default function KaoyanMessagesPage() {
     [selectedSessionId, sessions],
   )
 
-  async function loadSessions(nextTab = activeTab) {
-    if (!canUseRemote) {
-      setSessions([])
-      setMessages([])
-      setSelectedSessionId('')
-      setNotice(previewDataNotice('咨询消息'))
-      return
-    }
-
-    setLoading(true)
-    try {
-      const data = nextTab === 'sent'
-        ? await mentorApi.sentSessions({ page: 0, size: 12 }, token)
-        : await mentorApi.receivedSessions({ page: 0, size: 12 }, token)
-      const nextSessions = normalizeCounselingSessions(data)
-      const preferredId = location.state?.sessionId ? String(location.state.sessionId) : ''
-      const fallbackId = nextSessions[0]?.id ? String(nextSessions[0].id) : ''
-
-      setSessions(nextSessions)
-      setSelectedSessionId((current) => {
-        if (preferredId && nextSessions.some((item) => String(item.id) === preferredId)) return preferredId
-        if (current && nextSessions.some((item) => String(item.id) === String(current))) return current
-        return fallbackId
-      })
-      setNotice(remoteDataNotice('咨询消息'))
-    } catch (error) {
-      setSessions([])
-      setMessages([])
-      setSelectedSessionId('')
-      setNotice(fallbackDataNotice('咨询消息', error))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function loadMessages(sessionId) {
-    if (!sessionId || !canUseRemote) {
-      setMessages([])
-      return
-    }
-
-    try {
-      const data = await mentorApi.sessionMessages(sessionId, token)
-      setMessages(normalizeCounselingMessages(data))
-      await mentorApi.markAsRead(sessionId, token).catch(() => {})
-    } catch (error) {
-      setMessages([])
-      setNotice(error.message || '消息读取失败')
-    }
-  }
+  useEffect(() => {
+    setPage(0)
+    setSelectedSessionId('')
+    setMessages([])
+  }, [activeTab])
 
   useEffect(() => {
-    loadSessions(activeTab)
-  }, [activeTab, canUseRemote, token])
+    let active = true
+
+    async function loadSessions() {
+      if (!canUseRemote) {
+        setSessions([])
+        setSelectedSessionId('')
+        setMessages([])
+        setTotalPages(1)
+        setTotalElements(0)
+        setNotice(previewDataNotice('咨询消息'))
+        return
+      }
+
+      setLoadingSessions(true)
+      try {
+        const data = activeTab === 'sent'
+          ? await mentorApi.sentSessions({ page, size: PAGE_SIZE }, token)
+          : await mentorApi.receivedSessions({ page, size: PAGE_SIZE }, token)
+
+        if (!active) return
+
+        const nextSessions = normalizeCounselingSessions(data)
+        const preferredId = String(location.state?.sessionId || '')
+        const nextSelectedId = preferredId && nextSessions.some((item) => String(item.id) === preferredId)
+          ? preferredId
+          : nextSessions[0]?.id
+            ? String(nextSessions[0].id)
+            : ''
+
+        setSessions(nextSessions)
+        setSelectedSessionId(nextSelectedId)
+        setTotalPages(Math.max(1, Number(data?.totalPages || 1)))
+        setTotalElements(Number(data?.totalElements || nextSessions.length))
+        setNotice(remoteDataNotice('咨询消息'))
+      } catch (error) {
+        if (!active) return
+        setSessions([])
+        setSelectedSessionId('')
+        setMessages([])
+        setTotalPages(1)
+        setTotalElements(0)
+        setNotice(fallbackDataNotice('咨询消息', error))
+      } finally {
+        if (active) setLoadingSessions(false)
+      }
+    }
+
+    loadSessions()
+    return () => {
+      active = false
+    }
+  }, [activeTab, canUseRemote, location.state?.sessionId, page, token])
 
   useEffect(() => {
-    if (!selectedSessionId) return
-    loadMessages(selectedSessionId)
-  }, [selectedSessionId, canUseRemote, token])
+    let active = true
+
+    async function loadMessages() {
+      if (!canUseRemote || !selectedSessionId) {
+        setMessages([])
+        return
+      }
+
+      setLoadingMessages(true)
+      try {
+        const data = await mentorApi.sessionMessages(selectedSessionId, token)
+        if (!active) return
+        setMessages(normalizeCounselingMessages(data))
+        await mentorApi.markAsRead(selectedSessionId, token).catch(() => {})
+      } catch (error) {
+        if (!active) return
+        setMessages([])
+        setNotice(error.message || '咨询消息读取失败。')
+      } finally {
+        if (active) setLoadingMessages(false)
+      }
+    }
+
+    loadMessages()
+    return () => {
+      active = false
+    }
+  }, [canUseRemote, selectedSessionId, token])
 
   async function handleSend(event) {
     event.preventDefault()
-    if (!selectedSessionId || !draft.trim() || !canUseRemote || !token) return
+    if (!canUseRemote || !selectedSession || !draft.trim()) return
 
     setSending(true)
     try {
-      await mentorApi.sendMessage(selectedSessionId, draft.trim(), token)
-      await mentorApi.markAsRead(selectedSessionId, token).catch(() => {})
+      await mentorApi.sendMessage(selectedSession.id, draft.trim(), token)
       setDraft('')
-      await loadMessages(selectedSessionId)
-      await loadSessions(activeTab)
+      const data = await mentorApi.sessionMessages(selectedSession.id, token)
+      setMessages(normalizeCounselingMessages(data))
+      await mentorApi.markAsRead(selectedSession.id, token).catch(() => {})
     } catch (error) {
-      setNotice(error.message || '消息发送失败')
+      setNotice(error.message || '发送消息失败。')
     } finally {
       setSending(false)
     }
+  }
+
+  function handleTabChange(nextTab) {
+    if (nextTab === activeTab) return
+    setActiveTab(nextTab)
   }
 
   return (
@@ -119,45 +160,34 @@ export default function KaoyanMessagesPage() {
           kicker="咨询消息"
           pathItems={[
             { label: '考研主站', to: '/station/kaoyan' },
-            { label: '陪跑协同', to: '/station/kaoyan/support' },
+            { label: '1v1咨询', to: '/station/kaoyan/support/mentors' },
             { label: '咨询消息' },
           ]}
-          title="把发起中的咨询、收到的回复和继续追问放在一条连续消息流里。"
-          lead="旧前端的私信和咨询列表在这里被拆成左侧会话、右侧消息面板两块，不再互相打断。"
-          actions={<Link className="v2-secondary-link" to="/station/kaoyan/support">返回协同总览</Link>}
+          title="把 1v1咨询会话和连续追问收进同一条消息流。"
+          lead="左边只管切会话，右边只管读消息和继续发送，避免旧版列表和聊天区来回切换。"
+          actions={<Link className="v2-secondary-link" to="/station/kaoyan/support/mentors">回到 1v1咨询</Link>}
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
-        {loading ? <div className="v2-status-note">正在同步咨询会话…</div> : null}
+        {loadingSessions ? <div className="v2-status-note">正在同步咨询会话…</div> : null}
 
-        <section className="v2-summary-strip" aria-label="咨询摘要">
-          <article className="v2-summary-card">
-            <span>当前分组</span>
-            <strong>{activeTab === 'sent' ? '我发起的' : '我收到的'}</strong>
-            <p>左侧列表只保留当前分类下的会话。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>会话数量</span>
-            <strong>{sessions.length}</strong>
-            <p>进入消息页后，优先把已有会话处理完再新开咨询。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>当前选中</span>
-            <strong>{selectedSession?.subject || '尚未选择'}</strong>
-            <p>会话切换后，消息区会自动拉取并标记已读。</p>
-          </article>
-        </section>
-
-        <section className="v2-split-board">
+        <section className="v2-split-board v2-counseling-board">
           <CounselingSessionList
             activeTab={activeTab}
+            loading={loadingSessions}
+            page={page}
             sessions={sessions}
             selectedId={selectedSessionId}
+            totalElements={totalElements}
+            totalPages={totalPages}
+            onNextPage={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
+            onPreviousPage={() => setPage((current) => Math.max(0, current - 1))}
             onSelect={setSelectedSessionId}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
           />
           <CounselingMessagePanel
             draft={draft}
+            loading={loadingMessages}
             messages={messages}
             sending={sending}
             session={selectedSession}
@@ -169,11 +199,29 @@ export default function KaoyanMessagesPage() {
 
       <aside className="v2-side-column">
         <section className="v2-side-card">
-          <p className="v2-kicker">处理建议</p>
+          <p className="v2-kicker">当前工作流</p>
+          <div className="v2-check-list">
+            <div className="v2-check-row">
+              <strong>会话分组</strong>
+              <span>{activeTab === 'sent' ? '我发起的咨询' : '我收到的咨询'}</span>
+            </div>
+            <div className="v2-check-row">
+              <strong>会话总数</strong>
+              <span>{totalElements} 条</span>
+            </div>
+            <div className="v2-check-row">
+              <strong>当前选中</strong>
+              <span>{selectedSession ? '已展开当前会话主题' : '先从左侧选择会话'}</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="v2-side-card">
+          <p className="v2-kicker">消息建议</p>
           <ul>
-            <li>发起咨询时把问题背景写清楚，消息区再补细节，能减少来回追问。</li>
-            <li>收到回复后先在当前会话里继续追问，不要重复创建多个并行主题。</li>
-            <li>会话状态与未读提醒仍以旧后端接口为准，这里只重做页面结构。</li>
+            <li>先在主题里说明问题场景，再在消息里补细节，学长学姐更容易快速接住。</li>
+            <li>同一问题尽量在同一会话里追问，避免重复新建主题造成信息断裂。</li>
+            <li>如果问题已经转成长期结伴复习，改走同频自习室会更合适。</li>
           </ul>
         </section>
       </aside>

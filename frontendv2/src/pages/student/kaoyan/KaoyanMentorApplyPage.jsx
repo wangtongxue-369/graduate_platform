@@ -105,12 +105,17 @@ export default function KaoyanMentorApplyPage() {
           kicker="学长学姐入驻"
           pathItems={[
             { label: '考研主站', to: '/station/kaoyan' },
-            { label: '陪跑协同', to: '/station/kaoyan/support' },
+            { label: '1v1咨询', to: '/station/kaoyan/support/mentors' },
             { label: '学长学姐入驻' },
           ]}
-          title="把你的上岸经验整理成可持续回答别人的一份公开履历。"
+          title="把你的上岸经验整理成 1v1咨询可检索的一份公开档案。"
           lead="这里不再弹旧版模态框，而是把入驻资料、当前状态和注销动作拆成独立工作页。"
-          actions={<Link className="v2-secondary-link" to="/station/kaoyan/support/messages">查看咨询消息</Link>}
+          actions={(
+            <>
+              <Link className="v2-secondary-link" to="/station/kaoyan/support/mentors">回到 1v1咨询</Link>
+              <Link className="v2-secondary-link" to="/station/kaoyan/support/messages">查看咨询消息</Link>
+            </>
+          )}
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
@@ -120,7 +125,7 @@ export default function KaoyanMentorApplyPage() {
           <article className="v2-summary-card">
             <span>当前状态</span>
             <strong>{profile ? '已入驻' : '未入驻'}</strong>
-            <p>保存后即可出现在陪跑协同的咨询池中。</p>
+            <p>保存后即可出现在 1v1咨询的学长学姐列表中。</p>
           </article>
           <article className="v2-summary-card">
             <span>展示院校</span>

@@ -94,7 +94,7 @@ describe('page-level return paths', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: '我的资料状态只围绕审核进度查看，不混入公开资料浏览。',
+        name: '我的资料状态按旧版工作流拆回待审、通过、拒绝与全部视角，方便追踪每份资料的流转。',
       }),
     ).toBeInTheDocument()
   })
@@ -109,7 +109,9 @@ describe('page-level return paths', () => {
     expect(await screen.findByRole('link', { name: '择校账本' })).toHaveAttribute('href', '/station/kaoyan/schools')
     expect(screen.getByRole('link', { name: '计划轨道' })).toHaveAttribute('href', '/station/kaoyan/plans')
     expect(screen.getByRole('link', { name: '资料中枢' })).toHaveAttribute('href', '/station/kaoyan/materials')
-    expect(screen.getByRole('link', { name: '陪跑协同' })).toHaveAttribute('href', '/station/kaoyan/support')
+    expect(screen.getByRole('link', { name: '1v1咨询' })).toHaveAttribute('href', '/station/kaoyan/support/mentors')
+    expect(screen.getByRole('link', { name: '同频自习室' })).toHaveAttribute('href', '/station/kaoyan/support/rooms')
+    expect(screen.queryByRole('link', { name: '陪跑协同' })).not.toBeInTheDocument()
   })
 
   it('uses the current station route for sidebar grouping instead of the default target', async () => {

@@ -42,8 +42,10 @@ import KaoyanMaterialUploadPage from '@/pages/student/kaoyan/KaoyanMaterialUploa
 import KaoyanMyMaterialsPage from '@/pages/student/kaoyan/KaoyanMyMaterialsPage.jsx'
 import KaoyanMaterialDetailPage from '@/pages/student/kaoyan/KaoyanMaterialDetailPage.jsx'
 import KaoyanSupportOverviewPage from '@/pages/student/kaoyan/KaoyanSupportOverviewPage.jsx'
+import KaoyanMentorHallPage from '@/pages/student/kaoyan/KaoyanMentorHallPage.jsx'
 import KaoyanMentorApplyPage from '@/pages/student/kaoyan/KaoyanMentorApplyPage.jsx'
 import KaoyanMessagesPage from '@/pages/student/kaoyan/KaoyanMessagesPage.jsx'
+import KaoyanStudyRoomsPage from '@/pages/student/kaoyan/KaoyanStudyRoomsPage.jsx'
 import KaoyanStudyRoomPage from '@/pages/student/kaoyan/KaoyanStudyRoomPage.jsx'
 import StudyAbroadStationPage, {
   StudyAbroadApplicationsPage,
@@ -150,8 +152,10 @@ export default function App() {
           <Route path="/station/kaoyan/materials/mine" element={<KaoyanMyMaterialsPage />} />
           <Route path="/station/kaoyan/materials/:materialId" element={<KaoyanMaterialDetailPage />} />
           <Route path="/station/kaoyan/support" element={<KaoyanSupportOverviewPage />} />
+          <Route path="/station/kaoyan/support/mentors" element={<KaoyanMentorHallPage />} />
           <Route path="/station/kaoyan/support/mentors/apply" element={<KaoyanMentorApplyPage />} />
           <Route path="/station/kaoyan/support/messages" element={<KaoyanMessagesPage />} />
+          <Route path="/station/kaoyan/support/rooms" element={<KaoyanStudyRoomsPage />} />
           <Route path="/station/kaoyan/support/rooms/:roomId" element={<KaoyanStudyRoomPage />} />
           <Route path="/station/kaogong" element={<KaogongStationPage />} />
           <Route path="/station/kaogong/jobs" element={<KaogongJobsPage />} />
