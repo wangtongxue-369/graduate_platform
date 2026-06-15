@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { kaoyanApi, mentorApi } from '@legacy/lib/api.js'
 import PageIntro from '@/components/PageIntro.jsx'
+import KaoyanMentorProfileModal from '@/components/kaoyan/KaoyanMentorProfileModal.jsx'
 import {
   createKaoyanSchoolPreviewRows,
   createKaoyanSupportPreview,
@@ -61,11 +62,6 @@ function normalizeMentorRows(data) {
   }))
 }
 
-function getNextSelectedId(rows, currentId = '') {
-  if (rows.some((item) => String(item.id) === String(currentId))) return String(currentId)
-  return rows[0] ? String(rows[0].id) : ''
-}
-
 export default function KaoyanMentorHallPage() {
   const navigate = useNavigate()
   const { token } = useAuth()
@@ -74,7 +70,6 @@ export default function KaoyanMentorHallPage() {
   const [draftFilters, setDraftFilters] = useState(createFilters())
   const [appliedFilters, setAppliedFilters] = useState(createFilters())
   const [rows, setRows] = useState([])
-  const [selectedMentorId, setSelectedMentorId] = useState('')
   const [page, setPage] = useState(0)
   const pageSize = 10
   const [totalElements, setTotalElements] = useState(0)
@@ -84,10 +79,11 @@ export default function KaoyanMentorHallPage() {
   const [myProfile, setMyProfile] = useState(null)
   const [loading, setLoading] = useState(false)
   const [actingId, setActingId] = useState('')
+  const [previewMentorId, setPreviewMentorId] = useState('')
 
-  const selectedMentor = useMemo(
-    () => rows.find((item) => String(item.id) === String(selectedMentorId)) || rows[0] || null,
-    [rows, selectedMentorId],
+  const previewMentor = useMemo(
+    () => rows.find((item) => String(item.id) === String(previewMentorId)) || null,
+    [rows, previewMentorId],
   )
 
   useEffect(() => {
@@ -100,7 +96,6 @@ export default function KaoyanMentorHallPage() {
         if (!active) return
         setSchoolOptions(previewSchoolOptions)
         setRows(pagedRows.pageRows)
-        setSelectedMentorId((current) => getNextSelectedId(pagedRows.pageRows, current))
         setTotalElements(pagedRows.totalElements)
         setTotalPages(pagedRows.totalPages)
         setUnreadCount(0)
@@ -138,7 +133,6 @@ export default function KaoyanMentorHallPage() {
 
         setSchoolOptions(nextSchoolOptions)
         setRows(mentorRows)
-        setSelectedMentorId((current) => getNextSelectedId(mentorRows, current))
         setTotalElements(Number(mentorsData?.totalElements || 0))
         setTotalPages(Math.max(1, Number(mentorsData?.totalPages || 1)))
         setUnreadCount(Number(unreadData?.count || 0))
@@ -150,7 +144,6 @@ export default function KaoyanMentorHallPage() {
         const pagedRows = paginateRows(filteredRows, { page, size: pageSize })
         setSchoolOptions(previewSchoolOptions)
         setRows(pagedRows.pageRows)
-        setSelectedMentorId((current) => getNextSelectedId(pagedRows.pageRows, current))
         setTotalElements(pagedRows.totalElements)
         setTotalPages(pagedRows.totalPages)
         setUnreadCount(0)
@@ -287,9 +280,9 @@ export default function KaoyanMentorHallPage() {
                 </div>
                 <div className="v2-ledger-row__actions">
                   <button
-                    className={`v2-segment-button ${String(selectedMentor?.id || '') === String(item.id) ? 'is-active' : ''}`}
+                    className={`v2-segment-button ${String(previewMentorId || '') === String(item.id) ? 'is-active' : ''}`}
                     type="button"
-                    onClick={() => setSelectedMentorId(String(item.id))}
+                    onClick={() => setPreviewMentorId(String(item.id))}
                   >
                     查看资料
                   </button>
@@ -387,66 +380,14 @@ export default function KaoyanMentorHallPage() {
             </div>
           </form>
         </section>
-
-        <section className="v2-side-card">
-          <p className="v2-kicker">咨询对象速览</p>
-          {selectedMentor ? (
-            <div className="v2-check-list">
-              <div className="v2-check-row">
-                <strong>已选咨询对象</strong>
-                <span>当前已选学长学姐</span>
-              </div>
-              <div className="v2-check-row">
-                <strong>院校 / 专业</strong>
-                <span>{selectedMentor.graduateSchool} / {selectedMentor.major}</span>
-              </div>
-              <div className="v2-check-row">
-                <strong>擅长科目</strong>
-                <span>{selectedMentor.expertiseSubjects}</span>
-              </div>
-              {selectedMentor.examSubjects ? (
-                <div className="v2-check-row">
-                  <strong>考试科目</strong>
-                  <span>{selectedMentor.examSubjects}</span>
-                </div>
-              ) : null}
-              <div className="v2-check-row">
-                <strong>个人简介</strong>
-                <span>{selectedMentor.bio}</span>
-              </div>
-              <div className="v2-inline-actions">
-                <button
-                  className="v2-segment-button is-active"
-                  disabled={actingId === String(selectedMentor.id)}
-                  type="button"
-                  onClick={() => handleCreateSession(selectedMentor)}
-                >
-                  咨询该对象
-                </button>
-                <Link className="v2-secondary-link" to="/station/kaoyan/support/messages">查看消息</Link>
-              </div>
-            </div>
-          ) : (
-            <p>先从左侧列表选择一位学长学姐。</p>
-          )}
-        </section>
-
-        <section className="v2-side-card">
-          <p className="v2-kicker">我的入驻</p>
-          <div className="v2-check-list">
-            <div className="v2-check-row">
-              <strong>{myProfile ? '已入驻' : '未入驻'}</strong>
-              <span>{myProfile?.nickname || '还没有提交学长学姐档案。'}</span>
-            </div>
-            <div className="v2-inline-actions">
-              <Link className="v2-secondary-link" to="/station/kaoyan/support/mentors/apply">
-                {myProfile ? '编辑入驻信息' : '申请入驻'}
-              </Link>
-              <Link className="v2-secondary-link" to="/station/kaoyan/support/messages">咨询消息</Link>
-            </div>
-          </div>
-        </section>
       </aside>
+
+      <KaoyanMentorProfileModal
+        mentor={previewMentor}
+        acting={actingId === String(previewMentor?.id || '')}
+        onClose={() => setPreviewMentorId('')}
+        onConsult={handleCreateSession}
+      />
     </>
   )
 }

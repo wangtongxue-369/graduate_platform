@@ -1,80 +1,129 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
-import AdminMainPage from '@/pages/admin/AdminMainPage.jsx'
-import AuthLandingPage from '@/pages/auth/AuthLandingPage.jsx'
-import {
-  AdminCommunityCategoriesPage,
-  AdminCommunityCommentReportsPage,
-  AdminCommunityPage,
-  AdminCommunityPostReportsPage,
-  AdminCommunityReviewsPage,
-  AdminCommunityUsersPage,
-} from '@/pages/admin/AdminCommunityPages.jsx'
-import CommunityComposerPage from '@/pages/community/CommunityComposerPage.jsx'
-import CommunityHubPage from '@/pages/community/CommunityHubPage.jsx'
-import CommunityNotificationsPage from '@/pages/community/CommunityNotificationsPage.jsx'
-import CommunityPostPage from '@/pages/community/CommunityPostPage.jsx'
-import PracticeDirectoryPage, { PracticeBankPreviewPage } from '@/pages/practice/PracticeDirectoryPage.jsx'
-import PublicShell from '@/layouts/PublicShell.jsx'
-import CommonShell from '@/layouts/CommonShell.jsx'
-import StudentShell from '@/layouts/StudentShell.jsx'
-import AdminShell from '@/layouts/AdminShell.jsx'
-import SettingsShell from '@/layouts/SettingsShell.jsx'
-import JobStationPage, {
-  JobApplicationsPage,
-  JobFairsPage,
-  JobRecommendationsPage,
-  JobResumePage,
-} from '@/pages/student/job/JobStationPage.jsx'
-import KaogongStationPage, {
-  KaogongCalendarPage,
-  KaogongInterviewsPage,
-  KaogongJobsPage,
-  KaogongScoreLinesPage,
-} from '@/pages/student/kaogong/KaogongStationPage.jsx'
-import KaoyanOverviewPage from '@/pages/student/kaoyan/KaoyanOverviewPage.jsx'
-import KaoyanSchoolsPage from '@/pages/student/kaoyan/KaoyanSchoolsPage.jsx'
-import KaoyanSchoolFavoritesPage from '@/pages/student/kaoyan/KaoyanSchoolFavoritesPage.jsx'
-import KaoyanPlansPage from '@/pages/student/kaoyan/KaoyanPlansPage.jsx'
-import KaoyanPlanDetailPage from '@/pages/student/kaoyan/KaoyanPlanDetailPage.jsx'
-import KaoyanMaterialsPage from '@/pages/student/kaoyan/KaoyanMaterialsPage.jsx'
-import KaoyanMaterialUploadPage from '@/pages/student/kaoyan/KaoyanMaterialUploadPage.jsx'
-import KaoyanMyMaterialsPage from '@/pages/student/kaoyan/KaoyanMyMaterialsPage.jsx'
-import KaoyanMaterialDetailPage from '@/pages/student/kaoyan/KaoyanMaterialDetailPage.jsx'
-import KaoyanSupportOverviewPage from '@/pages/student/kaoyan/KaoyanSupportOverviewPage.jsx'
-import KaoyanMentorHallPage from '@/pages/student/kaoyan/KaoyanMentorHallPage.jsx'
-import KaoyanMentorApplyPage from '@/pages/student/kaoyan/KaoyanMentorApplyPage.jsx'
-import KaoyanMessagesPage from '@/pages/student/kaoyan/KaoyanMessagesPage.jsx'
-import KaoyanStudyRoomsPage from '@/pages/student/kaoyan/KaoyanStudyRoomsPage.jsx'
-import KaoyanStudyRoomPage from '@/pages/student/kaoyan/KaoyanStudyRoomPage.jsx'
-import StudyAbroadStationPage, {
-  StudyAbroadApplicationsPage,
-  StudyAbroadCasesPage,
-  StudyAbroadMaterialsPage,
-  StudyAbroadProgramsPage,
-  StudyAbroadTimelinePage,
-} from '@/pages/student/studyabroad/StudyAbroadStationPage.jsx'
-import AdminKaoyanOverviewPage from '@/pages/admin/AdminKaoyanOverviewPage.jsx'
-import AdminKaoyanMaterialsPage from '@/pages/admin/AdminKaoyanMaterialsPage.jsx'
-import AdminKaoyanSchoolsPage from '@/pages/admin/AdminKaoyanSchoolsPage.jsx'
-import AdminKaoyanScoreLinesPage from '@/pages/admin/AdminKaoyanScoreLinesPage.jsx'
-import {
-  AdminEmploymentPage,
-  AdminKaogongPage,
-  AdminQuestionBanksPage,
-} from '@/pages/admin/AdminMainPage.jsx'
-import SettingsProfilePage from '@/pages/settings/SettingsProfilePage.jsx'
-import SettingsPostsPage from '@/pages/settings/SettingsPostsPage.jsx'
-import SettingsPostEditPage from '@/pages/settings/SettingsPostEditPage.jsx'
-import SettingsCommentsPage from '@/pages/settings/SettingsCommentsPage.jsx'
-import SettingsPracticePage from '@/pages/settings/SettingsPracticePage.jsx'
-import SettingsSecurityPage from '@/pages/settings/SettingsSecurityPage.jsx'
+import AppBootScreen from '@/components/AppBootScreen.jsx'
 import { getRoleLandingPath } from '@/lib/roleRouting.js'
+
+const lazyDefault = (loader) => lazy(loader)
+const lazyNamed = (loader, exportName) => lazy(
+  () => loader().then((module) => ({ default: module[exportName] })),
+)
+
+const loadPublicShell = () => import('@/layouts/PublicShell.jsx')
+const loadCommonShell = () => import('@/layouts/CommonShell.jsx')
+const loadStudentShell = () => import('@/layouts/StudentShell.jsx')
+const loadAdminShell = () => import('@/layouts/AdminShell.jsx')
+const loadSettingsShell = () => import('@/layouts/SettingsShell.jsx')
+
+const loadAuthLandingPage = () => import('@/pages/auth/AuthLandingPage.jsx')
+const loadCommunityComposerPage = () => import('@/pages/community/CommunityComposerPage.jsx')
+const loadCommunityHubPage = () => import('@/pages/community/CommunityHubPage.jsx')
+const loadCommunityNotificationsPage = () => import('@/pages/community/CommunityNotificationsPage.jsx')
+const loadCommunityPostPage = () => import('@/pages/community/CommunityPostPage.jsx')
+const loadPracticeDirectoryPage = () => import('@/pages/practice/PracticeDirectoryPage.jsx')
+const loadJobStationPage = () => import('@/pages/student/job/JobStationPage.jsx')
+const loadKaogongStationPage = () => import('@/pages/student/kaogong/KaogongStationPage.jsx')
+const loadStudyAbroadStationPage = () => import('@/pages/student/studyabroad/StudyAbroadStationPage.jsx')
+const loadAdminMainPage = () => import('@/pages/admin/AdminMainPage.jsx')
+const loadAdminCommunityPages = () => import('@/pages/admin/AdminCommunityPages.jsx')
+const loadSettingsProfilePage = () => import('@/pages/settings/SettingsProfilePage.jsx')
+const loadSettingsPostsPage = () => import('@/pages/settings/SettingsPostsPage.jsx')
+const loadSettingsPostEditPage = () => import('@/pages/settings/SettingsPostEditPage.jsx')
+const loadSettingsCommentsPage = () => import('@/pages/settings/SettingsCommentsPage.jsx')
+const loadSettingsPracticePage = () => import('@/pages/settings/SettingsPracticePage.jsx')
+const loadSettingsSecurityPage = () => import('@/pages/settings/SettingsSecurityPage.jsx')
+
+const PublicShell = lazyDefault(loadPublicShell)
+const CommonShell = lazyDefault(loadCommonShell)
+const StudentShell = lazyDefault(loadStudentShell)
+const AdminShell = lazyDefault(loadAdminShell)
+const SettingsShell = lazyDefault(loadSettingsShell)
+
+const AuthLandingPage = lazyDefault(loadAuthLandingPage)
+const CommunityComposerPage = lazyDefault(loadCommunityComposerPage)
+const CommunityHubPage = lazyDefault(loadCommunityHubPage)
+const CommunityNotificationsPage = lazyDefault(loadCommunityNotificationsPage)
+const CommunityPostPage = lazyDefault(loadCommunityPostPage)
+const PracticeDirectoryPage = lazyDefault(loadPracticeDirectoryPage)
+const PracticeBankPreviewPage = lazyNamed(loadPracticeDirectoryPage, 'PracticeBankPreviewPage')
+
+const JobStationPage = lazyDefault(loadJobStationPage)
+const JobApplicationsPage = lazyNamed(loadJobStationPage, 'JobApplicationsPage')
+const JobFairsPage = lazyNamed(loadJobStationPage, 'JobFairsPage')
+const JobRecommendationsPage = lazyNamed(loadJobStationPage, 'JobRecommendationsPage')
+const JobResumePage = lazyNamed(loadJobStationPage, 'JobResumePage')
+
+const KaogongStationPage = lazyDefault(loadKaogongStationPage)
+const KaogongCalendarPage = lazyNamed(loadKaogongStationPage, 'KaogongCalendarPage')
+const KaogongInterviewsPage = lazyNamed(loadKaogongStationPage, 'KaogongInterviewsPage')
+const KaogongJobsPage = lazyNamed(loadKaogongStationPage, 'KaogongJobsPage')
+const KaogongScoreLinesPage = lazyNamed(loadKaogongStationPage, 'KaogongScoreLinesPage')
+
+const KaoyanOverviewPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanOverviewPage.jsx'))
+const KaoyanSchoolsPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanSchoolsPage.jsx'))
+const KaoyanSchoolFavoritesPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanSchoolFavoritesPage.jsx'))
+const KaoyanPlansPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanPlansPage.jsx'))
+const KaoyanPlanDetailPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanPlanDetailPage.jsx'))
+const KaoyanMaterialsPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanMaterialsPage.jsx'))
+const KaoyanMaterialUploadPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanMaterialUploadPage.jsx'))
+const KaoyanMyMaterialsPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanMyMaterialsPage.jsx'))
+const KaoyanMaterialDetailPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanMaterialDetailPage.jsx'))
+const KaoyanSupportOverviewPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanSupportOverviewPage.jsx'))
+const KaoyanMentorHallPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanMentorHallPage.jsx'))
+const KaoyanMentorApplyPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanMentorApplyPage.jsx'))
+const KaoyanMessagesPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanMessagesPage.jsx'))
+const KaoyanStudyRoomsPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanStudyRoomsPage.jsx'))
+const KaoyanStudyRoomPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanStudyRoomPage.jsx'))
+
+const StudyAbroadStationPage = lazyDefault(loadStudyAbroadStationPage)
+const StudyAbroadApplicationsPage = lazyNamed(loadStudyAbroadStationPage, 'StudyAbroadApplicationsPage')
+const StudyAbroadCasesPage = lazyNamed(loadStudyAbroadStationPage, 'StudyAbroadCasesPage')
+const StudyAbroadMaterialsPage = lazyNamed(loadStudyAbroadStationPage, 'StudyAbroadMaterialsPage')
+const StudyAbroadProgramsPage = lazyNamed(loadStudyAbroadStationPage, 'StudyAbroadProgramsPage')
+const StudyAbroadTimelinePage = lazyNamed(loadStudyAbroadStationPage, 'StudyAbroadTimelinePage')
+
+const AdminMainPage = lazyDefault(loadAdminMainPage)
+const AdminEmploymentPage = lazyNamed(loadAdminMainPage, 'AdminEmploymentPage')
+const AdminKaogongPage = lazyNamed(loadAdminMainPage, 'AdminKaogongPage')
+const AdminQuestionBanksPage = lazyNamed(loadAdminMainPage, 'AdminQuestionBanksPage')
+
+const AdminCommunityPage = lazyNamed(loadAdminCommunityPages, 'AdminCommunityPage')
+const AdminCommunityReviewsPage = lazyNamed(loadAdminCommunityPages, 'AdminCommunityReviewsPage')
+const AdminCommunityPostReportsPage = lazyNamed(loadAdminCommunityPages, 'AdminCommunityPostReportsPage')
+const AdminCommunityCommentReportsPage = lazyNamed(loadAdminCommunityPages, 'AdminCommunityCommentReportsPage')
+const AdminCommunityCategoriesPage = lazyNamed(loadAdminCommunityPages, 'AdminCommunityCategoriesPage')
+const AdminCommunityUsersPage = lazyNamed(loadAdminCommunityPages, 'AdminCommunityUsersPage')
+
+const AdminKaoyanOverviewPage = lazyDefault(() => import('@/pages/admin/AdminKaoyanOverviewPage.jsx'))
+const AdminKaoyanMaterialsPage = lazyDefault(() => import('@/pages/admin/AdminKaoyanMaterialsPage.jsx'))
+const AdminKaoyanSchoolsPage = lazyDefault(() => import('@/pages/admin/AdminKaoyanSchoolsPage.jsx'))
+const AdminKaoyanScoreLinesPage = lazyDefault(() => import('@/pages/admin/AdminKaoyanScoreLinesPage.jsx'))
+
+const SettingsProfilePage = lazyDefault(loadSettingsProfilePage)
+const SettingsPostsPage = lazyDefault(loadSettingsPostsPage)
+const SettingsPostEditPage = lazyDefault(loadSettingsPostEditPage)
+const SettingsCommentsPage = lazyDefault(loadSettingsCommentsPage)
+const SettingsPracticePage = lazyDefault(loadSettingsPracticePage)
+const SettingsSecurityPage = lazyDefault(loadSettingsSecurityPage)
+
+const routeFallback = (
+  <AppBootScreen
+    title="正在准备页面"
+    message="正在加载页面模块，请稍候..."
+  />
+)
+
+const authFallback = (
+  <AppBootScreen
+    title="正在准备页面"
+    message="正在验证登录状态，请稍候..."
+  />
+)
 
 function RoleLandingRoute() {
   const { user, loading, isAuthed } = useAuth()
 
-  if (loading) return null
+  if (loading) return authFallback
   if (!isAuthed || !user) return <Navigate replace to="/" />
 
   return <Navigate replace to={getRoleLandingPath(user)} />
@@ -83,7 +132,7 @@ function RoleLandingRoute() {
 function StudentOnly({ children }) {
   const { user, isAuthed, loading } = useAuth()
 
-  if (loading) return null
+  if (loading) return authFallback
   if (!isAuthed || !user || user.role !== 'user') return <Navigate replace to="/" />
 
   return children
@@ -92,7 +141,7 @@ function StudentOnly({ children }) {
 function AdminOnly({ children }) {
   const { user, isAuthed, loading } = useAuth()
 
-  if (loading) return null
+  if (loading) return authFallback
   if (!isAuthed || !user || user.role !== 'admin') return <Navigate replace to="/" />
 
   return children
@@ -101,7 +150,7 @@ function AdminOnly({ children }) {
 function AuthOnly({ children }) {
   const { user, isAuthed, loading } = useAuth()
 
-  if (loading) return null
+  if (loading) return authFallback
   if (!isAuthed || !user) return <Navigate replace to="/" />
 
   return children
@@ -112,7 +161,7 @@ export default function App() {
   const backgroundLocation = location.state?.backgroundLocation
 
   return (
-    <>
+    <Suspense fallback={routeFallback}>
       <Routes location={backgroundLocation || location}>
         <Route element={<PublicShell />}>
           <Route path="/" element={<AuthLandingPage />} />
@@ -208,8 +257,6 @@ export default function App() {
           <Route path="/settings/security" element={<SettingsSecurityPage />} />
         </Route>
       </Routes>
-
-      {backgroundLocation ? null : null}
-    </>
+    </Suspense>
   )
 }

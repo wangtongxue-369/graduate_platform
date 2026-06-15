@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '@/App.jsx'
@@ -163,6 +163,11 @@ describe('admin kaoyan split pages', () => {
       <MemoryRouter initialEntries={['/admin/kaoyan/materials']}>
         <App />
       </MemoryRouter>,
+    )
+
+    await waitForElementToBeRemoved(
+      () => screen.queryByRole('status', { name: 'app-loading' }),
+      { timeout: 5000 },
     )
 
     expect(

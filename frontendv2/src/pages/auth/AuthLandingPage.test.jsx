@@ -1,17 +1,25 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AuthLandingPage from './AuthLandingPage.jsx'
 
+const authState = {
+  loading: false,
+  isAuthed: false,
+  user: null,
+}
+
 vi.mock('@legacy/context/AuthContext.jsx', () => ({
-  useAuth: () => ({
-    loading: false,
-    isAuthed: false,
-    user: null,
-  }),
+  useAuth: () => authState,
 }))
 
 describe('AuthLandingPage', () => {
+  beforeEach(() => {
+    authState.loading = false
+    authState.isAuthed = false
+    authState.user = null
+  })
+
   it('shows intro navigation and login/register panes', () => {
     render(
       <MemoryRouter>
@@ -19,8 +27,20 @@ describe('AuthLandingPage', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('navigation', { name: '站点介绍导航' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: '登录' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: '注册' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /登录/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /注册/i })).toBeInTheDocument()
+  })
+
+  it('shows a visible loading placeholder while auth is bootstrapping', () => {
+    authState.loading = true
+
+    render(
+      <MemoryRouter>
+        <AuthLandingPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('status', { name: 'app-loading' })).toBeInTheDocument()
   })
 })

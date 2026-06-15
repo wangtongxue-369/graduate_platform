@@ -4,10 +4,11 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '@legacy/context/AuthContext.jsx'
 import App from './App.jsx'
 import './index.css'
+import { ROUTER_FUTURE_FLAGS } from './routerFuture.js'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter future={ROUTER_FUTURE_FLAGS}>
       <AuthProvider>
         <App />
       </AuthProvider>

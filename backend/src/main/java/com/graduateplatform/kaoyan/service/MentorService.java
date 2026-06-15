@@ -111,16 +111,17 @@ public class MentorService {
     // ========== Counseling ==========
 
     public Map<String, Object> createSession(Long studentId, Long mentorId, String subject) {
-        if (studentId.equals(mentorId)) {
-            throw new BusinessException("不能咨询自己");
-        }
-        // mentorId here is MentorProfile.id, look up the profile first
+        // mentorId here is MentorProfile.id, so self-check must compare
+        // against the mentor profile's owning user id instead of the profile id.
         MentorProfile mentorProfile = mentorRepository.findById(mentorId)
                 .orElseThrow(() -> new BusinessException("校友不存在"));
         if (!Boolean.TRUE.equals(mentorProfile.getActive())) {
             throw new BusinessException("校友已注销入驻");
         }
         User mentor = mentorProfile.getUser();
+        if (studentId.equals(mentor.getId())) {
+            throw new BusinessException("不能咨询自己");
+        }
         User student = findUser(studentId);
         CounselingSession session = CounselingSession.builder()
                 .mentor(mentor)

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '@/App.jsx'
@@ -151,6 +151,11 @@ describe('kaoyan support split pages', () => {
       </MemoryRouter>,
     )
 
+    await waitForElementToBeRemoved(
+      () => screen.queryByRole('status', { name: 'app-loading' }),
+      { timeout: 5000 },
+    )
+
     expect(
       await screen.findByRole('heading', {
         name: '先筛选学长学姐，再决定查看资料、发起咨询还是申请入驻。',
@@ -200,7 +205,7 @@ describe('kaoyan support split pages', () => {
     expect(screen.getByText('政治晨读房')).toBeInTheDocument()
   })
 
-  it('supports mentor hall filters, pagination, and create-session actions', async () => {
+  it('keeps only filters in the sidebar and opens mentor details in a modal', async () => {
     apiMocks.kaoyanApi.schoolsPage.mockResolvedValue({
       content: [{ id: 1, name: '华东师范大学' }],
       totalElements: 1,
@@ -263,6 +268,8 @@ describe('kaoyan support split pages', () => {
     renderRoute('/station/kaoyan/support/mentors', '/station/kaoyan/support/mentors', <KaoyanMentorHallPage />)
 
     expect(await screen.findByText('林学姐')).toBeInTheDocument()
+    expect(screen.queryByText('咨询对象速览')).not.toBeInTheDocument()
+    expect(document.querySelectorAll('.v2-side-column .v2-side-card')).toHaveLength(1)
 
     fireEvent.change(screen.getByLabelText('目标院校'), {
       target: { value: '华东师范大学' },
@@ -298,7 +305,14 @@ describe('kaoyan support split pages', () => {
     })
     expect(await screen.findByText('周学长')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: '发起咨询' }))
+    fireEvent.click(screen.getByRole('button', { name: '查看资料' }))
+
+    const mentorDialog = await screen.findByRole('dialog', { name: '周学长资料' })
+    expect(mentorDialog).toBeInTheDocument()
+    expect(within(mentorDialog).getAllByText('英语复试').length).toBeGreaterThan(0)
+    expect(within(mentorDialog).getByText('第二页结果')).toBeInTheDocument()
+
+    fireEvent.click(within(mentorDialog).getByRole('button', { name: '发起咨询' }))
 
     await waitFor(() => {
       expect(apiMocks.mentorApi.createSession).toHaveBeenCalledWith({ mentorId: 12 }, 'remote-token')
