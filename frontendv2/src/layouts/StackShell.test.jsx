@@ -95,4 +95,21 @@ describe('stack shells', () => {
 
     expect(screen.getByRole('link', { name: '返回主站' })).toHaveAttribute('href', '/community')
   })
+
+  it('renames the settings practice entry to summary-oriented copy', () => {
+    render(
+      <MemoryRouter initialEntries={['/settings/profile']}>
+        <Routes>
+          <Route element={<SettingsShell />}>
+            <Route
+              path="/settings/profile"
+              element={<div className="v2-main-column"><h1>个人信息</h1></div>}
+            />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('link', { name: '练习摘要' })).toHaveAttribute('href', '/settings/practice')
+  })
 })

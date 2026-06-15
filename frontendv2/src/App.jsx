@@ -21,10 +21,17 @@ const loadCommunityHubPage = () => import('@/pages/community/CommunityHubPage.js
 const loadCommunityNotificationsPage = () => import('@/pages/community/CommunityNotificationsPage.jsx')
 const loadCommunityPostPage = () => import('@/pages/community/CommunityPostPage.jsx')
 const loadPracticeDirectoryPage = () => import('@/pages/practice/PracticeDirectoryPage.jsx')
+const loadPracticeBankPage = () => import('@/pages/practice/PracticeBankPage.jsx')
+const loadPracticeSessionPage = () => import('@/pages/practice/PracticeSessionPage.jsx')
+const loadPracticeHistoryPage = () => import('@/pages/practice/PracticeHistoryPage.jsx')
+const loadPracticeWrongQuestionsPage = () => import('@/pages/practice/PracticeWrongQuestionsPage.jsx')
+const loadPracticeStatisticsPage = () => import('@/pages/practice/PracticeStatisticsPage.jsx')
 const loadJobStationPage = () => import('@/pages/student/job/JobStationPage.jsx')
 const loadKaogongStationPage = () => import('@/pages/student/kaogong/KaogongStationPage.jsx')
 const loadStudyAbroadStationPage = () => import('@/pages/student/studyabroad/StudyAbroadStationPage.jsx')
 const loadAdminMainPage = () => import('@/pages/admin/AdminMainPage.jsx')
+const loadAdminQuestionBanksPage = () => import('@/pages/admin/AdminQuestionBanksPage.jsx')
+const loadAdminQuestionBankWorkspacePage = () => import('@/pages/admin/AdminQuestionBankWorkspacePage.jsx')
 const loadAdminCommunityPages = () => import('@/pages/admin/AdminCommunityPages.jsx')
 const loadSettingsProfilePage = () => import('@/pages/settings/SettingsProfilePage.jsx')
 const loadSettingsPostsPage = () => import('@/pages/settings/SettingsPostsPage.jsx')
@@ -45,7 +52,11 @@ const CommunityHubPage = lazyDefault(loadCommunityHubPage)
 const CommunityNotificationsPage = lazyDefault(loadCommunityNotificationsPage)
 const CommunityPostPage = lazyDefault(loadCommunityPostPage)
 const PracticeDirectoryPage = lazyDefault(loadPracticeDirectoryPage)
-const PracticeBankPreviewPage = lazyNamed(loadPracticeDirectoryPage, 'PracticeBankPreviewPage')
+const PracticeBankPage = lazyDefault(loadPracticeBankPage)
+const PracticeSessionPage = lazyDefault(loadPracticeSessionPage)
+const PracticeHistoryPage = lazyDefault(loadPracticeHistoryPage)
+const PracticeWrongQuestionsPage = lazyDefault(loadPracticeWrongQuestionsPage)
+const PracticeStatisticsPage = lazyDefault(loadPracticeStatisticsPage)
 
 const JobStationPage = lazyDefault(loadJobStationPage)
 const JobApplicationsPage = lazyNamed(loadJobStationPage, 'JobApplicationsPage')
@@ -85,7 +96,8 @@ const StudyAbroadTimelinePage = lazyNamed(loadStudyAbroadStationPage, 'StudyAbro
 const AdminMainPage = lazyDefault(loadAdminMainPage)
 const AdminEmploymentPage = lazyNamed(loadAdminMainPage, 'AdminEmploymentPage')
 const AdminKaogongPage = lazyNamed(loadAdminMainPage, 'AdminKaogongPage')
-const AdminQuestionBanksPage = lazyNamed(loadAdminMainPage, 'AdminQuestionBanksPage')
+const AdminQuestionBanksPage = lazyDefault(loadAdminQuestionBanksPage)
+const AdminQuestionBankWorkspacePage = lazyDefault(loadAdminQuestionBankWorkspacePage)
 
 const AdminCommunityPage = lazyNamed(loadAdminCommunityPages, 'AdminCommunityPage')
 const AdminCommunityReviewsPage = lazyNamed(loadAdminCommunityPages, 'AdminCommunityReviewsPage')
@@ -176,7 +188,11 @@ export default function App() {
           <Route path="/community/notifications" element={<CommunityNotificationsPage />} />
           <Route path="/community/:postId" element={<CommunityPostPage />} />
           <Route path="/practice" element={<PracticeDirectoryPage />} />
-          <Route path="/practice/banks/:bankId" element={<PracticeBankPreviewPage />} />
+          <Route path="/practice/banks/:bankId" element={<PracticeBankPage />} />
+          <Route path="/practice/sessions/:sessionId" element={<PracticeSessionPage />} />
+          <Route path="/practice/history" element={<PracticeHistoryPage />} />
+          <Route path="/practice/wrong-questions" element={<PracticeWrongQuestionsPage />} />
+          <Route path="/practice/statistics" element={<PracticeStatisticsPage />} />
         </Route>
 
         <Route
@@ -234,6 +250,7 @@ export default function App() {
           <Route path="/admin/community/categories" element={<AdminCommunityCategoriesPage />} />
           <Route path="/admin/community/users" element={<AdminCommunityUsersPage />} />
           <Route path="/admin/question-banks" element={<AdminQuestionBanksPage />} />
+          <Route path="/admin/question-banks/:bankId" element={<AdminQuestionBankWorkspacePage />} />
           <Route path="/admin/kaoyan" element={<AdminKaoyanOverviewPage />} />
           <Route path="/admin/kaoyan/materials" element={<AdminKaoyanMaterialsPage />} />
           <Route path="/admin/kaoyan/schools" element={<AdminKaoyanSchoolsPage />} />

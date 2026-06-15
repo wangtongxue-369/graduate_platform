@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import App from '@/App.jsx'
-import { PracticeBankPreviewPage } from '@/pages/practice/PracticeDirectoryPage.jsx'
 import KaoyanSchoolsPage from '@/pages/student/kaoyan/KaoyanSchoolsPage.jsx'
 import { AdminKaoyanPage } from '@/pages/admin/AdminMainPage.jsx'
 import { AdminCommunityReviewsPage } from '@/pages/admin/AdminCommunityPages.jsx'
@@ -63,16 +62,14 @@ vi.mock('@/components/markdown/FrontendV2MarkdownContent.jsx', () => ({
 }))
 
 describe('page-level return paths', () => {
-  it('shows a return path on practice bank preview pages', () => {
+  it('shows a return path on practice bank preview pages', async () => {
     render(
       <MemoryRouter initialEntries={['/practice/banks/1']}>
-        <Routes>
-          <Route path="/practice/banks/:bankId" element={<PracticeBankPreviewPage />} />
-        </Routes>
+        <App />
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('link', { name: '题库目录' })).toHaveAttribute('href', '/practice')
+    expect(await screen.findByRole('link', { name: '题库目录' })).toHaveAttribute('href', '/practice')
   })
 
   it('shows a return path on direction child pages', () => {
@@ -159,5 +156,35 @@ describe('page-level return paths', () => {
     )
 
     expect(screen.getByRole('link', { name: '个人设置' })).toHaveAttribute('href', '/settings/profile')
+  })
+
+  it('renders the new practice history route from the app router', async () => {
+    render(
+      <MemoryRouter initialEntries={['/practice/history']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '练习历史',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('shows the dedicated admin question-bank workspace route', async () => {
+    authState.user = { id: 9, name: '治理测试用户', role: 'admin', target: 'job' }
+
+    render(
+      <MemoryRouter initialEntries={['/admin/question-banks/12']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '题库工作区',
+      }),
+    ).toBeInTheDocument()
   })
 })

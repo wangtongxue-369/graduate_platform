@@ -1,186 +1,292 @@
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '@legacy/context/AuthContext.jsx'
+import { practiceApi } from '@legacy/lib/api.js'
 import PageIntro from '@/components/PageIntro.jsx'
-import RoleAuthLink from '@/components/RoleAuthLink.jsx'
-import { createPracticePreview, findPracticePreviewBank } from '@/lib/practicePreview.js'
+import PracticeFilterSidebar from '@/components/practice/PracticeFilterSidebar.jsx'
+import PracticeBankCard from '@/components/practice/PracticeBankCard.jsx'
 
-const practiceStages = [
-  { title: '练习会话', note: '进入题库后开始具体做题，不和目录混在一起。' },
-  { title: '历史记录', note: '每次提交单独沉淀，方便回看节奏。' },
-  { title: '统计看板', note: '准确率和连续训练独立展示。' },
-  { title: '错题重练', note: '错题单独回流，不挤占选库页面。' },
-]
+const targetLabelMap = {
+  kaoyan: '考研',
+  kaogong: '考公',
+  job: '就业',
+  liuxue: '留学',
+}
 
-export default function PracticeDirectoryPage() {
-  const preview = createPracticePreview()
+const difficultyLabelMap = {
+  easy: '基础',
+  middle: '进阶',
+  hard: '冲刺',
+}
 
+const defaultFilters = {
+  target: '',
+  subject: '',
+  chapter: '',
+  questionType: '',
+  difficulty: '',
+  year: '',
+}
+
+const defaultOptions = {
+  targets: [],
+  subjects: [],
+  chapters: [],
+  questionTypes: [],
+  difficulties: [],
+  years: [],
+}
+
+const emptySummary = {
+  historyCount: 0,
+  wrongCount: 0,
+  practiceCount: 0,
+}
+
+function SelectField({ label, value, onChange, options = [], labels = {} }) {
   return (
-    <div className="v2-main-column">
-      <PageIntro
-        actions={<RoleAuthLink className="v2-secondary-link">登录后继续训练</RoleAuthLink>}
-        kicker="训练入口"
-        title="先选题库，再进入具体训练回路。"
-        lead="题库目录页只负责选择和分流，把做题、历史、统计、错题拆成后续页面，首页保持清爽。"
-      />
-
-      <section className="v2-summary-strip" aria-label="题库摘要">
-        <article className="v2-summary-card">
-          <span>可选题库</span>
-          <strong>{String(preview.banks.length).padStart(2, '0')}</strong>
-          <p>按方向与章节进入，不在这里直接做题。</p>
-        </article>
-        <article className="v2-summary-card">
-          <span>连续训练</span>
-          <strong>{preview.statistics.streakDays} 天</strong>
-          <p>最近一次提交在 {preview.statistics.lastSessionAt.slice(5, 16).replace('T', ' ')}</p>
-        </article>
-        <article className="v2-summary-card">
-          <span>累计场次</span>
-          <strong>{preview.statistics.totalSessions}</strong>
-          <p>当前预览的是有数据时的题库目录状态。</p>
-        </article>
-      </section>
-
-      <section className="v2-feed-list" aria-label="题库目录">
-        {preview.banks.map((bank) => (
-          <Link className="v2-feed-item" key={bank.id} to={`/practice/banks/${bank.id}`}>
-            <div className="v2-feed-index">{String(bank.id).padStart(2, '0')}</div>
-            <div className="v2-feed-body">
-              <div className="v2-article-meta">
-                <span>{bank.target}</span>
-                <span>{bank.subject}</span>
-                <span>{bank.chapter}</span>
-                <span>{bank.questionCount} 题</span>
-              </div>
-              <strong>{bank.title}</strong>
-              <p>{bank.description}</p>
-            </div>
-            <span className="v2-feed-action">进入预览</span>
-          </Link>
+    <label className="v2-field">
+      <span>{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)}>
+        <option value="">全部</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {labels[option] || option}
+          </option>
         ))}
-      </section>
-
-      <section className="v2-split-board" aria-label="训练后续">
-        <article className="v2-article-card">
-          <p className="v2-kicker">最近训练</p>
-          <div className="v2-check-list">
-            {preview.history.map((item) => (
-              <div className="v2-check-row" key={item.id}>
-                <strong>{item.bankTitle}</strong>
-                <span>{item.mode} / 得分 {item.score}</span>
-                <span>{item.submittedAt.slice(5, 16).replace('T', ' ')}</span>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="v2-article-card">
-          <p className="v2-kicker">错题回看</p>
-          <div className="v2-check-list">
-            {preview.wrongQuestions.map((item) => (
-              <div className="v2-check-row" key={item.questionId}>
-                <strong>{item.title}</strong>
-                <span>{item.subject} / {item.chapter}</span>
-                <span>已错 {item.wrongCount} 次</span>
-              </div>
-            ))}
-          </div>
-        </article>
-      </section>
-
-      <section className="v2-article-card" aria-label="训练链路">
-        <p className="v2-kicker">进入后会看到</p>
-        <div className="v2-process-strip">
-          {practiceStages.map((item) => (
-            <article className="v2-process-node" key={item.title}>
-              <span>{item.title}</span>
-              <strong>{item.note}</strong>
-            </article>
-          ))}
-        </div>
-      </section>
-    </div>
+      </select>
+    </label>
   )
 }
 
-export function PracticeBankPreviewPage() {
-  const { bankId } = useParams()
-  const preview = createPracticePreview()
-  const bank = findPracticePreviewBank(bankId)
+export default function PracticeDirectoryPage() {
+  const { isAuthed, token } = useAuth()
+  const [filters, setFilters] = useState(defaultFilters)
+  const [options, setOptions] = useState(defaultOptions)
+  const [banks, setBanks] = useState([])
+  const [summary, setSummary] = useState(emptySummary)
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    let active = true
+
+    async function loadOptions() {
+      try {
+        const data = await practiceApi.options()
+        if (!active) return
+        setOptions(data || defaultOptions)
+      } catch {
+        if (!active) return
+        setOptions(defaultOptions)
+      }
+    }
+
+    loadOptions()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadBanks() {
+      try {
+        const data = await practiceApi.banks(filters)
+        if (!active) return
+        setBanks(Array.isArray(data) ? data : [])
+        setMessage('')
+      } catch (error) {
+        if (!active) return
+        setBanks([])
+        setMessage(error.message || '题库目录暂时不可用。')
+      }
+    }
+
+    loadBanks()
+    return () => {
+      active = false
+    }
+  }, [filters])
+
+  useEffect(() => {
+    if (!isAuthed || !token || token === 'dev-token') {
+      setSummary(emptySummary)
+      return undefined
+    }
+
+    let active = true
+
+    async function loadSummary() {
+      try {
+        const [history, wrongs, stats] = await Promise.all([
+          practiceApi.history({ page: 1, size: 3 }, token),
+          practiceApi.wrongQuestions({ page: 0, size: 3 }, token),
+          practiceApi.statistics('day', token),
+        ])
+
+        if (!active) return
+        setSummary({
+          historyCount: history?.total ?? history?.totalElements ?? history?.items?.length ?? 0,
+          wrongCount: wrongs?.total ?? wrongs?.totalElements ?? wrongs?.items?.length ?? 0,
+          practiceCount: stats?.practiceCount ?? 0,
+        })
+      } catch {
+        if (!active) return
+        setSummary(emptySummary)
+      }
+    }
+
+    loadSummary()
+    return () => {
+      active = false
+    }
+  }, [isAuthed, token])
+
+  function updateFilter(key, value) {
+    setFilters((current) => ({ ...current, [key]: value }))
+  }
+
+  function resetFilters() {
+    setFilters(defaultFilters)
+  }
 
   return (
-    <div className="v2-main-column">
-      <PageIntro
-        actions={<RoleAuthLink className="v2-secondary-link">登录后开始做题</RoleAuthLink>}
-        kicker="题库预览"
-        pathItems={[
-          { label: '题库目录', to: '/practice' },
-          { label: bank ? bank.title : '题库预览' },
-        ]}
-        title={bank ? `${bank.subject} / ${bank.chapter}` : '题库不存在'}
-        lead={bank ? `${bank.description} 这里重点模拟选中题库后，历史、统计和错题如何围绕它展开。` : '没有找到这个题库。'}
-      />
+    <>
+      <div className="v2-main-column">
+        <PageIntro
+          kicker="Atlas Loop"
+          title="先选题库，再进入独立练习回路。"
+          lead="目录页只做发现和分流，把练习会话、历史、统计、错题拆成独立页面，减少首页噪音。"
+          actions={(
+            <div className="v2-inline-actions">
+              <Link className="v2-secondary-link" to="/practice/history">练习历史</Link>
+              <Link className="v2-secondary-link" to="/practice/wrong-questions">错题回练</Link>
+              <Link className="v2-secondary-link" to="/practice/statistics">练习统计</Link>
+            </div>
+          )}
+        />
 
-      {bank ? (
-        <>
-          <section className="v2-summary-strip" aria-label="题库概览">
-            <article className="v2-summary-card">
-              <span>适用方向</span>
-              <strong>{bank.target}</strong>
-              <p>{bank.subject} / {bank.chapter}</p>
-            </article>
-            <article className="v2-summary-card">
-              <span>题量</span>
-              <strong>{bank.questionCount} 题</strong>
-              <p>难度 {bank.difficulty}</p>
-            </article>
-            <article className="v2-summary-card">
-              <span>当前正确率</span>
-              <strong>{Math.round(preview.statistics.accuracyRate * 100)}%</strong>
-              <p>连续训练 {preview.statistics.streakDays} 天</p>
-            </article>
-          </section>
+        <section className="v2-summary-strip" aria-label="题库概览">
+          <article className="v2-summary-card">
+            <span>匹配题库</span>
+            <strong>{banks.length}</strong>
+            <p>按方向、科目和章节分流到具体题库。</p>
+          </article>
+          <article className="v2-summary-card">
+            <span>今日练习</span>
+            <strong>{summary.practiceCount}</strong>
+            <p>登录后会同步显示你当天的训练场次。</p>
+          </article>
+          <article className="v2-summary-card">
+            <span>待回练错题</span>
+            <strong>{summary.wrongCount}</strong>
+            <p>错题会单独沉淀到回练页，不挤在目录里。</p>
+          </article>
+        </section>
 
-          <section className="v2-split-board" aria-label="题库状态">
-            <article className="v2-article-card">
-              <p className="v2-kicker">最近训练</p>
-              <div className="v2-check-list">
-                {preview.history.map((item) => (
-                  <div className="v2-check-row" key={item.id}>
-                    <strong>{item.bankTitle}</strong>
-                    <span>{item.mode} / 得分 {item.score}</span>
-                    <span>{item.submittedAt.slice(5, 16).replace('T', ' ')}</span>
-                  </div>
-                ))}
-              </div>
-            </article>
+        {message ? <div className="v2-status-note">{message}</div> : null}
 
-            <article className="v2-article-card">
-              <p className="v2-kicker">错题重练</p>
-              <div className="v2-check-list">
-                {preview.wrongQuestions.map((item) => (
-                  <div className="v2-check-row" key={item.questionId}>
-                    <strong>{item.title}</strong>
-                    <span>{item.subject} / {item.chapter}</span>
-                    <span>需要回炉 {item.wrongCount} 次</span>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </section>
+        <section className="v2-article-card v2-practice-card">
+          <div className="v2-section-head">
+            <div>
+              <p className="v2-kicker">题库分发</p>
+              <h3>用卡片而不是长表格做题库入口</h3>
+            </div>
+          </div>
 
-          <section className="v2-article-card">
-            <p className="v2-kicker">训练闭环</p>
-            <div className="v2-process-strip">
-              {practiceStages.map((item) => (
-                <article className="v2-process-node" key={item.title}>
-                  <span>{item.title}</span>
-                  <strong>{item.note}</strong>
-                </article>
+          {banks.length ? (
+            <div className="v2-practice-bank-grid">
+              {banks.map((bank) => (
+                <PracticeBankCard key={bank.id} bank={bank} />
               ))}
             </div>
-          </section>
-        </>
-      ) : null}
-    </div>
+          ) : (
+            <div className="v2-empty-card">当前筛选条件下暂无题库。</div>
+          )}
+        </section>
+
+        <section className="v2-article-card">
+          <div className="v2-section-head">
+            <div>
+              <p className="v2-kicker">后续路径</p>
+              <h3>从题库跳进模式页，再进入练习会话</h3>
+            </div>
+          </div>
+          <div className="v2-check-list">
+            <article className="v2-check-row">
+              <strong>目录页</strong>
+              <span>公开浏览题库，游客可见。</span>
+            </article>
+            <article className="v2-check-row">
+              <strong>题库详情</strong>
+              <span>预览题目、挑选模式、配置筛选条件。</span>
+            </article>
+            <article className="v2-check-row">
+              <strong>会话页</strong>
+              <span>登录后进入答题、保存、交卷和讲评闭环。</span>
+            </article>
+            <article className="v2-check-row">
+              <strong>分析页</strong>
+              <span>历史、统计、错题各自独立，不再塞进首页。</span>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <PracticeFilterSidebar
+        title="筛选题库"
+        fields={(
+          <>
+            <SelectField
+              label="方向"
+              value={filters.target}
+              onChange={(value) => updateFilter('target', value)}
+              options={options.targets}
+              labels={targetLabelMap}
+            />
+            <SelectField
+              label="科目"
+              value={filters.subject}
+              onChange={(value) => updateFilter('subject', value)}
+              options={options.subjects}
+            />
+            <SelectField
+              label="章节"
+              value={filters.chapter}
+              onChange={(value) => updateFilter('chapter', value)}
+              options={options.chapters}
+            />
+            <SelectField
+              label="题型"
+              value={filters.questionType}
+              onChange={(value) => updateFilter('questionType', value)}
+              options={options.questionTypes}
+              labels={{ single: '单选题', multiple: '多选题', judge: '判断题', subjective: '主观题' }}
+            />
+            <SelectField
+              label="难度"
+              value={filters.difficulty}
+              onChange={(value) => updateFilter('difficulty', value)}
+              options={options.difficulties}
+              labels={difficultyLabelMap}
+            />
+            <SelectField
+              label="年份"
+              value={filters.year}
+              onChange={(value) => updateFilter('year', value)}
+              options={options.years.map(String)}
+            />
+          </>
+        )}
+        note="游客可以浏览目录和题库详情；开始练习、查看历史与错题需要登录。"
+        actions={(
+          <>
+            <button className="v2-primary-link" type="button" onClick={resetFilters}>重置筛选</button>
+            {!isAuthed ? <Link className="v2-secondary-link" to="/login">登录后继续</Link> : null}
+          </>
+        )}
+      />
+    </>
   )
 }

@@ -57,7 +57,7 @@ const settingsNav = [
   { label: '个人信息', to: '/settings/profile' },
   { label: '我的发帖', to: '/settings/posts' },
   { label: '我的评论', to: '/settings/comments' },
-  { label: '练习记录', to: '/settings/practice' },
+  { label: '练习摘要', to: '/settings/practice' },
   { label: '安全中心', to: '/settings/security' },
 ]
 
@@ -129,7 +129,7 @@ export function getShellTitle(user, mode = 'app', pathname = '') {
 
 export function getShellDescription(user, mode = 'app') {
   if (mode === 'settings') {
-    return '围绕个人资料、社区痕迹、练习记录与账户安全逐层管理。'
+    return '围绕个人资料、社区痕迹、练习摘要与账户安全逐层管理。'
   }
   if (user?.role === 'admin') {
     return '以治理队列为入口，再进入各管理模块处理真实后端业务。'
