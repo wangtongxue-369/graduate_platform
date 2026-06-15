@@ -1,7 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 export default function WrongQuestionWorkbench({ wrongs, onRetry, onPageChange }) {
   const [selectedIds, setSelectedIds] = useState([])
+  const visibleIds = useMemo(() => wrongs.items.map((item) => item.id), [wrongs.items])
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id))
+
+  useEffect(() => {
+    setSelectedIds((current) => current.filter((id) => visibleIds.includes(id)))
+  }, [visibleIds])
 
   function toggleQuestion(id) {
     setSelectedIds((current) => (
@@ -9,6 +15,17 @@ export default function WrongQuestionWorkbench({ wrongs, onRetry, onPageChange }
         ? current.filter((item) => item !== id)
         : [...current, id]
     ))
+  }
+
+  function toggleSelectAllVisible() {
+    setSelectedIds((current) => {
+      if (allVisibleSelected) {
+        return current.filter((id) => !visibleIds.includes(id))
+      }
+
+      const merged = new Set([...current, ...visibleIds])
+      return Array.from(merged)
+    })
   }
 
   async function handleRetry() {
@@ -23,10 +40,28 @@ export default function WrongQuestionWorkbench({ wrongs, onRetry, onPageChange }
           <p className="v2-kicker">错题池</p>
           <h3>把高频错题拎出来，单独进入回练会话</h3>
         </div>
-        <button className="v2-primary-link" type="button" onClick={handleRetry} disabled={!selectedIds.length}>
-          重练选中
-        </button>
+        <div className="v2-practice-batch-actions">
+          {visibleIds.length ? (
+            <button className="v2-secondary-link" type="button" onClick={toggleSelectAllVisible}>
+              {allVisibleSelected ? '取消全选' : '全选本页'}
+            </button>
+          ) : null}
+          <button className="v2-primary-link" type="button" onClick={handleRetry} disabled={!selectedIds.length}>
+            重练选中
+          </button>
+        </div>
       </div>
+
+      {selectedIds.length ? (
+        <div className="v2-practice-selection-summary">
+          <span>已选 {selectedIds.length} 题</span>
+          {!allVisibleSelected && visibleIds.length > 1 ? (
+            <button className="v2-ghost-link" type="button" onClick={toggleSelectAllVisible}>
+              补全本页
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {wrongs.items.length ? (
         <div className="v2-check-list">
@@ -39,14 +74,23 @@ export default function WrongQuestionWorkbench({ wrongs, onRetry, onPageChange }
                 type="button"
                 className={`v2-check-row v2-check-row--selectable ${checked ? 'is-active' : ''}`}
                 onClick={() => toggleQuestion(item.id)}
+                aria-pressed={checked}
               >
-                <strong>{item.stem}</strong>
-                <span>
-                  {item.subject || '未分类'}
-                  {' / '}
-                  {item.chapter || '未分章节'}
-                  {' / 已错 '}
-                  {item.wrongCount || 0} 次
+                <span className="v2-check-row__marker" aria-hidden="true">
+                  <span className="v2-check-row__marker-box">{checked ? '✓' : ''}</span>
+                </span>
+                <span className="v2-check-row__body">
+                  <span className="v2-check-row__topline">
+                    <strong>{item.stem}</strong>
+                    {checked ? <span className="v2-check-row__status">已选中</span> : null}
+                  </span>
+                  <span>
+                    {item.subject || '未分类'}
+                    {' / '}
+                    {item.chapter || '未分章节'}
+                    {' / 已错 '}
+                    {item.wrongCount || 0} 次
+                  </span>
                 </span>
               </button>
             )

@@ -19,9 +19,10 @@ describe('post markdown editor theme styles', () => {
   it('includes dark theme overrides for the markdown editor shell and internals', () => {
     const editorSection = getSection('.v2-post-workbench-editor {', '.v2-post-workbench-preview {')
 
-    expect(editorSection).toContain('html[data-theme="dark"] .v2-post-md-editor-surface')
-    expect(editorSection).toContain('html[data-theme="dark"] .v2-post-md-editor-surface .mdxeditor-toolbar')
-    expect(editorSection).toContain('html[data-theme="dark"] .v2-post-md-editor-surface .cm-editor')
+    expect(editorSection).toContain('.v2-post-md-editor > .v2-post-md-editor-surface')
+    expect(editorSection).toContain('html[data-theme="dark"] .v2-post-md-editor > .v2-post-md-editor-surface')
+    expect(editorSection).toContain('html[data-theme="dark"] .v2-post-md-editor > .v2-post-md-editor-surface .mdxeditor-toolbar')
+    expect(editorSection).toContain('html[data-theme="dark"] .v2-post-md-editor > .v2-post-md-editor-surface .cm-editor')
     expect(editorSection).toContain('var(--v2-paper)')
     expect(editorSection).toContain('var(--v2-paper-soft)')
     expect(editorSection).toContain('var(--v2-line)')
@@ -36,6 +37,16 @@ describe('post markdown editor theme styles', () => {
     expect(editorSection).toContain('[class*="_toolbarCodeBlockLanguageSelectContent_"]')
     expect(editorSection).toContain('[class*="_selectItem_"][data-highlighted]')
     expect(editorSection).toContain('[class*="_codeMirrorToolbar_"]')
-    expect(editorSection).toContain('html[data-theme="dark"] .v2-post-md-editor-surface')
+    expect(editorSection).toContain('html[data-theme="dark"] .v2-post-md-editor > .v2-post-md-editor-surface')
+  })
+
+  it('keeps the mdx popup container out of the normal page layout', () => {
+    const editorSection = getSection('.v2-post-workbench-editor {', '.v2-post-workbench-preview {')
+
+    expect(editorSection).toContain('.mdxeditor-popup-container.v2-post-md-editor-surface')
+    expect(editorSection).toContain('min-height: 0')
+    expect(editorSection).toContain('height: 0')
+    expect(editorSection).toContain('background: transparent')
+    expect(editorSection).toContain('overflow: visible')
   })
 })

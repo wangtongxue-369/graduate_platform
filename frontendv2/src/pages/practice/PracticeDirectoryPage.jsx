@@ -206,32 +206,6 @@ export default function PracticeDirectoryPage() {
           )}
         </section>
 
-        <section className="v2-article-card">
-          <div className="v2-section-head">
-            <div>
-              <p className="v2-kicker">后续路径</p>
-              <h3>从题库跳进模式页，再进入练习会话</h3>
-            </div>
-          </div>
-          <div className="v2-check-list">
-            <article className="v2-check-row">
-              <strong>目录页</strong>
-              <span>公开浏览题库，游客可见。</span>
-            </article>
-            <article className="v2-check-row">
-              <strong>题库详情</strong>
-              <span>预览题目、挑选模式、配置筛选条件。</span>
-            </article>
-            <article className="v2-check-row">
-              <strong>会话页</strong>
-              <span>登录后进入答题、保存、交卷和讲评闭环。</span>
-            </article>
-            <article className="v2-check-row">
-              <strong>分析页</strong>
-              <span>历史、统计、错题各自独立，不再塞进首页。</span>
-            </article>
-          </div>
-        </section>
       </div>
 
       <PracticeFilterSidebar
