@@ -964,6 +964,11 @@ export const mentorApi = {
   unreadCount(token) {
     return request('/api/kaoyan/mentors/counseling/unread-count', { token })
   },
+  counselingStreamUrl(token) {
+    const search = new URLSearchParams()
+    if (token) search.set('token', token)
+    return `${API_BASE}/api/kaoyan/mentors/counseling/stream?${search.toString()}`
+  },
 }
 
 export const studyRoomApi = {

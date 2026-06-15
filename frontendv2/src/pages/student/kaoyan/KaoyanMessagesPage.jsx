@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { mentorApi } from '@legacy/lib/api.js'
@@ -9,18 +9,46 @@ import {
   normalizeCounselingMessages,
   normalizeCounselingSessions,
 } from '@/pages/student/kaoyan/kaoyanPageData.js'
-import {
-  canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
-} from '@/lib/stationData.js'
+import { canUseRemoteToken, formatDateTimeLabel } from '@/lib/stationData.js'
 
 const PAGE_SIZE = 10
+const AUTO_REFRESH_MS = 15000
+
+function getSessionCounterpart(session, currentUserId, activeTab) {
+  if (!session) return ''
+
+  const currentId = String(currentUserId || '')
+  const mentorId = String(session.mentorId || '')
+  const studentId = String(session.studentId || '')
+
+  if (currentId && currentId === mentorId) {
+    return session.studentName || '咨询同学'
+  }
+
+  if (currentId && currentId === studentId) {
+    return session.mentorName || '学长学姐'
+  }
+
+  return activeTab === 'sent'
+    ? (session.mentorName || '学长学姐')
+    : (session.studentName || '咨询同学')
+}
+
+function matchesSessionGroup(session, currentUserId, activeTab) {
+  if (!currentUserId) return true
+
+  const currentId = String(currentUserId)
+  const mentorId = String(session.mentorId || '')
+  const studentId = String(session.studentId || '')
+
+  return activeTab === 'sent'
+    ? studentId === currentId
+    : mentorId === currentId
+}
 
 export default function KaoyanMessagesPage() {
   const location = useLocation()
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [activeTab, setActiveTab] = useState('sent')
   const [page, setPage] = useState(0)
@@ -30,21 +58,89 @@ export default function KaoyanMessagesPage() {
   const [selectedSessionId, setSelectedSessionId] = useState('')
   const [messages, setMessages] = useState([])
   const [draft, setDraft] = useState('')
-  const [notice, setNotice] = useState(previewDataNotice('咨询消息'))
   const [loadingSessions, setLoadingSessions] = useState(false)
   const [loadingMessages, setLoadingMessages] = useState(false)
   const [sending, setSending] = useState(false)
+  const [hasLoadedSessions, setHasLoadedSessions] = useState(false)
+  const [refreshTick, setRefreshTick] = useState(0)
+  const selectedSessionIdRef = useRef('')
+
+  const visibleSessions = useMemo(
+    () => sessions.filter((item) => matchesSessionGroup(item, user?.id, activeTab)),
+    [activeTab, sessions, user?.id],
+  )
+
+  const visibleTotalElements = visibleSessions.length !== sessions.length
+    ? visibleSessions.length
+    : totalElements
+
+  const visibleTotalPages = visibleSessions.length !== sessions.length
+    ? 1
+    : totalPages
 
   const selectedSession = useMemo(
-    () => sessions.find((item) => String(item.id) === String(selectedSessionId)) || null,
-    [selectedSessionId, sessions],
+    () => visibleSessions.find((item) => String(item.id) === String(selectedSessionId)) || null,
+    [selectedSessionId, visibleSessions],
   )
+
+  const selectedSessionCounterpart = useMemo(
+    () => getSessionCounterpart(selectedSession, user?.id, activeTab),
+    [activeTab, selectedSession, user?.id],
+  )
+
+  useEffect(() => {
+    selectedSessionIdRef.current = selectedSessionId
+  }, [selectedSessionId])
 
   useEffect(() => {
     setPage(0)
     setSelectedSessionId('')
     setMessages([])
+    setHasLoadedSessions(false)
   }, [activeTab])
+
+  useEffect(() => {
+    if (!canUseRemote) return undefined
+
+    const intervalId = setInterval(() => {
+      setRefreshTick((current) => current + 1)
+    }, AUTO_REFRESH_MS)
+
+    return () => {
+      clearInterval(intervalId)
+    }
+  }, [canUseRemote])
+
+  useEffect(() => {
+    if (!canUseRemote || !token || typeof EventSource === 'undefined') {
+      return undefined
+    }
+
+    const eventSource = new EventSource(mentorApi.counselingStreamUrl(token))
+
+    const handleCounselingUpdate = (event) => {
+      let payload = null
+      try {
+        payload = event?.data ? JSON.parse(event.data) : null
+      } catch {
+        payload = null
+      }
+
+      if (payload?.type === 'connected') return
+      setRefreshTick((current) => current + 1)
+    }
+
+    const handleError = () => {
+      eventSource.close()
+    }
+
+    eventSource.addEventListener('counseling-update', handleCounselingUpdate)
+    eventSource.addEventListener('error', handleError)
+
+    return () => {
+      eventSource.close()
+    }
+  }, [canUseRemote, token])
 
   useEffect(() => {
     let active = true
@@ -56,7 +152,7 @@ export default function KaoyanMessagesPage() {
         setMessages([])
         setTotalPages(1)
         setTotalElements(0)
-        setNotice(previewDataNotice('咨询消息'))
+        setHasLoadedSessions(true)
         return
       }
 
@@ -69,28 +165,33 @@ export default function KaoyanMessagesPage() {
         if (!active) return
 
         const nextSessions = normalizeCounselingSessions(data)
+        const nextVisibleSessions = nextSessions.filter((item) => matchesSessionGroup(item, user?.id, activeTab))
+        const currentSelectedId = String(selectedSessionIdRef.current || '')
         const preferredId = String(location.state?.sessionId || '')
-        const nextSelectedId = preferredId && nextSessions.some((item) => String(item.id) === preferredId)
-          ? preferredId
-          : nextSessions[0]?.id
-            ? String(nextSessions[0].id)
-            : ''
+        const nextSelectedId = currentSelectedId && nextVisibleSessions.some((item) => String(item.id) === currentSelectedId)
+          ? currentSelectedId
+          : preferredId && nextVisibleSessions.some((item) => String(item.id) === preferredId)
+            ? preferredId
+            : nextVisibleSessions[0]?.id
+              ? String(nextVisibleSessions[0].id)
+              : ''
 
         setSessions(nextSessions)
         setSelectedSessionId(nextSelectedId)
         setTotalPages(Math.max(1, Number(data?.totalPages || 1)))
         setTotalElements(Number(data?.totalElements || nextSessions.length))
-        setNotice(remoteDataNotice('咨询消息'))
-      } catch (error) {
+      } catch {
         if (!active) return
         setSessions([])
         setSelectedSessionId('')
         setMessages([])
         setTotalPages(1)
         setTotalElements(0)
-        setNotice(fallbackDataNotice('咨询消息', error))
       } finally {
-        if (active) setLoadingSessions(false)
+        if (active) {
+          setLoadingSessions(false)
+          setHasLoadedSessions(true)
+        }
       }
     }
 
@@ -98,7 +199,7 @@ export default function KaoyanMessagesPage() {
     return () => {
       active = false
     }
-  }, [activeTab, canUseRemote, location.state?.sessionId, page, token])
+  }, [activeTab, canUseRemote, location.state?.sessionId, page, refreshTick, token])
 
   useEffect(() => {
     let active = true
@@ -115,10 +216,9 @@ export default function KaoyanMessagesPage() {
         if (!active) return
         setMessages(normalizeCounselingMessages(data))
         await mentorApi.markAsRead(selectedSessionId, token).catch(() => {})
-      } catch (error) {
+      } catch {
         if (!active) return
         setMessages([])
-        setNotice(error.message || '咨询消息读取失败。')
       } finally {
         if (active) setLoadingMessages(false)
       }
@@ -128,7 +228,7 @@ export default function KaoyanMessagesPage() {
     return () => {
       active = false
     }
-  }, [canUseRemote, selectedSessionId, token])
+  }, [canUseRemote, refreshTick, selectedSessionId, token])
 
   async function handleSend(event) {
     event.preventDefault()
@@ -141,8 +241,6 @@ export default function KaoyanMessagesPage() {
       const data = await mentorApi.sessionMessages(selectedSession.id, token)
       setMessages(normalizeCounselingMessages(data))
       await mentorApi.markAsRead(selectedSession.id, token).catch(() => {})
-    } catch (error) {
-      setNotice(error.message || '发送消息失败。')
     } finally {
       setSending(false)
     }
@@ -163,34 +261,36 @@ export default function KaoyanMessagesPage() {
             { label: '1v1咨询', to: '/station/kaoyan/support/mentors' },
             { label: '咨询消息' },
           ]}
-          title="把 1v1咨询会话和连续追问收进同一条消息流。"
-          lead="左边只管切会话，右边只管读消息和继续发送，避免旧版列表和聊天区来回切换。"
-          actions={<Link className="v2-secondary-link" to="/station/kaoyan/support/mentors">回到 1v1咨询</Link>}
+          title="把 1v1 咨询会话和连续追问收进同一条消息流。"
+          lead="左侧切换历史会话，右侧保持同一块聊天工作台，减少在列表和对话之间来回跳转。"
+          actions={<Link className="v2-secondary-link" to="/station/kaoyan/support/mentors">回到 1v1 咨询</Link>}
         />
 
-        {notice ? <div className="v2-status-note">{notice}</div> : null}
-        {loadingSessions ? <div className="v2-status-note">正在同步咨询会话…</div> : null}
-
-        <section className="v2-split-board v2-counseling-board">
+        <section className="v2-split-board v2-counseling-board v2-counseling-workbench">
           <CounselingSessionList
             activeTab={activeTab}
+            currentUserId={user?.id}
             loading={loadingSessions}
             page={page}
-            sessions={sessions}
+            sessions={visibleSessions}
+            showEmptyState={hasLoadedSessions && !visibleSessions.length}
             selectedId={selectedSessionId}
-            totalElements={totalElements}
-            totalPages={totalPages}
-            onNextPage={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
+            totalElements={visibleTotalElements}
+            totalPages={visibleTotalPages}
+            onNextPage={() => setPage((current) => Math.min(visibleTotalPages - 1, current + 1))}
             onPreviousPage={() => setPage((current) => Math.max(0, current - 1))}
             onSelect={setSelectedSessionId}
             onTabChange={handleTabChange}
           />
           <CounselingMessagePanel
+            activeTab={activeTab}
+            currentUserId={user?.id}
             draft={draft}
             loading={loadingMessages}
             messages={messages}
             sending={sending}
             session={selectedSession}
+            sessionCounterpart={selectedSessionCounterpart}
             onDraftChange={setDraft}
             onSend={handleSend}
           />
@@ -198,31 +298,30 @@ export default function KaoyanMessagesPage() {
       </div>
 
       <aside className="v2-side-column">
-        <section className="v2-side-card">
-          <p className="v2-kicker">当前工作流</p>
+        <section className="v2-side-card v2-counseling-context-card">
+          <p className="v2-kicker">当前会话</p>
           <div className="v2-check-list">
             <div className="v2-check-row">
               <strong>会话分组</strong>
               <span>{activeTab === 'sent' ? '我发起的咨询' : '我收到的咨询'}</span>
             </div>
             <div className="v2-check-row">
-              <strong>会话总数</strong>
-              <span>{totalElements} 条</span>
+              <strong>当前对象</strong>
+              <span>{selectedSession ? selectedSessionCounterpart : '先从左侧选择一条会话'}</span>
             </div>
             <div className="v2-check-row">
-              <strong>当前选中</strong>
-              <span>{selectedSession ? '已展开当前会话主题' : '先从左侧选择会话'}</span>
+              <strong>当前主题</strong>
+              <span>{selectedSession?.subject || '会话选中后显示'}</span>
+            </div>
+            <div className="v2-check-row">
+              <strong>最近时间</strong>
+              <span>{selectedSession?.createdAt ? formatDateTimeLabel(selectedSession.createdAt) : '会话选中后显示'}</span>
+            </div>
+            <div className="v2-check-row">
+              <strong>会话总数</strong>
+              <span>{`${visibleTotalElements} 条`}</span>
             </div>
           </div>
-        </section>
-
-        <section className="v2-side-card">
-          <p className="v2-kicker">消息建议</p>
-          <ul>
-            <li>先在主题里说明问题场景，再在消息里补细节，学长学姐更容易快速接住。</li>
-            <li>同一问题尽量在同一会话里追问，避免重复新建主题造成信息断裂。</li>
-            <li>如果问题已经转成长期结伴复习，改走同频自习室会更合适。</li>
-          </ul>
         </section>
       </aside>
     </>

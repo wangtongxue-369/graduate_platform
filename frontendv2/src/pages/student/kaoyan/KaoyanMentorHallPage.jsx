@@ -48,6 +48,15 @@ function filterMentors(rows, filters) {
   })
 }
 
+function matchesMentorFilters(item, filters) {
+  return filterMentors([item], filters).length > 0
+}
+
+function excludeOwnMentor(rows, ownMentorId) {
+  if (!ownMentorId) return rows
+  return rows.filter((item) => String(item.id) !== String(ownMentorId))
+}
+
 function normalizeMentorRows(data) {
   const content = Array.isArray(data?.content) ? data.content : []
   return content.map((item, index) => ({
@@ -127,14 +136,24 @@ export default function KaoyanMentorHallPage() {
         if (!active) return
 
         const mentorRows = normalizeMentorRows(mentorsData)
+        const ownMentorId = profileData?.id || ''
+        const visibleMentorRows = excludeOwnMentor(mentorRows, ownMentorId)
+        const ownMentorOnPage = mentorRows.length !== visibleMentorRows.length
+        const shouldSubtractOwn = Boolean(ownMentorId) && (
+          ownMentorOnPage || matchesMentorFilters(profileData, appliedFilters)
+        )
+        const adjustedTotalElements = Math.max(
+          0,
+          Number(mentorsData?.totalElements || 0) - (shouldSubtractOwn ? 1 : 0),
+        )
         const nextSchoolOptions = Array.isArray(schoolsData?.content) && schoolsData.content.length
           ? schoolsData.content.map((item) => ({ id: item.id, name: item.name }))
           : previewSchoolOptions
 
         setSchoolOptions(nextSchoolOptions)
-        setRows(mentorRows)
-        setTotalElements(Number(mentorsData?.totalElements || 0))
-        setTotalPages(Math.max(1, Number(mentorsData?.totalPages || 1)))
+        setRows(visibleMentorRows)
+        setTotalElements(adjustedTotalElements)
+        setTotalPages(Math.max(1, Math.ceil(adjustedTotalElements / pageSize)))
         setUnreadCount(Number(unreadData?.count || 0))
         setMyProfile(profileData || null)
         setNotice(remoteDataNotice('学长学姐咨询'))

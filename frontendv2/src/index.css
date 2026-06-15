@@ -2853,18 +2853,235 @@ html[data-theme="dark"] .v2-plan-side-fact {
 }
 
 .v2-counseling-board {
-  align-items: start;
+  align-items: stretch;
   grid-template-columns: minmax(300px, 0.95fr) minmax(0, 1.45fr);
 }
 
 .v2-counseling-session-card,
 .v2-counseling-message-card {
   display: grid;
-  gap: 16px;
+  gap: 12px;
+  height: clamp(500px, 72vh, 568px);
+  padding: 15px 16px;
+  overflow: hidden;
 }
 
-.v2-counseling-message-list {
-  min-height: 240px;
+.v2-counseling-session-card {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.v2-counseling-message-card {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--v2-paper-strong) 78%, var(--v2-paper)) 0%,
+      var(--v2-paper) 60%,
+      var(--v2-paper-soft) 100%
+    );
+}
+
+.v2-counseling-session-card__head,
+.v2-counseling-message-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.v2-counseling-message-card__summary {
+  margin: 4px 0 0;
+  color: var(--v2-soft-strong);
+  line-height: 1.55;
+}
+
+.v2-counseling-session-list,
+.v2-counseling-thread {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.v2-counseling-session-list {
+  display: grid;
+  gap: 8px;
+  padding-right: 2px;
+}
+
+.v2-counseling-session-item {
+  display: grid;
+  gap: 7px;
+  padding: 10px 12px;
+  border: 1px solid var(--v2-line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 92%, transparent);
+  text-align: left;
+  transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+.v2-counseling-session-item:hover {
+  transform: translateY(-1px);
+  border-color: var(--v2-active-border);
+}
+
+.v2-counseling-session-item.is-active {
+  border-color: var(--v2-active-border);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--v2-tint) 18%, var(--v2-paper-strong)) 0%,
+      color-mix(in srgb, var(--v2-paper-strong) 96%, transparent) 100%
+    );
+  box-shadow: 0 10px 22px rgba(56, 84, 129, 0.07);
+}
+
+.v2-counseling-session-item__head,
+.v2-counseling-session-item__meta,
+.v2-counseling-composer__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.v2-counseling-session-item__subject {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--v2-ink);
+  line-height: 1.45;
+}
+
+.v2-counseling-session-item__meta {
+  flex-wrap: wrap;
+  color: var(--v2-soft-strong);
+  font-size: 0.8rem;
+}
+
+.v2-counseling-session-item__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 23px;
+  min-height: 23px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #d24d57 86%, var(--v2-paper));
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.v2-counseling-thread {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 8px 4px 2px;
+}
+
+.v2-counseling-thread--empty {
+  padding: 0;
+}
+
+.v2-chat-bubble-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.v2-chat-bubble-row.mine {
+  justify-content: flex-end;
+}
+
+.v2-chat-bubble {
+  display: grid;
+  gap: 6px;
+  max-width: min(74%, 520px);
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, transparent);
+  border-radius: 18px 18px 18px 10px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 94%, transparent);
+  box-shadow: 0 8px 18px rgba(42, 58, 84, 0.05);
+}
+
+.v2-chat-bubble-row.mine .v2-chat-bubble {
+  border-radius: 18px 18px 10px 18px;
+  border-color: color-mix(in srgb, var(--v2-active-border) 42%, transparent);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--v2-tint) 22%, var(--v2-paper-strong)) 0%,
+      color-mix(in srgb, var(--v2-paper-strong) 94%, transparent) 100%
+    );
+}
+
+.v2-chat-bubble__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  color: var(--v2-soft-strong);
+  font-size: 0.78rem;
+}
+
+.v2-chat-bubble p {
+  margin: 0;
+  color: var(--v2-ink);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.v2-counseling-composer {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--v2-line);
+}
+
+.v2-counseling-composer .v2-field {
+  gap: 8px;
+}
+
+.v2-counseling-composer textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.v2-counseling-composer__actions {
+  color: var(--v2-soft-strong);
+  font-size: 0.8rem;
+}
+
+.v2-counseling-composer__actions p {
+  margin: 0;
+}
+
+.v2-counseling-empty-state {
+  display: grid;
+  gap: 6px;
+  padding: 15px 16px;
+  border: 1px dashed var(--v2-line-strong);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--v2-paper-soft) 88%, transparent);
+}
+
+.v2-counseling-empty-state strong,
+.v2-counseling-empty-state p {
+  margin: 0;
+}
+
+.v2-counseling-empty-state p {
+  color: var(--v2-soft-strong);
+  line-height: 1.55;
+}
+
+.v2-counseling-context-card {
+  gap: 12px;
+  padding: 15px 16px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--v2-paper-strong) 80%, var(--v2-paper)) 0%,
+      var(--v2-paper) 100%
+    );
 }
 
 .v2-feed-item--notification {
@@ -3624,9 +3841,43 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   .v2-modal-card {
     padding: 18px;
   }
+
+  .v2-counseling-session-card,
+  .v2-counseling-message-card {
+    min-height: auto;
+  }
+
+  .v2-counseling-session-list,
+  .v2-counseling-thread {
+    max-height: none;
+  }
+
+  .v2-counseling-board {
+    grid-template-columns: minmax(248px, 0.86fr) minmax(0, 1.14fr);
+  }
+
+  .v2-counseling-session-card,
+  .v2-counseling-message-card {
+    height: clamp(480px, 70vh, 540px);
+  }
 }
 
 @media (max-width: 720px) {
+  .v2-counseling-board {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-counseling-session-card,
+  .v2-counseling-message-card {
+    height: auto;
+    min-height: auto;
+  }
+
+  .v2-counseling-session-list,
+  .v2-counseling-thread {
+    max-height: none;
+  }
+
   .v2-post-workbench-head {
     display: grid;
   }

@@ -43,6 +43,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/kaoyan/materials/*/download/*").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/kaoyan/materials").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/kaoyan/score-lines/favorites").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/kaoyan/mentors/counseling/stream").permitAll()
                 .requestMatchers("/api/kaoyan/mentors/me", "/api/kaoyan/mentors/counseling/**").authenticated()
                 .requestMatchers("/api/kaoyan/plans/**", "/api/kaoyan/checkins/**").authenticated()
                 .requestMatchers("/api/kaoyan/study-rooms/me", "/api/kaoyan/study-rooms/me/created").authenticated()

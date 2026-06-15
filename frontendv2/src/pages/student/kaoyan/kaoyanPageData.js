@@ -699,7 +699,9 @@ export function normalizeCounselingSessions(data) {
   return ensurePage(data).content.map((item, index) => ({
     id: item.id ?? `session-${index}`,
     subject: item.subject || '未命名咨询',
+    mentorId: item.mentorId ?? '',
     mentorName: item.mentorName || '',
+    studentId: item.studentId ?? '',
     studentName: item.studentName || '',
     unreadCount: Number(item.unreadCount || 0),
     createdAt: item.createdAt || '',

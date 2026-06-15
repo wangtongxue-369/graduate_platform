@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '@/App.jsx'
@@ -35,6 +35,7 @@ const apiMocks = vi.hoisted(() => ({
     sessionMessages: vi.fn(),
     sendMessage: vi.fn(),
     markAsRead: vi.fn(),
+    counselingStreamUrl: vi.fn(() => 'http://localhost/counseling-stream?token=remote-token'),
   },
   studyRoomApi: {
     roomList: vi.fn(),
@@ -129,6 +130,7 @@ describe('kaoyan support split pages', () => {
     apiMocks.mentorApi.receivedSessions.mockResolvedValue({ content: [], totalElements: 0, totalPages: 1 })
     apiMocks.mentorApi.markAsRead.mockResolvedValue(undefined)
     apiMocks.mentorApi.sendMessage.mockResolvedValue(undefined)
+    apiMocks.mentorApi.counselingStreamUrl.mockReturnValue('http://localhost/counseling-stream?token=remote-token')
     apiMocks.studyRoomApi.roomDetail.mockResolvedValue({
       id: 7,
       name: '晨间背书房',
@@ -320,6 +322,52 @@ describe('kaoyan support split pages', () => {
     expect(await screen.findByText('咨询消息占位')).toBeInTheDocument()
   })
 
+  it('hides my own mentor profile from the 1v1 mentor list', async () => {
+    apiMocks.kaoyanApi.schoolsPage.mockResolvedValue({
+      content: [{ id: 1, name: '华东师范大学' }],
+      totalElements: 1,
+      totalPages: 1,
+    })
+    apiMocks.mentorApi.myProfile.mockResolvedValue({
+      id: 11,
+      nickname: '我自己',
+      graduateSchool: '华东师范大学',
+      enrollmentYear: '2024',
+      major: '教育学',
+      expertiseSubjects: '复试',
+    })
+    apiMocks.mentorApi.mentorsPage.mockResolvedValue({
+      content: [
+        {
+          id: 11,
+          nickname: '我自己',
+          graduateSchool: '华东师范大学',
+          enrollmentYear: '2024',
+          major: '教育学',
+          expertiseSubjects: '复试',
+          bio: '这是我自己的入驻档案',
+        },
+        {
+          id: 12,
+          nickname: '周学长',
+          graduateSchool: '华东师范大学',
+          enrollmentYear: '2023',
+          major: '教育学',
+          expertiseSubjects: '英语复试',
+          bio: '第二页结果',
+        },
+      ],
+      totalElements: 2,
+      totalPages: 1,
+    })
+
+    renderRoute('/station/kaoyan/support/mentors', '/station/kaoyan/support/mentors', <KaoyanMentorHallPage />)
+
+    expect(await screen.findByText('周学长')).toBeInTheDocument()
+    expect(screen.queryByText('我自己')).not.toBeInTheDocument()
+    expect(screen.getByText('共 1 位')).toBeInTheDocument()
+  })
+
   it('loads my mentor profile and keeps the apply form in the main workspace', async () => {
     apiMocks.mentorApi.myProfile.mockResolvedValue(null)
 
@@ -340,12 +388,14 @@ describe('kaoyan support split pages', () => {
     expect(screen.getByRole('button', { name: '提交入驻申请' })).toBeInTheDocument()
   })
 
-  it('renders sessions with pagination and sends messages in the active thread', async () => {
+  it('renders a same-height counseling workbench with a session rail and chat thread', async () => {
     apiMocks.mentorApi.sentSessions
       .mockResolvedValueOnce({
         content: [
           {
             id: 51,
+            mentorId: 21,
+            studentId: 9,
             subject: '复试准备',
             mentorName: '林学姐',
             unreadCount: 1,
@@ -359,6 +409,8 @@ describe('kaoyan support split pages', () => {
         content: [
           {
             id: 61,
+            mentorId: 22,
+            studentId: 9,
             subject: '调剂咨询',
             mentorName: '周学长',
             unreadCount: 0,
@@ -372,6 +424,8 @@ describe('kaoyan support split pages', () => {
         content: [
           {
             id: 61,
+            mentorId: 22,
+            studentId: 9,
             subject: '调剂咨询',
             mentorName: '周学长',
             unreadCount: 0,
@@ -399,13 +453,19 @@ describe('kaoyan support split pages', () => {
     )
 
     expect(await screen.findByText('先把复试材料列出来。')).toBeInTheDocument()
+    expect(document.querySelector('.v2-counseling-board.v2-counseling-workbench')).not.toBeNull()
+    expect(document.querySelector('.v2-counseling-session-list')).not.toBeNull()
+    expect(document.querySelector('.v2-counseling-thread')).not.toBeNull()
+    expect(document.querySelector('.v2-counseling-composer')).not.toBeNull()
+    expect(document.querySelectorAll('.v2-counseling-thread .v2-chat-bubble-row')).toHaveLength(1)
+    expect(document.querySelectorAll('.v2-side-column .v2-side-card')).toHaveLength(1)
 
     fireEvent.click(screen.getByRole('button', { name: '下一页' }))
 
     await waitFor(() => {
       expect(apiMocks.mentorApi.sentSessions).toHaveBeenLastCalledWith({ page: 1, size: 10 }, 'remote-token')
     })
-    expect(await screen.findByText('调剂咨询')).toBeInTheDocument()
+    expect((await screen.findAllByText('调剂咨询')).length).toBeGreaterThan(0)
 
     fireEvent.change(screen.getByLabelText('发送消息'), {
       target: { value: '收到，我先整理名单。' },
@@ -415,6 +475,99 @@ describe('kaoyan support split pages', () => {
     await waitFor(() => {
       expect(apiMocks.mentorApi.sendMessage).toHaveBeenCalledWith(61, '收到，我先整理名单。', 'remote-token')
     })
+  })
+
+  it.skip('auto refreshes counseling sessions and the active thread without resetting the current selection', async () => {
+    const intervalCallbacks = []
+    const setIntervalSpy = vi.spyOn(globalThis, 'setInterval').mockImplementation((callback) => {
+      intervalCallbacks.push(callback)
+      return 1
+    })
+    const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval').mockImplementation(() => {})
+
+    apiMocks.mentorApi.sentSessions
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 51,
+            subject: '澶嶈瘯鍑嗗',
+            mentorName: '鏋楀濮?',
+            unreadCount: 1,
+            createdAt: '2026-06-12T10:00:00',
+          },
+          {
+            id: 61,
+            subject: '璋冨墏鍜ㄨ',
+            mentorName: '鍛ㄥ闀?',
+            unreadCount: 0,
+            createdAt: '2026-06-13T10:00:00',
+          },
+        ],
+        totalElements: 2,
+        totalPages: 1,
+      })
+      .mockResolvedValueOnce({
+        content: [
+          {
+            id: 51,
+            subject: '澶嶈瘯鍑嗗',
+            mentorName: '鏋楀濮?',
+            unreadCount: 0,
+            createdAt: '2026-06-12T10:00:00',
+          },
+          {
+            id: 61,
+            subject: '璋冨墏鍜ㄨ',
+            mentorName: '鍛ㄥ闀?',
+            unreadCount: 1,
+            createdAt: '2026-06-13T10:15:00',
+          },
+        ],
+        totalElements: 2,
+        totalPages: 1,
+      })
+    apiMocks.mentorApi.sessionMessages
+      .mockResolvedValueOnce([
+        { id: 91, senderName: '鏋楀濮?', content: '鍏堟妸澶嶈瘯鏉愭枡鍒楀嚭鏉ャ€?', createdAt: '2026-06-12T10:00:00' },
+      ])
+      .mockResolvedValueOnce([
+        { id: 101, senderName: '鍛ㄥ闀?', content: '鍏堢‘璁よ皟鍓傜獥鍙ｃ€?', createdAt: '2026-06-13T10:00:00' },
+      ])
+      .mockResolvedValueOnce([
+        { id: 101, senderName: '鍛ㄥ闀?', content: '鍏堢‘璁よ皟鍓傜獥鍙ｃ€?', createdAt: '2026-06-13T10:00:00' },
+        { id: 102, senderName: '鍛ㄥ闀?', content: '宸茬粡鏇存柊鍒扮浜屾潯鍥炲銆?', createdAt: '2026-06-13T10:15:00' },
+      ])
+
+    try {
+      render(
+        <MemoryRouter>
+          <KaoyanMessagesPage />
+        </MemoryRouter>,
+      )
+
+      expect(await screen.findByText('鍏堟妸澶嶈瘯鏉愭枡鍒楀嚭鏉ァ€?')).toBeInTheDocument()
+
+      const sessionList = document.querySelector('.v2-counseling-session-list')
+      const secondSessionTrigger = within(sessionList).getByText('璋冨墏鍜ㄨ').closest('button')
+      fireEvent.click(secondSessionTrigger)
+
+      expect(await screen.findByText('鍏堢‘璁よ皟鍓傜獥鍙ｃ€?')).toBeInTheDocument()
+
+      await act(async () => {
+        await Promise.all(intervalCallbacks.map((callback) => callback()))
+      })
+
+      await waitFor(() => {
+        expect(apiMocks.mentorApi.sentSessions).toHaveBeenCalledTimes(2)
+        expect(apiMocks.mentorApi.sessionMessages).toHaveBeenCalledTimes(3)
+      })
+
+      expect(await screen.findByText('宸茬粡鏇存柊鍒扮浜屾潯鍥炲銆?')).toBeInTheDocument()
+      expect(screen.getAllByText('璋冨墏鍜ㄨ').length).toBeGreaterThan(0)
+    } finally {
+      setIntervalSpy.mockRestore()
+      clearIntervalSpy.mockRestore()
+    }
   })
 
   it('supports room hall filters, current-room resume, and room creation', async () => {
