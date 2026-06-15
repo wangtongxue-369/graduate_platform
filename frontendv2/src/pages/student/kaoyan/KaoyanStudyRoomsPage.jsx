@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { kaoyanApi, studyRoomApi } from '@legacy/lib/api.js'
 import PageIntro from '@/components/PageIntro.jsx'
+import KaoyanStudyRoomCreateModal from '@/components/kaoyan/KaoyanStudyRoomCreateModal.jsx'
 import {
   createEmptyRoomForm,
   createKaoyanSchoolPreviewRows,
@@ -14,7 +15,6 @@ import {
   fallbackDataNotice,
   formatDateTimeLabel,
   previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -72,6 +72,9 @@ export default function KaoyanStudyRoomsPage() {
   const [notice, setNotice] = useState(previewDataNotice('同频自习室'))
   const [loading, setLoading] = useState(false)
   const [creatingRoom, setCreatingRoom] = useState(false)
+  const [createError, setCreateError] = useState('')
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const currentRoomId = currentRoom?.roomId || currentRoom?.id || ''
 
   useEffect(() => {
     let active = true
@@ -120,7 +123,7 @@ export default function KaoyanStudyRoomsPage() {
         setTotalPages(Math.max(1, Number(roomData?.totalPages || 1)))
         setCurrentRoom(currentRoomData || null)
         setCreatedRooms(Array.isArray(createdRoomsData) ? createdRoomsData : [])
-        setNotice(remoteDataNotice('同频自习室'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         const filteredRows = filterRooms(previewRooms, appliedFilters)
@@ -169,14 +172,34 @@ export default function KaoyanStudyRoomsPage() {
     navigate(`/station/kaoyan/support/rooms/${roomId}`)
   }
 
+  function handleOpenCreateModal() {
+    setCreateError('')
+    setIsCreateModalOpen(true)
+  }
+
+  function handleCloseCreateModal() {
+    if (creatingRoom) return
+    setCreateError('')
+    setIsCreateModalOpen(false)
+  }
+
+  function updateRoomForm(key, value) {
+    setRoomForm((current) => ({
+      ...current,
+      [key]: value,
+    }))
+  }
+
   async function handleCreateRoom(event) {
     event.preventDefault()
     if (!canUseRemote || !token) return
+
     if (!roomForm.name.trim()) {
-      setNotice('请先填写房间名称。')
+      setCreateError('请先填写房间名称。')
       return
     }
 
+    setCreateError('')
     setCreatingRoom(true)
     try {
       const room = await studyRoomApi.createRoom({
@@ -185,9 +208,12 @@ export default function KaoyanStudyRoomsPage() {
         major: roomForm.major.trim() || null,
       }, token)
       setRoomForm(createEmptyRoomForm())
+      setIsCreateModalOpen(false)
       navigate(`/station/kaoyan/support/rooms/${room.id}`)
     } catch (error) {
-      setNotice(error.message || '自习室创建失败')
+      const message = error.message || '自习室创建失败。'
+      setCreateError(message)
+      setNotice(message)
     } finally {
       setCreatingRoom(false)
     }
@@ -202,18 +228,18 @@ export default function KaoyanStudyRoomsPage() {
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '同频自习室' },
           ]}
-          title="找房间、继续在房、创建房间都放回同一个同频自习室大厅。"
-          lead="进入自习室前先在这里完成筛选、续接当前房间和新建房间，进房后只保留实时学习与讨论。"
+          title="找房间和筛房间都留在大厅，创建房间改成更轻的弹窗动作。"
+          lead="主区只保留结果列表，右侧负责筛选与快捷操作，进入房间后再继续实时学习和讨论。"
           actions={(
             <>
-              <Link className="v2-secondary-link" to="/station/kaoyan/support/mentors">去 1v1咨询</Link>
+              <Link className="v2-secondary-link" to="/station/kaoyan/support/mentors">去 1v1 咨询</Link>
               <Link className="v2-secondary-link" to="/station/kaoyan/support/messages">咨询消息</Link>
             </>
           )}
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
-        {loading ? <div className="v2-status-note">正在刷新自习室大厅…</div> : null}
+        {loading ? <div className="v2-status-note">正在刷新自习室大厅...</div> : null}
 
         <section className="v2-summary-strip" aria-label="自习室大厅摘要">
           <article className="v2-summary-card">
@@ -223,13 +249,13 @@ export default function KaoyanStudyRoomsPage() {
           </article>
           <article className="v2-summary-card">
             <span>当前在房</span>
-            <strong>{currentRoom?.name || '暂无'}</strong>
-            <p>如果已经在某个房间学习，可以从右侧继续返回。</p>
+            <strong>{currentRoom?.name || (currentRoomId ? `房间 ${currentRoomId}` : '暂无')}</strong>
+            <p>如果已经在某个房间学习，可以直接从右侧快捷续回。</p>
           </article>
           <article className="v2-summary-card">
             <span>我创建的房间</span>
             <strong>{createdRooms.length}</strong>
-            <p>这里会保留你创建过的开放房间，便于继续管理。</p>
+            <p>自己创建过的房间会保留在右侧快捷入口里。</p>
           </article>
         </section>
 
@@ -244,7 +270,7 @@ export default function KaoyanStudyRoomsPage() {
 
           <div className="v2-ledger-card">
             {rows.map((item) => (
-              <article className="v2-ledger-row v2-ledger-row--material" key={item.id}>
+              <article className="v2-ledger-row v2-ledger-row--material v2-room-ledger-row" key={item.id}>
                 <div className="v2-ledger-row__main">
                   <strong>{item.name}</strong>
                   <p>{item.schoolName} / {item.major}</p>
@@ -273,7 +299,7 @@ export default function KaoyanStudyRoomsPage() {
             ))}
             {!rows.length ? (
               <article className="v2-empty-card">
-                <p>当前筛选条件下还没有匹配的自习室，可以先放宽筛选或直接右侧创建。</p>
+                <p>当前筛选条件下还没有匹配的自习室，可以先放宽筛选或从右侧新建一间。</p>
               </article>
             ) : null}
           </div>
@@ -301,13 +327,27 @@ export default function KaoyanStudyRoomsPage() {
       </div>
 
       <aside className="v2-side-column">
-        <section className="v2-side-card">
-          <p className="v2-kicker">筛选条件</p>
+        <section className="v2-side-card v2-room-filter-card">
+          <div className="v2-side-card__head">
+            <div>
+              <p className="v2-kicker">筛选条件</p>
+              <h3>先缩小范围，再决定进入或创建</h3>
+            </div>
+            <button
+              className="v2-segment-button is-active"
+              disabled={!canUseRemote}
+              type="button"
+              onClick={handleOpenCreateModal}
+            >
+              新建房间
+            </button>
+          </div>
+
           <form className="v2-filter-form" onSubmit={handleSearch}>
             <label className="v2-field">
-              <span>院校筛选</span>
+              <span>目标院校</span>
               <select
-                aria-label="院校筛选"
+                aria-label="目标院校"
                 value={draftFilters.schoolId}
                 onChange={(event) => updateDraftFilter('schoolId', event.target.value)}
               >
@@ -331,87 +371,69 @@ export default function KaoyanStudyRoomsPage() {
               <button className="v2-segment-button" type="button" onClick={resetFilters}>清空</button>
             </div>
           </form>
-        </section>
 
-        <section className="v2-side-card">
-          <p className="v2-kicker">当前在房</p>
-          {currentRoom?.id || currentRoom?.roomId ? (
-            <div className="v2-check-list">
-              <div className="v2-check-row">
-                <strong>已加入房间</strong>
-                <span>当前房间：{currentRoom.name || `房间 ${currentRoom.roomId || currentRoom.id}`}</span>
-              </div>
-              <div className="v2-check-row">
-                <strong>状态说明</strong>
-                <span>你已经在房间中，可以直接继续。</span>
-              </div>
+          <div className="v2-room-side-divider" />
+
+          <section className="v2-room-side-section" aria-label="当前在房快捷入口">
+            <div className="v2-room-side-section__head">
+              <strong>当前在房</strong>
+              <span>{currentRoomId ? '可续回' : '暂无'}</span>
+            </div>
+            <p>
+              {currentRoomId
+                ? `当前房间：${currentRoom.name || `房间 ${currentRoomId}`}`
+                : '当前没有正在进行中的房间。'}
+            </p>
+            {currentRoomId ? (
               <button
                 className="v2-segment-button is-active"
                 type="button"
-                onClick={() => handleEnterRoom(currentRoom.roomId || currentRoom.id)}
+                onClick={() => handleEnterRoom(currentRoomId)}
               >
                 继续当前房间
               </button>
+            ) : null}
+          </section>
+
+          <section className="v2-room-side-section" aria-label="我创建的房间快捷入口">
+            <div className="v2-room-side-section__head">
+              <strong>我创建的房间</strong>
+              <span>{`${createdRooms.length} 间`}</span>
             </div>
-          ) : (
-            <p>当前没有正在进行中的自习室会话。</p>
-          )}
-        </section>
-
-        <section className="v2-side-card">
-          <p className="v2-kicker">我创建的房间</p>
-          <div className="v2-check-list">
-            {createdRooms.map((item) => (
-              <div className="v2-check-row" key={item.id}>
-                <strong>{item.name}</strong>
-                <span>{item.schoolName || '院校待补充'} / {item.major || '专业待补充'}</span>
-                <span>{formatDateTimeLabel(item.createdAt)}</span>
-              </div>
-            ))}
-            {!createdRooms.length ? <p>当前还没有自己创建的房间。</p> : null}
-          </div>
-        </section>
-
-        <section className="v2-side-card">
-          <p className="v2-kicker">创建房间</p>
-          <form className="v2-filter-form" onSubmit={handleCreateRoom}>
-            <label className="v2-field">
-              <span>房间名称</span>
-              <input
-                aria-label="房间名称"
-                type="text"
-                value={roomForm.name}
-                onChange={(event) => setRoomForm((current) => ({ ...current, name: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>创建院校</span>
-              <select
-                aria-label="创建院校"
-                value={roomForm.schoolId}
-                onChange={(event) => setRoomForm((current) => ({ ...current, schoolId: event.target.value }))}
-              >
-                <option value="">暂不指定</option>
-                {schoolOptions.map((item) => (
-                  <option key={`create-${item.id}-${item.name}`} value={String(item.id)}>{item.name}</option>
+            {createdRooms.length ? (
+              <div className="v2-room-mini-list">
+                {createdRooms.map((item) => (
+                  <button
+                    className="v2-room-mini-button"
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleEnterRoom(item.id)}
+                  >
+                    <strong>{item.name}</strong>
+                    <span>{item.schoolName || '院校待补充'} / {item.major || '专业待补充'}</span>
+                    <small>{formatDateTimeLabel(item.createdAt)}</small>
+                  </button>
                 ))}
-              </select>
-            </label>
-            <label className="v2-field">
-              <span>创建专业</span>
-              <input
-                aria-label="创建专业"
-                type="text"
-                value={roomForm.major}
-                onChange={(event) => setRoomForm((current) => ({ ...current, major: event.target.value }))}
-              />
-            </label>
-            <button className="v2-segment-button is-active" disabled={creatingRoom || !canUseRemote} type="submit">
-              {creatingRoom ? '创建中…' : '创建并进入'}
-            </button>
-          </form>
+              </div>
+            ) : (
+              <p>当前还没有自己创建的房间，先筛选后也可以直接新建一间。</p>
+            )}
+          </section>
         </section>
       </aside>
+
+      {isCreateModalOpen ? (
+        <KaoyanStudyRoomCreateModal
+          canUseRemote={canUseRemote}
+          error={createError}
+          form={roomForm}
+          saving={creatingRoom}
+          schoolOptions={schoolOptions}
+          onChange={updateRoomForm}
+          onClose={handleCloseCreateModal}
+          onSubmit={handleCreateRoom}
+        />
+      ) : null}
     </>
   )
 }
