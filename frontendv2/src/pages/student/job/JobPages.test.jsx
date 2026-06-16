@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import JobStationOverviewPage from './JobStationOverviewPage.jsx'
+import JobResumePage from './JobResumePage.jsx'
 
 const authState = vi.hoisted(() => ({
   user: {
@@ -113,5 +114,28 @@ describe('student employment pages', () => {
     expect(screen.getByText('最近提醒')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /简历中心/ })).toHaveAttribute('href', '/station/job/resume')
     expect(screen.getByRole('link', { name: /岗位推荐/ })).toHaveAttribute('href', '/station/job/recommendations')
+  })
+
+  it('renders the resume center with edit and preview modes plus attachment actions', async () => {
+    apiMocks.employmentApi.resume.mockResolvedValue({
+      targetRole: '平台后端工程师',
+      expectedCities: '上海, 杭州',
+      expectedIndustries: '教育科技',
+      baseInfo: '张三 / 华东师范大学',
+      selfEvaluation: '擅长 Spring Boot 与数据看板。',
+      resumeFile: {
+        hasFile: true,
+        fileName: 'resume-final.pdf',
+        fileSize: 409600,
+        uploadedAt: '2026-06-12T09:30:00',
+      },
+    })
+
+    renderRoute('/station/job/resume', <JobResumePage />)
+
+    expect(await screen.findByDisplayValue('平台后端工程师')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '预览' })).toBeInTheDocument()
+    expect(screen.getByText('resume-final.pdf')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '导出 Word' })).toBeInTheDocument()
   })
 })
