@@ -215,7 +215,7 @@ export function normalizeCommunityNotification(item) {
     id: item?.id,
     title: item?.title || item?.subject || '社区通知',
     content: item?.content || item?.message || '',
-    read: Boolean(item?.read ?? item?.isRead),
+    read: Boolean(item?.read ?? item?.isRead ?? item?.readFlag),
     createdAt: item?.createdAt || item?.time || null,
     link: item?.link || item?.url || '',
     type: item?.type || 'community',

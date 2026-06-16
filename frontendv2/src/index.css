@@ -3045,6 +3045,29 @@ html[data-theme="dark"] .v2-plan-side-fact {
   color: var(--v2-soft-strong);
 }
 
+.v2-route-tab__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.v2-route-tab__badge {
+  min-width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #d84a4a;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 8px 18px rgba(216, 74, 74, 0.24);
+}
+
 .v2-route-tab small {
   color: var(--v2-soft);
 }
@@ -3224,6 +3247,45 @@ html[data-theme="dark"] .v2-plan-side-fact {
 .v2-check-row strong,
 .v2-check-row span {
   text-align: left;
+}
+
+.v2-composer-side-column > .v2-side-card:nth-of-type(2) {
+  padding: 16px 16px 14px;
+}
+
+.v2-composer-side-column > .v2-side-card:nth-of-type(2) .v2-composer-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.v2-composer-side-column > .v2-side-card:nth-of-type(2) .v2-check-row {
+  gap: 4px;
+  padding: 0;
+  border-top: 0;
+  align-content: start;
+}
+
+.v2-composer-side-column > .v2-side-card:nth-of-type(2) .v2-check-row:first-child,
+.v2-composer-side-column > .v2-side-card:nth-of-type(2) .v2-check-row:nth-child(2) {
+  grid-column: 1 / -1;
+}
+
+.v2-composer-side-column > .v2-side-card:nth-of-type(2) .v2-check-row strong {
+  font-size: 0.8rem;
+  color: var(--v2-soft);
+}
+
+.v2-composer-side-column > .v2-side-card:nth-of-type(2) .v2-check-row span {
+  line-height: 1.45;
+  color: var(--v2-text);
+}
+
+.v2-composer-side-column > .v2-side-card:nth-of-type(2) .v2-check-row:nth-child(2) span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .v2-check-row--selectable {

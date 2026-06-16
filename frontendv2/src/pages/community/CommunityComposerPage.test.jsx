@@ -9,6 +9,7 @@ const authState = {
 }
 
 const categoriesMock = vi.fn()
+const notificationsMock = vi.fn()
 
 vi.mock('@legacy/context/AuthContext.jsx', () => ({
   useAuth: () => authState,
@@ -18,6 +19,7 @@ vi.mock('@legacy/lib/api.js', () => ({
   communityApi: {
     categories: (...args) => categoriesMock(...args),
     createPost: vi.fn(),
+    notifications: (...args) => notificationsMock(...args),
   },
 }))
 
@@ -40,6 +42,7 @@ vi.mock('@/components/SubnavTabs.jsx', () => ({
 
 vi.mock('@/lib/communityPreview.js', () => ({
   createCommunityPreviewCategories: () => [],
+  createCommunityPreviewPosts: () => [],
   shouldForceCommunityPreview: () => false,
 }))
 
@@ -48,9 +51,18 @@ describe('CommunityComposerPage', () => {
     authState.isAuthed = true
     authState.token = 'real-token'
     categoriesMock.mockReset()
+    notificationsMock.mockReset()
     categoriesMock.mockResolvedValue([
       { id: 'job', code: 'job', name: 'Job' },
     ])
+    notificationsMock.mockResolvedValue({
+      content: [],
+      unreadCount: 0,
+      totalElements: 0,
+      totalPages: 1,
+      number: 0,
+      size: 1,
+    })
   })
 
   it('adds tag slots and keeps tag values separate', async () => {

@@ -12,8 +12,9 @@ import {
   communityVisibilityOptions,
   normalizeCommunityCategory,
 } from '@/lib/communityUi.js'
+import { useCommunitySubnavItems } from '@/lib/communityTabs.js'
 
-const communityTabs = [
+const communityTabItems = [
   { label: '社区目录', to: '/community', note: '浏览与筛选' },
   { label: '发布帖子', to: '/community/new', note: '提交正文与附件' },
   { label: '消息通知', to: '/community/notifications', note: '查看互动提醒' },
@@ -49,6 +50,7 @@ export default function CommunityComposerPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const isForcedPreview = shouldForceCommunityPreview(token)
+  const communityTabs = useCommunitySubnavItems(communityTabItems)
 
   useEffect(() => {
     let active = true
@@ -386,8 +388,8 @@ export default function CommunityComposerPage() {
         </section>
       </div>
 
-      <aside className="v2-side-column">
-        <section className="v2-side-card">
+      <aside className="v2-side-column v2-composer-side-column">
+        <section className="v2-side-card v2-side-card--composer-summary">
           <p className="v2-kicker">提交控制</p>
           <div className="v2-side-action-stack">
             <button
@@ -416,7 +418,7 @@ export default function CommunityComposerPage() {
 
         <section className="v2-side-card">
           <p className="v2-kicker">提交前确认</p>
-          <div className="v2-check-list">
+          <div className="v2-composer-summary">
             <div className="v2-check-row">
               <strong>当前身份</strong>
               <span>{identitySummary}</span>
