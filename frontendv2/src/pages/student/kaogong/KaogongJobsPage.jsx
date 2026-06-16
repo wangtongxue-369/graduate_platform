@@ -8,8 +8,8 @@ import {
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 import {
+  createDefaultJobCriteriaFromUser,
   createKaogongJobPreviewRows,
-  defaultJobCriteria,
   normalizeFavoriteJobs,
   normalizeJobRows,
 } from '@/pages/student/kaogong/kaogongPageData.js'
@@ -21,10 +21,11 @@ const jobCategoryOptions = ['', '综合管理', '行政执法', '专业技术']
 const unitTypeOptions = ['', '中央机关直属机构', '地方机关', '事业单位']
 
 export default function KaogongJobsPage() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
-  const [draftFilters, setDraftFilters] = useState(defaultJobCriteria)
-  const [appliedFilters, setAppliedFilters] = useState(defaultJobCriteria)
+  const profileCriteria = createDefaultJobCriteriaFromUser(user)
+  const [draftFilters, setDraftFilters] = useState(() => profileCriteria)
+  const [appliedFilters, setAppliedFilters] = useState(() => profileCriteria)
   const [rows, setRows] = useState(createKaogongJobPreviewRows())
   const [favoriteJobs, setFavoriteJobs] = useState([])
   const [histories, setHistories] = useState([])
@@ -110,8 +111,9 @@ export default function KaogongJobsPage() {
   }
 
   function resetFilters() {
-    setDraftFilters(defaultJobCriteria)
-    setAppliedFilters(defaultJobCriteria)
+    const nextCriteria = createDefaultJobCriteriaFromUser(user)
+    setDraftFilters(nextCriteria)
+    setAppliedFilters(nextCriteria)
   }
 
   function updateDraftFilter(key, value) {
@@ -129,7 +131,8 @@ export default function KaogongJobsPage() {
     ['岗位类别', appliedFilters.jobCategory],
     ['单位类型', appliedFilters.unitType],
   ].filter(([, value]) => Boolean(value))
-  const summaryText = `共 ${rows.length} 个岗位 · 最高匹配 ${rows[0]?.matchScore || 0} · 已收藏 ${favoriteJobs.length}`
+  const summaryText = `共 ${rows.length} 个岗位 · 最高匹配 ${rows[0]?.matchScore || 0}% · 已收藏 ${favoriteJobs.length}`
+  const hasProfileDefaults = Object.values(profileCriteria).some(Boolean)
 
   return (
     <>
@@ -158,7 +161,10 @@ export default function KaogongJobsPage() {
         <section className="v2-feed-list" aria-label="岗位匹配结果">
           {rows.map((item) => (
             <article className="v2-feed-item v2-feed-item--kaogong" key={item.id}>
-              <div className="v2-feed-index">{item.matchScore}</div>
+              <div className="v2-feed-index v2-feed-index--match">
+                <strong>{item.matchScore}%</strong>
+                <span>匹配度</span>
+              </div>
               <div className="v2-feed-body">
                 <strong>{item.jobName}</strong>
                 <p>{item.recruitingUnit}</p>
@@ -202,6 +208,7 @@ export default function KaogongJobsPage() {
             <div>
               <p className="v2-kicker">筛选条件</p>
               <h3>调整岗位范围</h3>
+              <p>{hasProfileDefaults ? '已根据个人信息预填，可继续修改。' : '完善个人信息后会自动预填。'}</p>
             </div>
           </div>
           <form className="v2-filter-form" onSubmit={handleApplyFilters}>

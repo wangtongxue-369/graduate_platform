@@ -12,6 +12,51 @@ export const defaultJobCriteria = {
   unitType: '',
 }
 
+function firstText(...values) {
+  return values.find((value) => String(value || '').trim()) || ''
+}
+
+function normalizeEducation(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+  if (text.includes('博士')) return '博士'
+  if (text.includes('硕士') || text.includes('研究生')) return '硕士'
+  if (text.includes('本科') || text.includes('学士')) return '本科'
+  if (text.includes('专科') || text.includes('大专')) return '大专'
+  return ''
+}
+
+function normalizeDegree(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+  if (text.includes('博士')) return '博士'
+  if (text.includes('硕士')) return '硕士'
+  if (text.includes('学士') || text.includes('本科')) return '学士'
+  return ''
+}
+
+function normalizePoliticalStatus(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+  if (text.includes('党员')) return '中共党员'
+  if (text.includes('团员')) return '共青团员'
+  if (text.includes('群众')) return '群众'
+  return ''
+}
+
+export function createDefaultJobCriteriaFromUser(user = {}) {
+  const educationSource = firstText(user.education, user.educationLevel, user.degree, user.grade)
+  return {
+    ...defaultJobCriteria,
+    education: normalizeEducation(educationSource),
+    degree: normalizeDegree(firstText(user.degree, user.degreeLevel, educationSource)),
+    major: String(firstText(user.major, user.majorName)).trim(),
+    region: String(firstText(user.intentRegion, user.region, user.city)).trim(),
+    household: String(firstText(user.household, user.householdRegister, user.originPlace, user.birthPlace, user.nativePlace)).trim(),
+    politicalStatus: normalizePoliticalStatus(firstText(user.politicalStatus, user.politicsStatus)),
+  }
+}
+
 export const interviewStatusOptions = [
   { value: '', label: '全部' },
   { value: 'OPEN', label: '开放中' },

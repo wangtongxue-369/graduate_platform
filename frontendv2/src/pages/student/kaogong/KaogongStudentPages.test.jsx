@@ -250,6 +250,48 @@ describe('kaogong student split pages', () => {
     })
   })
 
+  it('prefills job filters from the user profile and keeps them editable', async () => {
+    authState.user = {
+      ...authState.user,
+      education: '本科',
+      degree: '学士',
+      major: '计算机科学',
+      intentRegion: '北京',
+      household: '上海生源',
+      politicalStatus: '中共党员',
+    }
+
+    renderPage(<KaogongJobsPage />)
+
+    expect(screen.getByLabelText('学历')).toHaveValue('本科')
+    expect(screen.getByLabelText('学位')).toHaveValue('学士')
+    expect(screen.getByLabelText('专业')).toHaveValue('计算机科学')
+    expect(screen.getByLabelText('地区偏好')).toHaveValue('北京')
+    expect(screen.getByLabelText('户籍/生源地')).toHaveValue('上海生源')
+    expect(screen.getByLabelText('政治面貌')).toHaveValue('中共党员')
+    expect(screen.getByText('已根据个人信息预填，可继续修改。')).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.matchJobs).toHaveBeenCalledWith(expect.objectContaining({
+        education: '本科',
+        degree: '学士',
+        major: '计算机科学',
+        region: '北京',
+        household: '上海生源',
+        politicalStatus: '中共党员',
+      }), 'remote-token')
+    })
+
+    fireEvent.change(screen.getByLabelText('地区偏好'), { target: { value: '上海' } })
+    fireEvent.click(screen.getByRole('button', { name: '应用筛选' }))
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.matchJobs).toHaveBeenLastCalledWith(expect.objectContaining({
+        region: '上海',
+      }), 'remote-token')
+    })
+  })
+
   it('submits the legacy matching payload when the redesigned filter controller is applied', async () => {
     renderPage(<KaogongJobsPage />)
 
@@ -330,6 +372,8 @@ describe('kaogong student split pages', () => {
     await waitFor(() => {
       expect(screen.getByText('户籍/生源地：上海生源')).toBeInTheDocument()
     })
+    expect(screen.getByText('88%')).toBeInTheDocument()
+    expect(screen.getByText('匹配度')).toBeInTheDocument()
   })
 
   it('supports job favorites and match history in the jobs workspace', async () => {
@@ -943,14 +987,14 @@ describe('kaogong student split pages', () => {
     expect(await screen.findByRole('button', { name: /创建房间/ })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /创建房间/ }))
 
-    const createForm = screen.getByRole('button', { name: '创建并进入讨论区' }).closest('form')
+    const createForm = screen.getByRole('button', { name: '创建并进入房间' }).closest('form')
     expect(createForm).not.toBeNull()
     const formScope = within(createForm)
 
     fireEvent.change(formScope.getByLabelText('房间标题'), { target: { value: '无领导晚场' } })
     fireEvent.change(formScope.getByLabelText('岗位方向'), { target: { value: '无领导/ 综合管理岗' } })
     fireEvent.change(formScope.getByLabelText('面试时间'), { target: { value: '2026-06-20T20:00' } })
-    fireEvent.click(formScope.getByRole('button', { name: '创建并进入讨论区' }))
+    fireEvent.click(formScope.getByRole('button', { name: '创建并进入房间' }))
 
     await waitFor(() => {
       expect(apiMocks.kaogongApi.createInterviewRoom).toHaveBeenCalled()
