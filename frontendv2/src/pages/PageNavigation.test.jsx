@@ -24,6 +24,23 @@ vi.mock('@legacy/context/AuthContext.jsx', () => ({
 }))
 
 vi.mock('@legacy/lib/api.js', () => ({
+  kaogongApi: {
+    favoriteJobs: vi.fn(),
+    favoriteScoreLines: vi.fn(),
+    mySubscriptions: vi.fn(),
+    calendarExamGroupsPage: vi.fn(),
+    myInterviewRooms: vi.fn(),
+    interviewMessagesPage: vi.fn(),
+    matchJobs: vi.fn(),
+    jobMatchHistory: vi.fn(),
+    scoreLinesPage: vi.fn(),
+    notifications: vi.fn(),
+    interviewRoomsPage: vi.fn(),
+    interviewFeedbackPage: vi.fn(),
+    interviewRooms: vi.fn(),
+    interviewAttachmentsPage: vi.fn(),
+    interviewRoomStreamUrl: vi.fn(() => 'http://localhost/kaogong-room-stream'),
+  },
   kaoyanApi: {
     schoolsPage: vi.fn(),
     scoreLinesPage: vi.fn(),
@@ -109,6 +126,34 @@ describe('page-level return paths', () => {
     expect(screen.getByRole('link', { name: '1v1咨询' })).toHaveAttribute('href', '/station/kaoyan/support/mentors')
     expect(screen.getByRole('link', { name: '同频自习室' })).toHaveAttribute('href', '/station/kaoyan/support/rooms')
     expect(screen.queryByRole('link', { name: '陪跑协同' })).not.toBeInTheDocument()
+  })
+
+  it('renders the dedicated kaogong interview room route from the app router', async () => {
+    render(
+      <MemoryRouter initialEntries={['/station/kaogong/interviews/rooms/7']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '模拟面试房间',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('keeps kaogong navigation grouped while pointing to the student route hubs', async () => {
+    render(
+      <MemoryRouter initialEntries={['/station/kaogong']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('link', { name: '考公总览' })).toHaveAttribute('href', '/station/kaogong')
+    expect(screen.getByRole('link', { name: '岗位匹配' })).toHaveAttribute('href', '/station/kaogong/jobs')
+    expect(screen.getByRole('link', { name: '分数线账本' })).toHaveAttribute('href', '/station/kaogong/score-lines')
+    expect(screen.getByRole('link', { name: '考试日历' })).toHaveAttribute('href', '/station/kaogong/calendar')
+    expect(screen.getByRole('link', { name: '模拟面试' })).toHaveAttribute('href', '/station/kaogong/interviews')
   })
 
   it('uses the current station route for sidebar grouping instead of the default target', async () => {

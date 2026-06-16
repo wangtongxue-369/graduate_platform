@@ -67,6 +67,7 @@ const JobResumePage = lazyNamed(loadJobStationPage, 'JobResumePage')
 const KaogongStationPage = lazyDefault(loadKaogongStationPage)
 const KaogongCalendarPage = lazyNamed(loadKaogongStationPage, 'KaogongCalendarPage')
 const KaogongInterviewsPage = lazyNamed(loadKaogongStationPage, 'KaogongInterviewsPage')
+const KaogongInterviewRoomPage = lazyNamed(loadKaogongStationPage, 'KaogongInterviewRoomPage')
 const KaogongJobsPage = lazyNamed(loadKaogongStationPage, 'KaogongJobsPage')
 const KaogongScoreLinesPage = lazyNamed(loadKaogongStationPage, 'KaogongScoreLinesPage')
 
@@ -95,7 +96,7 @@ const StudyAbroadTimelinePage = lazyNamed(loadStudyAbroadStationPage, 'StudyAbro
 
 const AdminMainPage = lazyDefault(loadAdminMainPage)
 const AdminEmploymentPage = lazyNamed(loadAdminMainPage, 'AdminEmploymentPage')
-const AdminKaogongPage = lazyNamed(loadAdminMainPage, 'AdminKaogongPage')
+const AdminKaogongPage = lazyDefault(() => import('@/pages/admin/AdminKaogongPage.jsx'))
 const AdminQuestionBanksPage = lazyDefault(loadAdminQuestionBanksPage)
 const AdminQuestionBankWorkspacePage = lazyDefault(loadAdminQuestionBankWorkspacePage)
 
@@ -227,6 +228,7 @@ export default function App() {
           <Route path="/station/kaogong/score-lines" element={<KaogongScoreLinesPage />} />
           <Route path="/station/kaogong/calendar" element={<KaogongCalendarPage />} />
           <Route path="/station/kaogong/interviews" element={<KaogongInterviewsPage />} />
+          <Route path="/station/kaogong/interviews/rooms/:roomId" element={<KaogongInterviewRoomPage />} />
           <Route path="/station/studyabroad" element={<StudyAbroadStationPage />} />
           <Route path="/station/studyabroad/programs" element={<StudyAbroadProgramsPage />} />
           <Route path="/station/studyabroad/cases" element={<StudyAbroadCasesPage />} />

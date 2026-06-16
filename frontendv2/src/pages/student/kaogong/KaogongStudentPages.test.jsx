@@ -1,0 +1,496 @@
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import KaogongOverviewPage from '@/pages/student/kaogong/KaogongOverviewPage.jsx'
+import {
+  KaogongCalendarPage,
+  KaogongInterviewsPage,
+  KaogongInterviewRoomPage,
+  KaogongJobsPage,
+  KaogongScoreLinesPage,
+} from '@/pages/student/kaogong/KaogongStationPage.jsx'
+
+const authState = vi.hoisted(() => ({
+  user: {
+    id: 9,
+    name: '考公测试用户',
+    role: 'user',
+    target: 'kaogong',
+  },
+  token: 'remote-token',
+}))
+
+const apiMocks = vi.hoisted(() => ({
+  kaogongApi: {
+    favoriteJobs: vi.fn(),
+    favoriteScoreLines: vi.fn(),
+    mySubscriptions: vi.fn(),
+    calendarExamGroupsPage: vi.fn(),
+    myInterviewRooms: vi.fn(),
+    interviewMessagesPage: vi.fn(),
+    matchJobs: vi.fn(),
+    favoriteJob: vi.fn(),
+    unfavoriteJob: vi.fn(),
+    jobMatchHistory: vi.fn(),
+    scoreLinesPage: vi.fn(),
+    favoriteScoreLine: vi.fn(),
+    unfavoriteScoreLine: vi.fn(),
+    notifications: vi.fn(),
+    subscribeCalendar: vi.fn(),
+    cancelSubscription: vi.fn(),
+    interviewRoomsPage: vi.fn(),
+    createInterviewRoom: vi.fn(),
+    joinInterviewRoom: vi.fn(),
+    interviewRooms: vi.fn(),
+    interviewAttachmentsPage: vi.fn(),
+    interviewFeedbackPage: vi.fn(),
+    sendInterviewMessage: vi.fn(),
+    uploadInterviewAttachment: vi.fn(),
+    downloadInterviewAttachment: vi.fn(),
+    addInterviewFeedback: vi.fn(),
+    updateInterviewRoomStatus: vi.fn(),
+    interviewRoomStreamUrl: vi.fn(() => 'http://localhost/kaogong-room-stream'),
+  },
+}))
+
+vi.mock('@legacy/context/AuthContext.jsx', () => ({
+  useAuth: () => authState,
+}))
+
+vi.mock('@legacy/lib/api.js', () => apiMocks)
+
+class EventSourceMock {
+  addEventListener() {}
+
+  close() {}
+}
+
+vi.stubGlobal('EventSource', EventSourceMock)
+
+function renderPage(node) {
+  return render(
+    <MemoryRouter>
+      {node}
+    </MemoryRouter>,
+  )
+}
+
+describe('kaogong student split pages', () => {
+  beforeEach(() => {
+    authState.user = {
+      id: 9,
+      name: '考公测试用户',
+      role: 'user',
+      target: 'kaogong',
+    }
+    authState.token = 'remote-token'
+
+    Object.values(apiMocks).forEach((group) => {
+      Object.values(group).forEach((fn) => {
+        if (typeof fn?.mockReset === 'function') fn.mockReset()
+      })
+    })
+
+    apiMocks.kaogongApi.favoriteJobs.mockResolvedValue([])
+    apiMocks.kaogongApi.favoriteScoreLines.mockResolvedValue([])
+    apiMocks.kaogongApi.mySubscriptions.mockResolvedValue([])
+    apiMocks.kaogongApi.calendarExamGroupsPage.mockResolvedValue({
+      content: [],
+      totalElements: 0,
+      totalPages: 1,
+    })
+    apiMocks.kaogongApi.myInterviewRooms.mockResolvedValue([])
+    apiMocks.kaogongApi.interviewMessagesPage.mockResolvedValue({
+      content: [],
+      totalElements: 0,
+      totalPages: 1,
+    })
+    apiMocks.kaogongApi.matchJobs.mockResolvedValue([])
+    apiMocks.kaogongApi.jobMatchHistory.mockResolvedValue([])
+    apiMocks.kaogongApi.scoreLinesPage.mockResolvedValue({
+      content: [],
+      totalElements: 0,
+      totalPages: 1,
+    })
+    apiMocks.kaogongApi.notifications.mockResolvedValue([])
+    apiMocks.kaogongApi.interviewRoomsPage.mockResolvedValue({
+      content: [],
+      totalElements: 0,
+      totalPages: 1,
+    })
+    apiMocks.kaogongApi.interviewRooms.mockResolvedValue([])
+    apiMocks.kaogongApi.interviewAttachmentsPage.mockResolvedValue({
+      content: [],
+      totalElements: 0,
+      totalPages: 1,
+    })
+    apiMocks.kaogongApi.interviewFeedbackPage.mockResolvedValue({
+      content: [],
+      totalElements: 0,
+      totalPages: 1,
+    })
+    apiMocks.kaogongApi.sendInterviewMessage.mockResolvedValue(undefined)
+    apiMocks.kaogongApi.uploadInterviewAttachment.mockResolvedValue(undefined)
+    apiMocks.kaogongApi.addInterviewFeedback.mockResolvedValue(undefined)
+    apiMocks.kaogongApi.updateInterviewRoomStatus.mockResolvedValue({ id: 7, status: 'COMPLETED' })
+  })
+
+  it('renders countdown, favorites, and my room state from backend data', async () => {
+    apiMocks.kaogongApi.favoriteJobs.mockResolvedValue([
+      { id: 1, jobName: '市直综合岗', region: '杭州', recruitingUnit: '杭州市直单位' },
+    ])
+    apiMocks.kaogongApi.favoriteScoreLines.mockResolvedValue([
+      { id: 11, jobName: '杭州综合岗', year: 2025, scoreLine: 128.5, region: '杭州' },
+    ])
+    apiMocks.kaogongApi.mySubscriptions.mockResolvedValue([
+      { id: 91, region: '浙江', examType: '浙江省公务员考试', examYear: '2026', status: 'ACTIVE' },
+    ])
+    apiMocks.kaogongApi.calendarExamGroupsPage.mockResolvedValue({
+      content: [
+        {
+          key: 'zj::exam::2026',
+          region: '浙江',
+          examType: '浙江省公务员考试',
+          year: '2026',
+          events: [
+            { id: 1, nodeType: '报名', title: '报名开始', eventDate: '2026-02-03' },
+          ],
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+    apiMocks.kaogongApi.myInterviewRooms.mockResolvedValue([
+      { id: 7, title: '结构化一组', status: 'OPEN', participantCount: 6 },
+    ])
+    apiMocks.kaogongApi.interviewMessagesPage.mockResolvedValue({
+      content: [
+        { id: 301, senderName: '同伴A', content: '今晚 20:00 继续', createdAt: '2026-06-15T20:00:00' },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+
+    renderPage(<KaogongOverviewPage />)
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.favoriteJobs).toHaveBeenCalledWith('remote-token')
+      expect(apiMocks.kaogongApi.favoriteScoreLines).toHaveBeenCalledWith('remote-token')
+    })
+
+    expect(await screen.findAllByText('结构化一组')).not.toHaveLength(0)
+    expect(screen.getAllByText('市直综合岗').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('杭州综合岗').length).toBeGreaterThan(0)
+    const signalBoard = screen.getByLabelText('考公主站信号板')
+    expect(within(signalBoard).getByText('报名 / 报名开始')).toBeInTheDocument()
+  })
+
+  it('shows a past-due status instead of a negative countdown when subscribed nodes are already over', async () => {
+    apiMocks.kaogongApi.mySubscriptions.mockResolvedValue([
+      { id: 92, region: '浙江', examType: '浙江省公务员考试', examYear: '2020', status: 'ACTIVE' },
+    ])
+    apiMocks.kaogongApi.calendarExamGroupsPage.mockResolvedValue({
+      content: [
+        {
+          key: 'zj::exam::2020',
+          region: '浙江',
+          examType: '浙江省公务员考试',
+          year: '2020',
+          events: [
+            { id: 1, nodeType: '报名', title: '报名开始', eventDate: '2020-02-03' },
+          ],
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+
+    renderPage(<KaogongOverviewPage />)
+
+    const signalBoard = await screen.findByLabelText('考公主站信号板')
+    expect(within(signalBoard).getByText('报名 / 报名开始')).toBeInTheDocument()
+    expect(within(signalBoard).queryByText(/还有 -/)).not.toBeInTheDocument()
+    expect(within(signalBoard).getAllByText(/已过 \d+ 天/).length).toBeGreaterThan(0)
+  })
+
+  it('supports job favorites and match history in the jobs workspace', async () => {
+    apiMocks.kaogongApi.matchJobs.mockResolvedValue([
+      {
+        id: 21,
+        jobName: '税务综合岗',
+        recruitingUnit: '杭州市税务局',
+        region: '杭州',
+        examType: '浙江省公务员考试',
+        recruitCount: 4,
+        educationRequirement: '本科',
+        majorRequirement: '计算机类',
+        matchScore: 92,
+        matchReasons: ['地区偏好匹配', '专业方向匹配'],
+        registrationStart: '2026-02-03',
+        registrationEnd: '2026-02-08',
+        sourceUrl: 'https://example.com/jobs/21',
+      },
+    ])
+    apiMocks.kaogongApi.favoriteJobs
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: 21, jobName: '税务综合岗', region: '杭州' }])
+    apiMocks.kaogongApi.jobMatchHistory.mockResolvedValue([
+      { id: 1, resultCount: 6, createdAt: '2026-06-15T10:00:00' },
+    ])
+
+    renderPage(<KaogongJobsPage />)
+
+    expect(await screen.findByText('税务综合岗')).toBeInTheDocument()
+    expect(screen.getByText('最近匹配')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '收藏岗位' }))
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.favoriteJob).toHaveBeenCalledWith(21, 'remote-token')
+    })
+  })
+
+  it('supports score-line favorites in the ledger workspace', async () => {
+    apiMocks.kaogongApi.scoreLinesPage.mockResolvedValue({
+      content: [
+        {
+          id: 51,
+          jobName: '杭州综合岗',
+          recruitingUnit: '杭州市直单位',
+          region: '杭州',
+          year: 2025,
+          examType: '浙江省公务员考试',
+          scoreLine: 128.5,
+          interviewRatio: '3:1',
+          recruitCount: 4,
+          interviewCount: 12,
+          source: '官方公告',
+          dataNote: '近三年稳定在 128 左右',
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+    apiMocks.kaogongApi.favoriteScoreLines
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: 51, jobName: '杭州综合岗', year: 2025, scoreLine: 128.5 }])
+
+    renderPage(<KaogongScoreLinesPage />)
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.scoreLinesPage).toHaveBeenCalled()
+    })
+    expect(screen.getAllByText('杭州综合岗').length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByRole('button', { name: '收藏分数线' }))
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.favoriteScoreLine).toHaveBeenCalledWith(51, 'remote-token')
+    })
+  })
+
+  it('supports exam subscription actions and reminder updates in the calendar workspace', async () => {
+    apiMocks.kaogongApi.calendarExamGroupsPage.mockResolvedValue({
+      content: [
+        {
+          key: 'zj::exam::2026',
+          region: '浙江',
+          examType: '浙江省公务员考试',
+          year: '2026',
+          events: [
+            { id: 1, nodeType: '报名', title: '报名开始', eventDate: '2026-02-03' },
+            { id: 2, nodeType: '笔试', title: '行测 + 申论', eventDate: '2026-03-12' },
+          ],
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+    apiMocks.kaogongApi.mySubscriptions
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: 91,
+          region: '浙江',
+          examType: '浙江省公务员考试',
+          examYear: '2026',
+          remindBeforeDays: 3,
+          status: 'ACTIVE',
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 91,
+          region: '浙江',
+          examType: '浙江省公务员考试',
+          examYear: '2026',
+          remindBeforeDays: 7,
+          status: 'ACTIVE',
+        },
+      ])
+    apiMocks.kaogongApi.notifications.mockResolvedValue([
+      { id: 201, title: '报名提醒', content: '距离报名开始还有 3 天', createdAt: '2026-01-31T09:00:00' },
+    ])
+
+    renderPage(<KaogongCalendarPage />)
+
+    expect(await screen.findByText('浙江省公务员考试')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '订阅考试' }))
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.subscribeCalendar).toHaveBeenCalledWith({
+        region: '浙江',
+        examType: '浙江省公务员考试',
+        examYear: '2026',
+        remindBeforeDays: 3,
+      }, 'remote-token')
+    })
+
+    expect(await screen.findByLabelText('提醒提前天数 91')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('提醒提前天数 91'), {
+      target: { value: '7' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '保存提醒 91' }))
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.subscribeCalendar).toHaveBeenCalledWith({
+        region: '浙江',
+        examType: '浙江省公务员考试',
+        examYear: '2026',
+        remindBeforeDays: 7,
+      }, 'remote-token')
+    })
+  })
+
+  it('supports current-room continue, create room, and join room from the interview hall', async () => {
+    apiMocks.kaogongApi.interviewRoomsPage.mockResolvedValue({
+      content: [
+        {
+          id: 7,
+          title: '结构化一组',
+          jobDirection: '税务 / 综合管理岗',
+          scheduledAt: '2026-06-20T19:00:00',
+          ownerName: '同伴A',
+          participantCount: 6,
+          status: 'OPEN',
+          description: '今晚继续结构化题组训练',
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+    apiMocks.kaogongApi.myInterviewRooms.mockResolvedValue([
+      { id: 7, title: '结构化一组', status: 'OPEN', participantCount: 6 },
+    ])
+    apiMocks.kaogongApi.createInterviewRoom.mockResolvedValue({ id: 41, title: '无领导晚场', status: 'OPEN' })
+    apiMocks.kaogongApi.joinInterviewRoom.mockResolvedValue({ id: 7, title: '结构化一组', status: 'OPEN' })
+
+    const firstView = render(
+      <MemoryRouter initialEntries={['/station/kaogong/interviews']}>
+        <Routes>
+          <Route path="/station/kaogong/interviews" element={<KaogongInterviewsPage />} />
+          <Route path="/station/kaogong/interviews/rooms/:roomId" element={<div>考公房间占位</div>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findAllByText('结构化一组')).not.toHaveLength(0)
+    expect(screen.getByRole('button', { name: '继续当前房间' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '进入房间 7' }))
+    expect(await screen.findByText('考公房间占位')).toBeInTheDocument()
+    firstView.unmount()
+
+    render(
+      <MemoryRouter initialEntries={['/station/kaogong/interviews']}>
+        <Routes>
+          <Route path="/station/kaogong/interviews" element={<KaogongInterviewsPage />} />
+          <Route path="/station/kaogong/interviews/rooms/:roomId" element={<div>考公房间占位</div>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findAllByText('结构化一组')).not.toHaveLength(0)
+    fireEvent.click(screen.getByRole('button', { name: '新建房间' }))
+
+    const createForm = screen.getByRole('button', { name: '创建并进入' }).closest('form')
+    expect(createForm).not.toBeNull()
+    const formScope = within(createForm)
+
+    fireEvent.change(formScope.getByLabelText('房间标题'), { target: { value: '无领导晚场' } })
+    fireEvent.change(formScope.getByLabelText('岗位方向'), { target: { value: '无领导/ 综合管理岗' } })
+    fireEvent.change(formScope.getByLabelText('面试时间'), { target: { value: '2026-06-20T20:00' } })
+    fireEvent.click(formScope.getByRole('button', { name: '创建并进入' }))
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.createInterviewRoom).toHaveBeenCalled()
+    })
+    expect(await screen.findAllByText('考公房间占位')).not.toHaveLength(0)
+  })
+
+  it('loads messages, attachments, feedback, and send actions in the room workspace', async () => {
+    apiMocks.kaogongApi.interviewRooms.mockResolvedValue([
+      {
+        id: 7,
+        title: '结构化一组',
+        jobDirection: '税务 / 综合管理岗',
+        scheduledAt: '2026-06-20T19:00:00',
+        ownerId: 9,
+        ownerName: '考公测试用户',
+        participantCount: 6,
+        status: 'OPEN',
+        description: '今晚继续结构化',
+      },
+    ])
+    apiMocks.kaogongApi.myInterviewRooms.mockResolvedValue([
+      { id: 7, title: '结构化一组', status: 'OPEN' },
+    ])
+    apiMocks.kaogongApi.interviewMessagesPage.mockResolvedValue({
+      content: [
+        { id: 301, senderId: 9, senderName: '考公测试用户', content: '先过自我介绍', createdAt: '2026-06-15T19:00:00' },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+    apiMocks.kaogongApi.interviewAttachmentsPage.mockResolvedValue({
+      content: [
+        { id: 401, originalName: 'outline.pdf', sizeBytes: 2048, note: '' },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+    apiMocks.kaogongApi.interviewFeedbackPage.mockResolvedValue({
+      content: [
+        {
+          id: 501,
+          reviewerName: '同伴A',
+          score: 88,
+          suggestions: '结尾再收紧',
+          strengths: '观点清晰',
+          createdAt: '2026-06-15T20:00:00',
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+
+    render(
+      <MemoryRouter initialEntries={['/station/kaogong/interviews/rooms/7']}>
+        <Routes>
+          <Route path="/station/kaogong/interviews/rooms/:roomId" element={<KaogongInterviewRoomPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { name: '结构化一组' })).toBeInTheDocument()
+    expect(screen.getByText('先过自我介绍')).toBeInTheDocument()
+    expect(screen.getByText('outline.pdf')).toBeInTheDocument()
+    expect(screen.getByText('结尾再收紧')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('发送消息'), { target: { value: '下一轮过应变题' } })
+    fireEvent.click(screen.getByRole('button', { name: '发送消息' }))
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.sendInterviewMessage).toHaveBeenCalledWith(7, { content: '下一轮过应变题' }, 'remote-token')
+    })
+  })
+})

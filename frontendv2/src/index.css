@@ -4292,6 +4292,25 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   transform: translateY(-1px);
 }
 
+.v2-kaogong-admin-card-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.v2-kaogong-admin-card-head > div {
+  display: grid;
+  gap: 4px;
+}
+
+.v2-kaogong-admin-empty {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
 .v2-comment-editor--inline {
   margin-top: 4px;
   padding: 14px 16px 16px;

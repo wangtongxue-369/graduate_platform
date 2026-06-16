@@ -181,7 +181,7 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
 
     renderPage(<KaogongCalendarPage />)
 
-    expect(screen.getByText('筛选控制器')).toBeInTheDocument()
+    expect(screen.getByText('筛选与订阅')).toBeInTheDocument()
     expect(screen.getByLabelText('地区')).toBeInTheDocument()
 
     await waitFor(() => {
