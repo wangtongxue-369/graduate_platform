@@ -117,7 +117,7 @@ export default function KaoyanMentorApplyPage() {
             { label: '1v1咨询', to: '/station/kaoyan/support/mentors' },
             { label: '学长学姐入驻' },
           ]}
-          title="把你的上岸经验整理成 1v1咨询可检索的一份公开档案。"
+          title="学长学姐入驻"
           lead="这里不再弹旧版模态框，而是把入驻资料、当前状态和注销动作拆成独立工作页。"
           actions={(
             <>

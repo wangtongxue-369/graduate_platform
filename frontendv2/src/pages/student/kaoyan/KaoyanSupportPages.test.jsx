@@ -159,9 +159,7 @@ describe('kaoyan support split pages', () => {
     )
 
     expect(
-      await screen.findByRole('heading', {
-        name: '先筛选学长学姐，再决定查看资料、发起咨询还是申请入驻。',
-      }),
+      await screen.findByRole('heading', { name: '1v1 咨询' }),
     ).toBeInTheDocument()
   })
 
@@ -193,7 +191,7 @@ describe('kaoyan support split pages', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findByRole('heading', { name: '进入 1v1咨询，或直接进入同频自习室。' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '考研陪伴' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '进入 1v1咨询' })).toHaveAttribute(
       'href',
       '/station/kaoyan/support/mentors',

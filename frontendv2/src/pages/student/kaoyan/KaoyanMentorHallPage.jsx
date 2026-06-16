@@ -230,7 +230,7 @@ export default function KaoyanMentorHallPage() {
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '1v1咨询' },
           ]}
-          title="先筛选学长学姐，再决定查看资料、发起咨询还是申请入驻。"
+          title="1v1 咨询"
           lead="这里保留旧版 1v1咨询的筛选、档案、入驻和消息入口，把功能集中在学长学姐匹配与一对一问答上。"
           actions={(
             <>

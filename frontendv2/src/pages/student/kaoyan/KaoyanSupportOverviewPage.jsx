@@ -97,7 +97,7 @@ export default function KaoyanSupportOverviewPage() {
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '协作入口' },
           ]}
-          title="进入 1v1咨询，或直接进入同频自习室。"
+          title="考研陪伴"
           lead="这个页面只作为兼容旧入口保留的分流页，真正的功能分别在 1v1咨询 与 同频自习室中完成。"
         />
 

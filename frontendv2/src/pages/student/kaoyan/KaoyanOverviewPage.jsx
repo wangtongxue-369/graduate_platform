@@ -9,7 +9,7 @@ export default function KaoyanOverviewPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="考研主站"
-        title="把择校、计划、资料、1v1咨询和同频自习室收进一张考研推进台。"
+        title="考研总览"
         lead="主站只做任务判断和入口分发，复杂动作进入各自深层页完成。"
       />
 
