@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { communityApi } from '@legacy/lib/api.js'
@@ -65,6 +65,8 @@ export default function CommunityPostPage() {
   })
   const [acting, setActing] = useState(false)
   const [downloadingAttachmentId, setDownloadingAttachmentId] = useState(null)
+  const postDetailRef = useRef(null)
+  const postDetailEndRef = useRef(null)
   const isForcedPreview = shouldForceCommunityPreview(token)
   const currentUserId = user?.id ?? null
   const isAdmin = String(user?.role || '').toLowerCase() === 'admin'
@@ -442,6 +444,14 @@ export default function CommunityPostPage() {
     ? findCommentInTree(comments, composer.target.id)?.content?.slice(0, 36) || '评论'
     : ''
 
+  function scrollPostDetailToTop() {
+    postDetailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  function scrollPostDetailToBottom() {
+    postDetailEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }
+
   return (
     <>
       <div className="v2-main-column">
@@ -468,7 +478,7 @@ export default function CommunityPostPage() {
           <div className="v2-article-card">正在加载帖子内容...</div>
         ) : post ? (
           <>
-            <section className="v2-article-card v2-post-detail-card">
+            <section className="v2-article-card v2-post-detail-card" ref={postDetailRef}>
               <div className="v2-post-header">
                 <div className="v2-article-meta">
                   <span>{post.category?.name || '社区'}</span>
@@ -482,9 +492,28 @@ export default function CommunityPostPage() {
                   ))}
                 </div>
               </div>
+              <div className="v2-post-detail-card__float-nav" aria-label="帖子详情快捷滚动">
+                <button
+                  aria-label="帖子详情回到顶部"
+                  className="v2-post-detail-card__float-btn"
+                  onClick={scrollPostDetailToTop}
+                  type="button"
+                >
+                  <span aria-hidden="true">{'\u2191'}</span>
+                </button>
+                <button
+                  aria-label="帖子详情滚到底部"
+                  className="v2-post-detail-card__float-btn"
+                  onClick={scrollPostDetailToBottom}
+                  type="button"
+                >
+                  <span aria-hidden="true">{'\u2193'}</span>
+                </button>
+              </div>
               <div className="v2-post-markdown">
                 <FrontendV2MarkdownContent content={post.content || ''} />
               </div>
+              <div aria-hidden="true" className="v2-post-detail-card__end-anchor" ref={postDetailEndRef} />
             </section>
 
             {post.attachmentNote ? (

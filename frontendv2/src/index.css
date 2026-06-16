@@ -5890,6 +5890,7 @@ html[data-theme="dark"] .v2-kaogong-calendar-overview-subscription {
 }
 
 .v2-post-detail-card {
+  position: relative;
   gap: 20px;
   border-color: var(--v2-line-strong);
   background:
@@ -5899,6 +5900,45 @@ html[data-theme="dark"] .v2-kaogong-calendar-overview-subscription {
       var(--v2-paper) 56%,
       var(--v2-paper-soft) 100%
     );
+}
+
+.v2-post-detail-card__float-nav {
+  position: sticky;
+  top: 20px;
+  z-index: 2;
+  display: grid;
+  justify-content: end;
+  gap: 10px;
+  margin-bottom: -8px;
+  pointer-events: none;
+}
+
+.v2-post-detail-card__float-btn {
+  pointer-events: auto;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--v2-line-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 86%, var(--v2-highlight-soft));
+  color: var(--v2-ink);
+  box-shadow: 0 16px 28px color-mix(in srgb, var(--v2-bg) 26%, transparent);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.v2-post-detail-card__float-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--v2-active-border);
+  background: color-mix(in srgb, var(--v2-paper-strong) 72%, var(--v2-highlight-soft));
+}
+
+.v2-post-detail-card__float-btn:focus-visible {
+  outline: 2px solid var(--v2-highlight);
+  outline-offset: 2px;
+}
+
+.v2-post-detail-card__end-anchor {
+  height: 1px;
 }
 
 .v2-post-header .v2-article-meta span {
