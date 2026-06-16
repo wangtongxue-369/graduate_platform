@@ -157,7 +157,7 @@ export const studyAbroadWorkspace = {
     badge: 'SA',
     kicker: 'overseas roadmap',
     title: '留学主站',
-    description: '项目目录、录取案例、申请进度、时间线和材料清单都围着申请推进来组织。',
+    description: '院校项目库、录取案例库、申请项目管理、申请时间线和材料清单都围绕留学申请流程组织。',
     metrics: [
       { label: '在申项目', value: '5' },
       { label: '时间节点', value: '9' },
@@ -166,10 +166,10 @@ export const studyAbroadWorkspace = {
   },
   nav: [
     { label: '总览', to: '/station/studyabroad', summary: '先看申请路线图' },
-    { label: '项目目录', to: '/station/studyabroad/programs', summary: '对应 schools/page' },
-    { label: '案例档案', to: '/station/studyabroad/cases', summary: '对应 admission-cases/page' },
-    { label: '申请跟踪', to: '/station/studyabroad/applications', summary: '对应 applications' },
-    { label: '时间线', to: '/station/studyabroad/timeline', summary: '对应 timeline' },
+    { label: '院校项目库', to: '/station/studyabroad/programs', summary: '浏览院校和专业项目' },
+    { label: '录取案例库', to: '/station/studyabroad/cases', summary: '查看匿名录取和拒信案例' },
+    { label: '申请项目管理', to: '/station/studyabroad/applications', summary: '维护个人申请清单' },
+    { label: '申请时间线', to: '/station/studyabroad/timeline', summary: '管理申请节点和截止日期' },
     { label: '材料清单', to: '/station/studyabroad/materials', summary: '对应 materials 与附件' },
   ],
   programs: [

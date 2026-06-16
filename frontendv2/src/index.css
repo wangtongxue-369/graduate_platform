@@ -1379,6 +1379,26 @@ html[data-theme="dark"] .v2-glass-card {
   max-width: 64ch;
 }
 
+.v2-page-intro--compact {
+  padding: 22px 28px;
+}
+
+.v2-page-intro--compact .v2-page-trail {
+  margin-bottom: 8px;
+}
+
+.v2-page-intro--compact h1 {
+  max-width: none;
+  font-size: clamp(1.85rem, 1.8vw, 2.3rem);
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+
+.v2-page-intro--compact .v2-lead {
+  max-width: 78ch;
+  margin-top: 10px;
+}
+
 .v2-inline-actions {
   margin-top: 6px;
 }

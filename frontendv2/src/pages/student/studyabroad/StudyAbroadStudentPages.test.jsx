@@ -115,7 +115,7 @@ describe('study abroad student pages', () => {
 
     renderPage(<StudyAbroadExperiencesPage />)
 
-    expect(await screen.findByRole('heading', { name: '把可复用的申请经验沉淀成可筛选、可阅读、可维护的经验流。' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '留学经验库' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '发布经验' })).toBeInTheDocument()
     expect(screen.getByText('2026/06/12')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '查看全文' })).toBeInTheDocument()

@@ -33,7 +33,7 @@ export default function StudyAbroadExperiencesPage() {
   const [page, setPage] = useState(0)
   const [rows, setRows] = useState(createFallbackExperiences())
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: createFallbackExperiences().length })
-  const [notice, setNotice] = useState(previewDataNotice('留学经验'))
+  const [notice, setNotice] = useState(previewDataNotice('留学经验库'))
   const [composerOpen, setComposerOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(createEmptyStudyAbroadExperienceForm())
@@ -47,7 +47,7 @@ export default function StudyAbroadExperiencesPage() {
       if (!canUseRemote) {
         setRows(createFallbackExperiences())
         setPageInfo({ totalPages: 1, totalElements: createFallbackExperiences().length })
-        setNotice(previewDataNotice('留学经验'))
+        setNotice(previewDataNotice('留学经验库'))
         return
       }
 
@@ -61,18 +61,18 @@ export default function StudyAbroadExperiencesPage() {
             keyword: deferredKeyword,
           }),
           8000,
-          '留学经验读取超时，请检查后端服务。',
+          '留学经验库读取超时，请检查后端服务。',
         )
         if (!active) return
         const normalized = normalizeExperiencesPage(data)
         setRows(normalized.content)
         setPageInfo({ totalPages: normalized.totalPages, totalElements: normalized.totalElements })
-        setNotice(remoteDataNotice('留学经验'))
+        setNotice(remoteDataNotice('留学经验库'))
       } catch (error) {
         if (!active) return
         setRows(createFallbackExperiences())
         setPageInfo({ totalPages: 1, totalElements: createFallbackExperiences().length })
-        setNotice(fallbackDataNotice('留学经验', error))
+        setNotice(fallbackDataNotice('留学经验库', error))
       }
     }
 
@@ -136,13 +136,14 @@ export default function StudyAbroadExperiencesPage() {
     <>
       <div className="v2-main-column">
         <PageIntro
-          kicker="留学经验"
+          kicker="留学经验库"
           pathItems={[
             { label: '留学总览', to: '/station/studyabroad' },
-            { label: '经验沉淀' },
+            { label: '留学经验库' },
           ]}
-          title="把可复用的申请经验沉淀成可筛选、可阅读、可维护的经验流。"
-          lead="阅读和创作分层，避免把长表单和长列表堆在同一屏里。"
+          title="留学经验库"
+          lead="浏览同学发布的申请经验，点击查看全文；登录后可以发布、编辑和删除自己的经验帖。"
+          compact
         />
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         <section className="v2-summary-strip">
@@ -189,8 +190,8 @@ export default function StudyAbroadExperiencesPage() {
         <section className="v2-side-card">
           <div className="v2-side-card__head">
             <div>
-              <p className="v2-kicker">经验筛选</p>
-              <h3>先收口，再决定要读还是要写</h3>
+              <p className="v2-kicker">筛选条件</p>
+              <h3>筛选经验帖</h3>
             </div>
             <button className="v2-primary-link" type="button" onClick={openCreateDrawer}>发布经验</button>
           </div>

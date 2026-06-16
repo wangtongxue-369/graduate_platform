@@ -38,7 +38,7 @@ export default function StudyAbroadCasesPage() {
   const [page, setPage] = useState(0)
   const [rows, setRows] = useState(createFallbackCases())
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: createFallbackCases().length })
-  const [notice, setNotice] = useState(previewDataNotice('案例档案'))
+  const [notice, setNotice] = useState(previewDataNotice('录取案例库'))
   const [selectedCase, setSelectedCase] = useState(createFallbackCases()[0] || null)
   const [caseModalOpen, setCaseModalOpen] = useState(false)
   const [caseForm, setCaseForm] = useState(createEmptyStudyAbroadCaseForm())
@@ -51,7 +51,7 @@ export default function StudyAbroadCasesPage() {
       if (!canUseRemote) {
         setRows(createFallbackCases())
         setPageInfo({ totalPages: 1, totalElements: createFallbackCases().length })
-        setNotice(previewDataNotice('案例档案'))
+        setNotice(previewDataNotice('录取案例库'))
         return
       }
 
@@ -66,20 +66,20 @@ export default function StudyAbroadCasesPage() {
             keyword: deferredKeyword,
           }),
           8000,
-          '案例档案读取超时，请检查后端服务。',
+          '录取案例库读取超时，请检查后端服务。',
         )
         if (!active) return
         const normalized = normalizeCasesPage(data)
         setRows(normalized.content)
         setPageInfo({ totalPages: normalized.totalPages, totalElements: normalized.totalElements })
         setSelectedCase(normalized.content[0] || null)
-        setNotice(remoteDataNotice('案例档案'))
+        setNotice(remoteDataNotice('录取案例库'))
       } catch (error) {
         if (!active) return
         setRows(createFallbackCases())
         setPageInfo({ totalPages: 1, totalElements: createFallbackCases().length })
         setSelectedCase(createFallbackCases()[0] || null)
-        setNotice(fallbackDataNotice('案例档案', error))
+        setNotice(fallbackDataNotice('录取案例库', error))
       }
     }
 
@@ -122,13 +122,14 @@ export default function StudyAbroadCasesPage() {
     <>
       <div className="v2-main-column">
         <PageIntro
-          kicker="案例档案"
+          kicker="录取案例库"
           pathItems={[
             { label: '留学总览', to: '/station/studyabroad' },
-            { label: '案例档案' },
+            { label: '录取案例库' },
           ]}
-          title="把相近背景的录取样本收进同一条判断链路。"
-          lead="先筛选，再看详情，最后决定是否提交自己的匿名案例。"
+          title="录取案例库"
+          lead="查看往届学生的录取、候补和拒信案例，按国家、结果、本科专业和关键词筛选，也可以匿名提交自己的案例。"
+          compact
         />
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         <section className="v2-summary-strip">
@@ -148,7 +149,7 @@ export default function StudyAbroadCasesPage() {
             <p>当前列表里属于你的案例样本数量。</p>
           </article>
         </section>
-        <section className="v2-feed-list" aria-label="案例档案列表">
+        <section className="v2-feed-list" aria-label="录取案例库列表">
           {rows.map((row) => (
             <article className="v2-feed-item" key={row.id}>
               <div className="v2-feed-index">{row.applicationYear}</div>
@@ -174,7 +175,7 @@ export default function StudyAbroadCasesPage() {
           <div className="v2-side-card__head">
             <div>
               <p className="v2-kicker">案例筛选</p>
-              <h3>缩小样本，再进入详情</h3>
+              <h3>筛选录取案例</h3>
             </div>
             <button className="v2-primary-link" type="button" onClick={() => setCaseModalOpen(true)}>提交案例</button>
           </div>
@@ -241,7 +242,7 @@ export default function StudyAbroadCasesPage() {
       <EmploymentConfirmModal
         open={Boolean(pendingDelete)}
         title="确认删除这条案例样本？"
-        body="删除后会从当前案例档案中移除这条记录。"
+        body="删除后会从当前录取案例库中移除这条记录。"
         confirmLabel="删除案例"
         onConfirm={confirmDelete}
         onClose={() => setPendingDelete(null)}

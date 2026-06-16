@@ -196,8 +196,9 @@ export default function StudyAbroadOverviewPage() {
       <div className="v2-main-column">
         <PageIntro
           kicker="留学总览"
-          title="先看推进态势，再决定去哪个子页继续把申请往前推。"
-          lead="Command Deck 把申请、风险、目录和案例放进同一张调度视图。"
+          title="留学总览"
+          lead="汇总你的申请项目、截止提醒、材料进度、院校项目和录取案例，方便答辩和日常管理时快速进入对应功能。"
+          compact
         />
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         <StudyAbroadCommandDeck
