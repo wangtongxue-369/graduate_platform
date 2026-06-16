@@ -56,7 +56,7 @@ describe('admin study abroad pages', () => {
     })
   })
 
-  it('renders the admin study abroad programs page and creates school programs through a drawer', async () => {
+  it('renders the admin study abroad programs page and creates school programs through a page modal', async () => {
     apiMocks.adminStudyAbroadApi.schools.mockResolvedValue({
       content: [
         { id: 101, country: 'UK', schoolName: 'UCL', programName: 'MSc CS', degree: 'Master', subjectArea: 'Computer Science' },
@@ -76,7 +76,9 @@ describe('admin study abroad pages', () => {
     renderPage(<AdminStudyAbroadProgramsPage />)
 
     expect(await screen.findByText('UCL')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '院校项目管理' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '新建院校项目' }))
+    expect(screen.getByTestId('admin-studyabroad-detail-drawer')).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('院校名称'), { target: { value: 'LSE' } })
     fireEvent.change(screen.getByLabelText('项目名称'), { target: { value: 'MSc DS' } })
     fireEvent.click(screen.getByRole('button', { name: '保存院校项目' }))
@@ -102,6 +104,7 @@ describe('admin study abroad pages', () => {
     renderPage(<AdminStudyAbroadCasesPage />)
 
     expect(await screen.findByText('UCL')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '录取案例管理' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '删除' }))
     fireEvent.click(await screen.findByRole('button', { name: '删除案例' }))
 
@@ -123,6 +126,8 @@ describe('admin study abroad pages', () => {
     renderPage(<AdminStudyAbroadExperiencesPage />)
 
     expect(await screen.findByText('文书复盘')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '经验内容管理' })).toBeInTheDocument()
+    expect(screen.queryByText('5 min')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '删除' }))
     fireEvent.click(await screen.findByRole('button', { name: '删除经验' }))
 

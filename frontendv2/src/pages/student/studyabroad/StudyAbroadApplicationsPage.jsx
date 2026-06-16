@@ -186,7 +186,7 @@ export default function StudyAbroadApplicationsPage() {
                   )) : (
                     <div className="v2-check-row">
                       <strong>当前没有项目</strong>
-                      <span>可以直接从右侧抽屉新建申请。</span>
+                      <span>可以点击“新建申请”，在弹出的页面中填写申请项目。</span>
                     </div>
                   )}
                 </div>
