@@ -4,6 +4,7 @@ import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { mentorApi } from '@legacy/lib/api.js'
 import CounselingMessagePanel from '@/components/kaoyan/CounselingMessagePanel.jsx'
 import CounselingSessionList from '@/components/kaoyan/CounselingSessionList.jsx'
+import KaoyanMentorProfileModal from '@/components/kaoyan/KaoyanMentorProfileModal.jsx'
 import PageIntro from '@/components/PageIntro.jsx'
 import {
   normalizeCounselingMessages,
@@ -64,6 +65,19 @@ export default function KaoyanMessagesPage() {
   const [hasLoadedSessions, setHasLoadedSessions] = useState(false)
   const [refreshTick, setRefreshTick] = useState(0)
   const selectedSessionIdRef = useRef('')
+  const [profileMentor, setProfileMentor] = useState(null)
+
+  async function handleViewMentor(mentorId) {
+    if (!canUseRemote || !mentorId) return
+    try {
+      const data = await mentorApi.mentorsPage({ size: 200 })
+      const list = Array.isArray(data?.content) ? data.content : []
+      const found = list.find((item) => String(item.id) === String(mentorId))
+      setProfileMentor(found || null)
+    } catch {
+      setProfileMentor(null)
+    }
+  }
 
   const visibleSessions = useMemo(
     () => sessions.filter((item) => matchesSessionGroup(item, user?.id, activeTab)),
@@ -216,6 +230,16 @@ export default function KaoyanMessagesPage() {
         if (!active) return
         setMessages(normalizeCounselingMessages(data))
         await mentorApi.markAsRead(selectedSessionId, token).catch(() => {})
+        // Immediately zero the unread badge in local state so the UI
+        // responds instantly (same as v1 behaviour). The next SSE / poll
+        // cycle will reconcile with the authoritative backend count.
+        setSessions((prev) =>
+          prev.map((s) =>
+            String(s.id) === String(selectedSessionId)
+              ? { ...s, unreadCount: 0 }
+              : s,
+          ),
+        )
       } catch {
         if (!active) return
         setMessages([])
@@ -241,6 +265,13 @@ export default function KaoyanMessagesPage() {
       const data = await mentorApi.sessionMessages(selectedSession.id, token)
       setMessages(normalizeCounselingMessages(data))
       await mentorApi.markAsRead(selectedSession.id, token).catch(() => {})
+      setSessions((prev) =>
+        prev.map((s) =>
+          String(s.id) === String(selectedSession.id)
+            ? { ...s, unreadCount: 0 }
+            : s,
+        ),
+      )
     } finally {
       setSending(false)
     }
@@ -255,14 +286,13 @@ export default function KaoyanMessagesPage() {
     <>
       <div className="v2-main-column">
         <PageIntro
-          kicker="咨询消息"
+          kicker="考研咨询"
           pathItems={[
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '1v1咨询', to: '/station/kaoyan/support/mentors' },
             { label: '咨询消息' },
           ]}
-          title="把 1v1 咨询会话和连续追问收进同一条消息流。"
-          lead="左侧切换历史会话，右侧保持同一块聊天工作台，减少在列表和对话之间来回跳转。"
+          title="咨询消息"
           actions={<Link className="v2-secondary-link" to="/station/kaoyan/support/mentors">回到 1v1 咨询</Link>}
         />
 
@@ -293,6 +323,7 @@ export default function KaoyanMessagesPage() {
             sessionCounterpart={selectedSessionCounterpart}
             onDraftChange={setDraft}
             onSend={handleSend}
+            onViewMentor={handleViewMentor}
           />
         </section>
       </div>
@@ -310,10 +341,6 @@ export default function KaoyanMessagesPage() {
               <span>{selectedSession ? selectedSessionCounterpart : '先从左侧选择一条会话'}</span>
             </div>
             <div className="v2-check-row">
-              <strong>当前主题</strong>
-              <span>{selectedSession?.subject || '会话选中后显示'}</span>
-            </div>
-            <div className="v2-check-row">
               <strong>最近时间</strong>
               <span>{selectedSession?.createdAt ? formatDateTimeLabel(selectedSession.createdAt) : '会话选中后显示'}</span>
             </div>
@@ -324,6 +351,14 @@ export default function KaoyanMessagesPage() {
           </div>
         </section>
       </aside>
+
+      {profileMentor ? (
+        <KaoyanMentorProfileModal
+          mentor={profileMentor}
+          onClose={() => setProfileMentor(null)}
+          onConsult={() => setProfileMentor(null)}
+        />
+      ) : null}
     </>
   )
 }

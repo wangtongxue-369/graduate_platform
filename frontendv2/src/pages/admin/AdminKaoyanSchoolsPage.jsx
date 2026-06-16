@@ -102,8 +102,8 @@ export default function AdminKaoyanSchoolsPage() {
             { label: '考研治理', to: '/admin/kaoyan' },
             { label: '院校维护' },
           ]}
-          title="院校页只管理基础档案和标签，不再混入分数线维护表单。"
-          lead="筛选、编辑和停用都围绕院校实体展开，保证分数线页保留清晰的学校上下文。"
+          title="院校维护"
+          lead="基业长青，始于根基。"
           actions={<Link className="v2-secondary-link" to="/admin/kaoyan/score-lines">去分数线维护</Link>}
         />
 

@@ -139,8 +139,8 @@ export default function AdminKaoyanScoreLinesPage() {
             { label: '考研治理', to: '/admin/kaoyan' },
             { label: '分数线维护' },
           ]}
-          title="保留院校上下文后再维护分数线，避免跨校编辑时的误填与串改。"
-          lead="先在右侧锁定学校，再在主区浏览或编辑这一所学校的年度分数线记录。"
+          title="分数线维护"
+          lead="数字虽冷，承载的是千万人的前程。"
           actions={<Link className="v2-secondary-link" to="/admin/kaoyan/schools">去院校维护</Link>}
         />
 

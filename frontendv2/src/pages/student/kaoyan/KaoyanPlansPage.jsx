@@ -89,8 +89,8 @@ export default function KaoyanPlansPage() {
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '计划轨道' },
           ]}
-          title="计划列表负责排布阶段，编辑和打卡都进入计划详情页。"
-          lead="把创建动作收进右栏，让主区保持时间轨道视图。"
+          title="计划轨道"
+          lead="好的计划是成功的一半。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}

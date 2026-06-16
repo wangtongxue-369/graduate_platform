@@ -131,9 +131,7 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
     renderPage(<KaoyanSchoolsPage />)
 
     expect(
-      screen.getByRole('heading', {
-        name: '把院校档案、分数线和收藏动作叠在同一张比较账本里。',
-      }),
+      screen.getByRole('heading', { name: '择校账本' }),
     ).toBeInTheDocument()
     expect(screen.getByText('筛选控制器')).toBeInTheDocument()
     expect(screen.getByLabelText('院校名称')).toBeInTheDocument()

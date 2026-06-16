@@ -120,8 +120,8 @@ export default function AdminKaoyanMaterialsPage() {
           { label: '考研治理', to: '/admin/kaoyan' },
           { label: '资料审核' },
         ]}
-        title="把待审、通过和拒绝的资料拆成明确队列，而不是继续沿用旧版混排卡片。"
-        lead="保留旧版审核流的工作重点，但把统计、翻页和附件信息都集中到同一张审核工作台里。"
+        title="资料审核"
+        lead="审得细，才走得远。"
         actions={<Link className="v2-secondary-link" to="/admin/kaoyan">返回考研治理总览</Link>}
       />
 

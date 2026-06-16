@@ -60,8 +60,8 @@ export default function AdminKaoyanOverviewPage() {
             { label: '管理员主站', to: '/admin' },
             { label: '考研治理' },
           ]}
-          title="先分诊考研积压，再进入资料审核、院校维护和分数线维护专页。"
-          lead="这页只负责分流，不再把审核卡片和维护表单硬塞在同一屏里。"
+          title="考研数据维护"
+          lead="治学如治水，疏浚胜于筑堤。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}

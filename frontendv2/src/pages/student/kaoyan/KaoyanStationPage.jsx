@@ -311,7 +311,7 @@ export default function KaoyanStationPage() {
     <div className="v2-main-column">
       <PageIntro
         kicker="考研主站"
-        title="把择校、计划、资料和协同收进一条考研工作链。"
+        title="考研总览"
         lead="先看总览，再进子页。"
       />
 
@@ -503,7 +503,7 @@ export function KaoyanSchoolsPage() {
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '择校账本' },
           ]}
-          title="院校档案和分数线合并成一张账本。"
+          title="择校账本"
           lead="主区只看比较结果。"
         />
 
@@ -677,7 +677,7 @@ export function KaoyanPlansPage() {
           { label: '考研主站', to: '/station/kaoyan' },
           { label: '计划轨道' },
         ]}
-        title="把长期计划拆成清楚的时间段。"
+        title="计划轨道"
         lead="主区直接看时间轨。"
       />
 
@@ -795,7 +795,7 @@ export function KaoyanMaterialsPage() {
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '资料货架' },
           ]}
-          title="资料先按用途和状态分层。"
+          title="资料中枢"
           lead="主区只保留资料结果。"
         />
 
@@ -943,7 +943,7 @@ export function KaoyanSupportPage() {
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '支持协同' },
           ]}
-          title="导师与自习室统一放在协同页。"
+          title="考研陪伴"
           lead="先选支持资源，再继续下钻。"
         />
 

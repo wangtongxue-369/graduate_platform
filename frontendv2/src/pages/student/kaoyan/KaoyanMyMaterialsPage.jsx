@@ -127,8 +127,8 @@ export default function KaoyanMyMaterialsPage() {
           { label: '资料中枢', to: '/station/kaoyan/materials' },
           { label: '我的资料' },
         ]}
-        title="我的资料状态按旧版工作流拆回待审、通过、拒绝与全部视角，方便追踪每份资料的流转。"
-        lead="这里不混入公开浏览，只看自己上传过的资料与审核结果，避免和公开资料列表互相打架。"
+        title="我的资料"
+        lead="日积月累，功不唐捐。"
         actions={(
           <>
             <Link className="v2-secondary-link" to="/station/kaoyan/materials/upload">上传新资料</Link>

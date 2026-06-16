@@ -74,8 +74,8 @@ export default function KaoyanSchoolFavoritesPage() {
           { label: '择校账本', to: '/station/kaoyan/schools' },
           { label: '收藏账本' },
         ]}
-        title="把你已经决定持续跟踪的分数线单独收进回看账本。"
-        lead="这里不再混入全量筛选，只看真正留下来的目标记录。"
+        title="院校收藏"
+        lead="盯紧目标，心无旁骛。"
       />
 
       {notice ? <div className="v2-status-note">{notice}</div> : null}
