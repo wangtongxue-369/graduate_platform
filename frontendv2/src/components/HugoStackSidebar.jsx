@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
-import ThemeSwitch from '@/components/ThemeSwitch.jsx'
+import ThemeSwitch, { ThemePreferenceSync } from '@/components/ThemeSwitch.jsx'
 import {
   getAppNavigation,
   getSettingsNavigation,
@@ -66,6 +66,7 @@ export default function HugoStackSidebar({ mode = 'app' }) {
 
   return (
     <aside className="v2-stack-sidebar" ref={sidebarRef}>
+      <ThemePreferenceSync />
       <div className="v2-stack-sidebar__column">
         {mode === 'settings' ? (
           <div className="v2-stack-profile v2-glass-card">
