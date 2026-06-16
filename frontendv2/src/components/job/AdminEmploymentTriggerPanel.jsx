@@ -3,6 +3,7 @@ export default function AdminEmploymentTriggerPanel({
   selectedSource,
   onSelectSource,
   onTrigger,
+  showSources = true,
 }) {
   return (
     <section className="v2-side-card v2-practice-drawer" data-testid="admin-employment-trigger-panel">
@@ -13,16 +14,18 @@ export default function AdminEmploymentTriggerPanel({
         </div>
       </div>
 
-      <div className="v2-check-list">
-        {sources.map((item) => (
-          <article className="v2-check-row" key={`${item.relatedType}-${item.id}`}>
-            <button className="v2-secondary-link" type="button" onClick={() => onSelectSource(item)}>
-              {item.title}
-            </button>
-            <span>{item.relatedType === 'FAIR' ? '招聘会' : '岗位'}</span>
-          </article>
-        ))}
-      </div>
+      {showSources ? (
+        <div className="v2-check-list">
+          {sources.map((item) => (
+            <article className="v2-check-row" key={`${item.relatedType}-${item.id}`}>
+              <button className="v2-secondary-link" type="button" onClick={() => onSelectSource(item)}>
+                {item.title}
+              </button>
+              <span>{item.relatedType === 'FAIR' ? '招聘会' : '岗位'}</span>
+            </article>
+          ))}
+        </div>
+      ) : null}
 
       {selectedSource ? (
         <div className="v2-check-list">

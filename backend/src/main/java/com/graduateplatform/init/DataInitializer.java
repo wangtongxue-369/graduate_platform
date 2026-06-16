@@ -7,6 +7,7 @@ import com.graduateplatform.community.entity.PostCategory;
 import com.graduateplatform.community.repository.PostCategoryRepository;
 import com.graduateplatform.job.entity.CareerFair;
 import com.graduateplatform.job.entity.JobPosting;
+import com.graduateplatform.job.repository.ApplicationRecordRepository;
 import com.graduateplatform.job.repository.CareerFairRepository;
 import com.graduateplatform.job.repository.JobPostingRepository;
 import com.graduateplatform.kaogong.entity.CivilServicePost;
@@ -28,6 +29,7 @@ public class DataInitializer implements CommandLineRunner {
     private final QuestionBankRepository bankRepository;
     private final CareerFairRepository careerFairRepository;
     private final JobPostingRepository jobPostingRepository;
+    private final ApplicationRecordRepository applicationRecordRepository;
     private final CivilServicePostRepository civilServicePostRepository;
     private final InterviewScoreLineRepository scoreLineRepository;
     private final ExamCalendarEventRepository calendarEventRepository;
@@ -37,6 +39,7 @@ public class DataInitializer implements CommandLineRunner {
                            QuestionBankRepository bankRepository,
                            CareerFairRepository careerFairRepository,
                            JobPostingRepository jobPostingRepository,
+                           ApplicationRecordRepository applicationRecordRepository,
                            CivilServicePostRepository civilServicePostRepository,
                            InterviewScoreLineRepository scoreLineRepository,
                            ExamCalendarEventRepository calendarEventRepository,
@@ -49,6 +52,7 @@ public class DataInitializer implements CommandLineRunner {
         this.calendarEventRepository = calendarEventRepository;
         this.careerFairRepository = careerFairRepository;
         this.jobPostingRepository = jobPostingRepository;
+        this.applicationRecordRepository = applicationRecordRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -142,6 +146,7 @@ public class DataInitializer implements CommandLineRunner {
     private void initEmploymentData() {
         updateLegacyEmploymentSeedData();
         cleanupDuplicateCareerFairs();
+        cleanupLegacyDemoJobPostings();
 
         java.time.LocalDateTime fairStart = java.time.LocalDateTime.now().plusDays(3).withHour(15).withMinute(0).withSecond(0).withNano(0);
         boolean hasTencentFair = careerFairRepository.existsByTitleAndCompanyName("腾讯2026应届生招聘宣讲会", "腾讯");
@@ -369,6 +374,7 @@ public class DataInitializer implements CommandLineRunner {
                 .active(true)
                 .build());
         }
+        cleanupDuplicateSeedJobPostings();
         cleanupDuplicateCareerFairs();
     }
 
@@ -481,98 +487,76 @@ public class DataInitializer implements CommandLineRunner {
                 "联想校园招聘官网，提供中国校园招聘项目、岗位信息、招聘流程和在线投递入口。");
         }
 
-        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("Java Backend Engineer", "Future Tech")) {
-            applyRealJobPostingSeed(job,
-                "软件开发-后台开发方向", "腾讯", "深圳/北京/上海/广州/成都/武汉/杭州", "互联网", "民企", "后端",
-                "面议", "本科及以上", "计算机科学,软件工程,信息系统", "Java,C++,Go,分布式系统,数据库",
-                "腾讯校招软件开发后台方向，面向服务端研发、分布式系统、业务后台和基础架构等岗位，可在腾讯校招官网完成岗位投递。",
-                "https://join.qq.com/post.html?query=2_75%2Cp_2");
-        }
-        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("Java 后端工程师", "未来科技")) {
-            applyRealJobPostingSeed(job,
-                "软件开发-后台开发方向", "腾讯", "深圳/北京/上海/广州/成都/武汉/杭州", "互联网", "民企", "后端",
-                "面议", "本科及以上", "计算机科学,软件工程,信息系统", "Java,C++,Go,分布式系统,数据库",
-                "腾讯校招软件开发后台方向，面向服务端研发、分布式系统、业务后台和基础架构等岗位，可在腾讯校招官网完成岗位投递。",
-                "https://join.qq.com/post.html?query=2_75%2Cp_2");
-        }
-
-        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("Product Operations Trainee", "Harbor Equipment Group")) {
-            applyRealJobPostingSeed(job,
-                "产品运营校招生", "字节跳动", "北京/上海/深圳/杭州", "互联网", "民企", "产品运营",
-                "面议", "本科及以上", "管理学,新闻传播,计算机科学,数据科学", "数据分析,用户运营,内容运营,项目管理",
-                "字节跳动校园招聘产品运营方向，覆盖内容、用户、商业化和增长运营等场景，可在字节跳动校招职位页搜索并投递。",
-                "https://jobs.bytedance.com/campus/m/position");
-        }
-        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("产品运营管培生", "港湾装备集团")) {
-            applyRealJobPostingSeed(job,
-                "产品运营校招生", "字节跳动", "北京/上海/深圳/杭州", "互联网", "民企", "产品运营",
-                "面议", "本科及以上", "管理学,新闻传播,计算机科学,数据科学", "数据分析,用户运营,内容运营,项目管理",
-                "字节跳动校园招聘产品运营方向，覆盖内容、用户、商业化和增长运营等场景，可在字节跳动校招职位页搜索并投递。",
-                "https://jobs.bytedance.com/campus/m/position");
-        }
-        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("前端开发工程师", "未来科技")) {
-            applyRealJobPostingSeed(job,
-                "前端开发工程师", "阿里巴巴", "杭州/北京/上海/深圳", "互联网", "民企", "前端",
-                "面议", "本科及以上", "计算机科学,软件工程,数字媒体技术", "Vue,React,JavaScript,TypeScript",
-                "阿里巴巴校园招聘研发类前端方向，参与业务平台、用户产品和技术中台的 Web 端研发，可在阿里巴巴校招官网投递。",
-                "https://campus-talent.alibaba.com/");
-        }
-        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("数据分析师", "海通数科")) {
-            applyRealJobPostingSeed(job,
-                "商业分析师", "美团", "北京/上海/深圳/成都", "本地生活服务", "民企", "数据分析",
-                "面议", "本科及以上", "统计学,数据科学,计算机科学,经济学", "SQL,Python,Excel,商业分析",
-                "美团校园招聘商业分析方向，围绕本地生活业务进行指标建设、数据洞察和经营分析，可通过美团校园招聘官网投递。",
-                "https://campus.meituan.com/");
-        }
-        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("测试开发工程师", "星河智能科技")) {
-            applyRealJobPostingSeed(job,
-                "软件测试开发工程师", "华为", "深圳/上海/杭州/南京/西安", "通信与智能终端", "民企", "测试开发",
-                "面议", "本科及以上", "计算机科学,软件工程,通信工程,电子信息", "Python,自动化测试,接口测试,Linux,质量工程",
-                "华为校园招聘软件测试开发方向，参与产品质量工程、自动化测试和工程效率建设，可在华为校园招聘职位列表投递。",
-                "https://career.huawei.com/reccampportal/portal5/campus-recruitment.html?jobTypes=0");
-        }
-        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("网络安全工程师", "云盾安全")) {
-            applyRealJobPostingSeed(job,
-                "安全工程师（漏洞方向）", "奇安信", "北京/成都/南京/厦门", "网络安全", "民企", "安全",
-                "面议", "本科及以上", "网络空间安全,信息安全,计算机科学", "渗透测试,漏洞分析,Linux,Python,Web安全",
-                "奇安信校园招聘安全工程师漏洞方向，跟踪最新安全技术并参与漏洞研究、安全验证和攻防实践，可在奇安信校招职位页投递。",
-                "https://www.qianxin.com/campus/internJobSearch");
-        }
-        for (JobPosting job : jobPostingRepository.findByTitleAndCompanyName("产品经理助理", "港湾装备集团")) {
-            applyRealJobPostingSeed(job,
-                "产品经理", "京东", "北京/上海/深圳", "电商与供应链科技", "民企", "产品",
-                "面议", "本科及以上", "管理学,工业工程,计算机科学,电子商务", "需求分析,Axure,数据分析,项目协同",
-                "京东校园招聘产品方向，参与零售、物流、科技等业务产品规划和需求落地，可在京东招聘官网选择校园招聘投递。",
-                "https://zhaopin.jd.com/");
-        }
     }
 
-    private void applyRealJobPostingSeed(JobPosting job,
-                                         String title,
-                                         String companyName,
-                                         String city,
-                                         String industry,
-                                         String companyType,
-                                         String roleType,
-                                         String salaryRange,
-                                         String educationRequirement,
-                                         String majorKeywords,
-                                         String skillTags,
-                                         String description,
-                                         String applyUrl) {
-        job.setTitle(title);
-        job.setCompanyName(companyName);
-        job.setCity(city);
-        job.setIndustry(industry);
-        job.setCompanyType(companyType);
-        job.setRoleType(roleType);
-        job.setSalaryRange(salaryRange);
-        job.setEducationRequirement(educationRequirement);
-        job.setMajorKeywords(majorKeywords);
-        job.setSkillTags(skillTags);
-        job.setDescription(description);
-        job.setApplyUrl(applyUrl);
-        jobPostingRepository.save(job);
+    private void cleanupLegacyDemoJobPostings() {
+        String[][] legacyDemoJobs = {
+            {"Java Backend Engineer", "Future Tech"},
+            {"Java 后端工程师", "未来科技"},
+            {"Product Operations Trainee", "Harbor Equipment Group"},
+            {"产品运营管培生", "港湾装备集团"},
+            {"前端开发工程师", "未来科技"},
+            {"数据分析师", "海通数科"},
+            {"测试开发工程师", "星河智能科技"},
+            {"网络安全工程师", "云盾安全"},
+            {"产品经理助理", "港湾装备集团"},
+        };
+
+        for (String[] key : legacyDemoJobs) {
+            jobPostingRepository.findByTitleAndCompanyName(key[0], key[1])
+                .forEach(this::removeJobPostingFromRecommendations);
+        }
+        jobPostingRepository.flush();
+    }
+
+    private void cleanupDuplicateSeedJobPostings() {
+        String[][] seedJobs = {
+            {"软件开发-后台开发方向", "腾讯"},
+            {"产品运营校招生", "字节跳动"},
+            {"前端开发工程师", "阿里巴巴"},
+            {"商业分析师", "美团"},
+            {"软件测试开发工程师", "华为"},
+            {"安全工程师（漏洞方向）", "奇安信"},
+            {"产品经理", "京东"},
+        };
+
+        for (String[] key : seedJobs) {
+            cleanupDuplicateJobPostings(key[0], key[1]);
+        }
+        jobPostingRepository.flush();
+    }
+
+    private void cleanupDuplicateJobPostings(String title, String companyName) {
+        java.util.List<JobPosting> jobs = jobPostingRepository.findByTitleAndCompanyName(title, companyName);
+        if (jobs.size() <= 1) return;
+
+        JobPosting keeper = jobs.stream()
+            .sorted(jobPostingKeepComparator())
+            .findFirst()
+            .orElse(null);
+        if (keeper == null) return;
+
+        jobs.stream()
+            .filter(job -> !java.util.Objects.equals(job.getId(), keeper.getId()))
+            .forEach(this::removeJobPostingFromRecommendations);
+    }
+
+    private java.util.Comparator<JobPosting> jobPostingKeepComparator() {
+        return java.util.Comparator
+            .comparingInt((JobPosting job) -> applicationRecordRepository.existsByJobPostingId(job.getId()) ? 0 : 1)
+            .thenComparingInt(job -> Boolean.TRUE.equals(job.getActive()) ? 0 : 1)
+            .thenComparing(JobPosting::getCreatedAt, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()));
+    }
+
+    private void removeJobPostingFromRecommendations(JobPosting job) {
+        if (job.getId() != null && applicationRecordRepository.existsByJobPostingId(job.getId())) {
+            if (Boolean.TRUE.equals(job.getActive())) {
+                job.setActive(false);
+                jobPostingRepository.save(job);
+            }
+            return;
+        }
+        jobPostingRepository.delete(job);
     }
 
     private void applyRealCareerFairSeed(CareerFair fair,

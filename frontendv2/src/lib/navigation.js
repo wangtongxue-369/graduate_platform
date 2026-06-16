@@ -30,7 +30,7 @@ const directionNavMap = {
   ],
   job: [
     { label: '就业总览', to: '/station/job' },
-    { label: '简历中枢', to: '/station/job/resume' },
+    { label: '简历中心', to: '/station/job/resume' },
     { label: '岗位推荐', to: '/station/job/recommendations' },
     { label: '投递跟踪', to: '/station/job/applications' },
     { label: '招聘会目录', to: '/station/job/fairs' },

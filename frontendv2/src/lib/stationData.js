@@ -82,3 +82,9 @@ export function fallbackDataNotice(label, error) {
   if (error?.message) return error.message
   return `${label}读取失败，已切回预览数据。`
 }
+
+export function shouldShowStatusNotice(notice) {
+  if (!notice) return false
+  const text = String(notice)
+  return !text.endsWith('：预览数据') && !text.endsWith('：已连接后端')
+}

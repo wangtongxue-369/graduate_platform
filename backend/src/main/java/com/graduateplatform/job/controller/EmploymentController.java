@@ -127,7 +127,13 @@ public class EmploymentController {
     }
 
     @GetMapping("/recommendations")
-    public ApiResponse<?> recommendations(@RequestParam Map<String, String> filters, Authentication auth) {
+    public ApiResponse<?> recommendations(@RequestParam Map<String, String> filters,
+                                          @RequestParam(required = false) Integer page,
+                                          @RequestParam(required = false) Integer size,
+                                          Authentication auth) {
+        if (page != null || size != null) {
+            return ApiResponse.ok(employmentService.recommendationsPage(currentUserId(auth), filters, page, size));
+        }
         return ApiResponse.ok(employmentService.recommendations(currentUserId(auth), filters));
     }
 

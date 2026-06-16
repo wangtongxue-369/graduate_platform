@@ -10,8 +10,7 @@ export default function JobRecommendationFilters({ filters, onChange, onReset })
     <section className="v2-side-card">
       <div className="v2-side-card__head">
         <div>
-          <p className="v2-kicker">筛选台</p>
-          <h3>把高频条件固定在右栏</h3>
+          <h3>筛选条件</h3>
         </div>
         <button className="v2-secondary-link" type="button" onClick={onReset}>重置</button>
       </div>

@@ -42,18 +42,20 @@ export function normalizeResume(data) {
     expectedCities: data?.expectedCities || '',
     expectedIndustries: data?.expectedIndustries || '',
     expectedSalary: data?.expectedSalary || '',
-    highestEducation: data?.highestEducation || '',
+    highestEducation: data?.highestEducation || data?.educationLevel || '',
     major: data?.major || '',
+    phone: data?.phone || '',
+    email: data?.email || '',
     skillTags: data?.skillTags || '',
     projectKeywords: data?.projectKeywords || '',
     internshipKeywords: data?.internshipKeywords || '',
     certificates: data?.certificates || '',
     portfolioUrl: data?.portfolioUrl || '',
     baseInfo: data?.baseInfo || '',
-    educationExperience: data?.educationExperience || '',
-    projectExperience: data?.projectExperience || '',
-    internshipExperience: data?.internshipExperience || '',
-    skillsDescription: data?.skillsDescription || '',
+    educationExperience: data?.educationExperience || data?.education || '',
+    projectExperience: data?.projectExperience || data?.projects || '',
+    internshipExperience: data?.internshipExperience || data?.internships || '',
+    skillsDescription: data?.skillsDescription || data?.skills || '',
     selfEvaluation: data?.selfEvaluation || '',
     resumeFile: {
       ...resumeFileDefaults,
@@ -81,6 +83,17 @@ export function normalizeRecommendations(data) {
     applyUrl: item.applyUrl || '',
     canApplyDirectly: Boolean(item.applyUrl),
   }))
+}
+
+export function normalizeRecommendationPage(data) {
+  const rawItems = Array.isArray(data) ? data : (data?.items || data?.content || [])
+  return {
+    items: normalizeRecommendations(rawItems),
+    totalPages: Array.isArray(data) ? 1 : Number(data?.totalPages ?? 1),
+    page: Array.isArray(data) ? 1 : Number(data?.page ?? 1),
+    totalItems: Array.isArray(data) ? rawItems.length : Number(data?.totalItems ?? data?.totalElements ?? rawItems.length),
+    size: Array.isArray(data) ? rawItems.length : Number(data?.size ?? rawItems.length),
+  }
 }
 
 export function normalizeApplications(data) {
@@ -225,10 +238,10 @@ export function buildApplicationGroups(items) {
   })
 
   return [
-    { key: 'todo', title: '待开始', description: '先补齐材料，再决定是否投递。', items: grouped.todo },
+    { key: 'todo', title: '待启动', description: '先补齐材料，再决定是否投递。', items: grouped.todo },
     { key: 'active', title: '推进中', description: '已投递、筛选中和笔试阶段。', items: grouped.active },
     { key: 'interview', title: '面试中', description: '进入面试链路后的记录。', items: grouped.interview },
-    { key: 'result', title: '已有结果', description: '录用、拒绝、放弃和关闭记录。', items: grouped.result },
+    { key: 'result', title: '已出结果', description: '录用、拒绝、放弃和关闭记录。', items: grouped.result },
   ]
 }
 

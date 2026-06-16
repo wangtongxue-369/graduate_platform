@@ -123,7 +123,7 @@ describe('page-level return paths', () => {
     expect(await screen.findByRole('link', { name: '择校账本' })).toHaveAttribute('href', '/station/kaoyan/schools')
     expect(screen.getByRole('link', { name: '计划轨道' })).toHaveAttribute('href', '/station/kaoyan/plans')
     expect(screen.getByRole('link', { name: '资料中枢' })).toHaveAttribute('href', '/station/kaoyan/materials')
-    expect(screen.getByRole('link', { name: '1v1咨询' })).toHaveAttribute('href', '/station/kaoyan/support/mentors')
+    expect(screen.getByRole('link', { name: '1v1 咨询' })).toHaveAttribute('href', '/station/kaoyan/support/mentors')
     expect(screen.getByRole('link', { name: '同频自习室' })).toHaveAttribute('href', '/station/kaoyan/support/rooms')
     expect(screen.queryByRole('link', { name: '陪跑协同' })).not.toBeInTheDocument()
   })
@@ -244,7 +244,7 @@ describe('page-level return paths', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: '先确认求职定位和附件状态，再进入简历编辑与导出。',
+        name: '简历中心',
       }),
     ).toBeInTheDocument()
   })
@@ -260,7 +260,7 @@ describe('page-level return paths', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: '先切换治理对象，再处理招聘会、岗位、提醒触达与简历状态。',
+        name: '就业运营总台',
       }),
     ).toBeInTheDocument()
   })
