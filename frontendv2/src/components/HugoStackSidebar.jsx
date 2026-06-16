@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
-import {
-  DEFAULT_PREFERENCES,
-  PREFERENCES_STORAGE_KEY,
-} from '@legacy/lib/preferences.js'
 import ThemeSwitch from '@/components/ThemeSwitch.jsx'
 import {
   getAppNavigation,
@@ -13,35 +9,6 @@ import {
   getShellTitle,
 } from '@/lib/navigation.js'
 import { getRoleLandingPath } from '@/lib/roleRouting.js'
-
-const languageOptions = [
-  { value: 'zh-CN', label: '中文' },
-  { value: 'bilingual', label: '双语' },
-  { value: 'en', label: 'English' },
-]
-
-function readLanguageMode() {
-  try {
-    const raw = window.localStorage.getItem(PREFERENCES_STORAGE_KEY)
-    const parsed = raw ? JSON.parse(raw) : null
-    return parsed?.languageMode || DEFAULT_PREFERENCES.languageMode
-  } catch {
-    return DEFAULT_PREFERENCES.languageMode
-  }
-}
-
-function persistLanguageMode(languageMode) {
-  try {
-    const raw = window.localStorage.getItem(PREFERENCES_STORAGE_KEY)
-    const parsed = raw ? JSON.parse(raw) : {}
-    window.localStorage.setItem(
-      PREFERENCES_STORAGE_KEY,
-      JSON.stringify({ ...parsed, languageMode }),
-    )
-  } catch {
-    // ignore local preference persistence failures
-  }
-}
 
 function getAvatarText(name = '') {
   const clean = String(name || '').trim()
@@ -52,7 +19,6 @@ export default function HugoStackSidebar({ mode = 'app' }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
-  const [languageMode, setLanguageMode] = useState(readLanguageMode)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const sidebarRef = useRef(null)
 
@@ -96,11 +62,6 @@ export default function HugoStackSidebar({ mode = 'app' }) {
     }
     await logout()
     navigate('/', { replace: true })
-  }
-
-  function handleLanguageChange(nextValue) {
-    setLanguageMode(nextValue)
-    persistLanguageMode(nextValue)
   }
 
   return (
@@ -185,22 +146,6 @@ export default function HugoStackSidebar({ mode = 'app' }) {
             </div>
 
             <div className="v2-stack-settings-body">
-              <section className="v2-stack-settings-card">
-                <p className="v2-stack-menu__title">语言</p>
-                <div className="v2-language-switch" role="group" aria-label="语言切换">
-                  {languageOptions.map((item) => (
-                    <button
-                      className={`v2-language-switch__btn ${languageMode === item.value ? 'is-active' : ''}`}
-                      key={item.value}
-                      onClick={() => handleLanguageChange(item.value)}
-                      type="button"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </section>
-
               <section className="v2-stack-settings-card">
                 <p className="v2-stack-menu__title">主题</p>
                 <ThemeSwitch />

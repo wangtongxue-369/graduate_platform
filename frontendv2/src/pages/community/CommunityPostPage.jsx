@@ -28,8 +28,9 @@ import {
   updateCommentInTree,
 } from '@/lib/communityUi.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
+import { useCommunitySubnavItems } from '@/lib/communityTabs.js'
 
-const communityTabs = [
+const communityTabItems = [
   { label: '社区目录', to: '/community', note: '浏览与筛选' },
   { label: '发布帖子', to: '/community/new', note: '提交正文与附件' },
   { label: '消息通知', to: '/community/notifications', note: '查看互动提醒' },
@@ -68,6 +69,7 @@ export default function CommunityPostPage() {
   const currentUserId = user?.id ?? null
   const isAdmin = String(user?.role || '').toLowerCase() === 'admin'
   const returnTo = location.state?.returnTo || '/community'
+  const communityTabs = useCommunitySubnavItems(communityTabItems)
 
   useEffect(() => {
     let active = true

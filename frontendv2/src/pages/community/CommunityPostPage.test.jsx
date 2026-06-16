@@ -11,6 +11,7 @@ const authState = {
 
 const postDetailMock = vi.fn()
 const commentsMock = vi.fn()
+const notificationsMock = vi.fn()
 
 vi.mock('@legacy/context/AuthContext.jsx', () => ({
   useAuth: () => authState,
@@ -20,6 +21,7 @@ vi.mock('@legacy/lib/api.js', () => ({
   communityApi: {
     postDetail: (...args) => postDetailMock(...args),
     comments: (...args) => commentsMock(...args),
+    notifications: (...args) => notificationsMock(...args),
     updateComment: vi.fn(),
     createComment: vi.fn(),
     deleteComment: vi.fn(),
@@ -57,6 +59,7 @@ vi.mock('@/components/SubnavTabs.jsx', () => ({
 vi.mock('@/lib/communityPreview.js', () => ({
   canUseCommunityPreview: () => false,
   createCommunityPreviewComments: () => [],
+  createCommunityPreviewPosts: () => [],
   findCommunityPreviewPostById: () => null,
   shouldForceCommunityPreview: () => false,
 }))
@@ -73,6 +76,7 @@ describe('CommunityPostPage', () => {
 
     postDetailMock.mockReset()
     commentsMock.mockReset()
+    notificationsMock.mockReset()
 
     postDetailMock.mockResolvedValue({
       id: 9,
@@ -89,6 +93,14 @@ describe('CommunityPostPage', () => {
     })
 
     commentsMock.mockResolvedValue([])
+    notificationsMock.mockResolvedValue({
+      content: [],
+      unreadCount: 0,
+      totalElements: 0,
+      totalPages: 1,
+      number: 0,
+      size: 1,
+    })
   })
 
   it('renders a return link back to the filtered hub path', async () => {

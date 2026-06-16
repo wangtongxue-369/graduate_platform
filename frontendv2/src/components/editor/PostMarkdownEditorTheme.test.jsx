@@ -30,6 +30,7 @@ vi.mock('@mdxeditor/editor', async () => {
     toolbarPlugin: vi.fn(() => ({ type: 'toolbar' })),
     codeBlockPlugin: vi.fn(() => ({ type: 'codeblock' })),
     codeMirrorPlugin: vi.fn(() => ({ type: 'codemirror' })),
+    imagePlugin: vi.fn(() => ({ type: 'image' })),
     BlockTypeSelect: () => null,
     BoldItalicUnderlineToggles: () => null,
     ChangeCodeMirrorLanguage: () => null,
@@ -38,6 +39,7 @@ vi.mock('@mdxeditor/editor', async () => {
     CreateLink: () => null,
     DiffSourceToggleWrapper: ({ children }) => children,
     InsertCodeBlock: () => null,
+    InsertImage: () => null,
     ListsToggle: () => null,
     UndoRedo: () => null,
   }

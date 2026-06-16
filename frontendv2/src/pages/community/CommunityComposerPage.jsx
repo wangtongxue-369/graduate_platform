@@ -12,8 +12,9 @@ import {
   communityVisibilityOptions,
   normalizeCommunityCategory,
 } from '@/lib/communityUi.js'
+import { useCommunitySubnavItems } from '@/lib/communityTabs.js'
 
-const communityTabs = [
+const communityTabItems = [
   { label: '社区目录', to: '/community', note: '浏览与筛选' },
   { label: '发布帖子', to: '/community/new', note: '提交正文与附件' },
   { label: '消息通知', to: '/community/notifications', note: '查看互动提醒' },
@@ -39,6 +40,250 @@ function normalizeTagValue(value) {
   return Array.from(String(value || '')).slice(0, 10).join('')
 }
 
+function formatFileSize(size) {
+  if (!Number.isFinite(size) || size <= 0) return '0 B'
+  if (size < 1024) return `${size} B`
+
+  const units = ['KB', 'MB', 'GB']
+  let value = size / 1024
+  let unitIndex = 0
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024
+    unitIndex += 1
+  }
+
+  const fixed = value >= 10 || Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1)
+  return `${fixed} ${units[unitIndex]}`
+}
+
+function isMarkdownFileName(fileName) {
+  return /\.(md|markdown)$/i.test(String(fileName || ''))
+}
+
+const MAX_ATTACHMENT_COUNT = 6
+const MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024
+const ALLOWED_ATTACHMENT_EXTENSIONS = [
+  'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'txt',
+  'png', 'jpg', 'jpeg', 'gif', 'webp', 'zip', 'rar', '7z',
+]
+
+function ensureSentence(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+  return /[。！？]$/.test(text) ? text : `${text}。`
+}
+
+function getFileExtension(fileName) {
+  const normalizedName = String(fileName || '').trim()
+  const lastDotIndex = normalizedName.lastIndexOf('.')
+  if (lastDotIndex < 0 || lastDotIndex === normalizedName.length - 1) {
+    return ''
+  }
+  return normalizedName.slice(lastDotIndex + 1).toLowerCase()
+}
+
+function getAttachmentRequirementHint() {
+  return `合规附件要求：单帖最多 ${MAX_ATTACHMENT_COUNT} 个；每个文件不能超过 20MB；文件名需要带扩展名；支持 ${ALLOWED_ATTACHMENT_EXTENSIONS.join('、')}。`
+}
+
+function buildAttachmentGuidance(extraHint = '') {
+  const segments = []
+  if (extraHint) {
+    segments.push(ensureSentence(extraHint))
+  }
+  segments.push(getAttachmentRequirementHint())
+  return segments.join('')
+}
+
+function buildAttachmentValidationFeedback(title, problem, extraHint = '') {
+  return {
+    ...buildValidationFeedback(title, ensureSentence(problem)),
+    extraMessage: buildAttachmentGuidance(extraHint),
+  }
+}
+
+function buildAttachmentRequestFailureFeedback(rawMessage) {
+  if (!rawMessage) return null
+
+  const normalizedMessage = String(rawMessage).trim()
+  const attachmentExtraHint = normalizedMessage.includes('至少上传一个附件')
+    ? '如需发布含附件帖子，请先上传至少 1 个附件。'
+    : ''
+
+  if (
+    normalizedMessage.includes('至少上传一个附件')
+    || normalizedMessage.includes('单帖最多上传')
+    || normalizedMessage.includes('检测到重复附件')
+    || normalizedMessage.includes('附件不能为空文件')
+    || normalizedMessage.includes('附件超过 20MB')
+    || normalizedMessage.includes('不支持的附件格式')
+    || normalizedMessage.includes('附件必须包含扩展名')
+  ) {
+    return {
+      tone: 'error',
+      kicker: '附件校验',
+      title: '附件不符合要求',
+      message: ensureSentence(normalizedMessage),
+      extraMessage: buildAttachmentGuidance(attachmentExtraHint),
+      confirmLabel: '继续修改',
+    }
+  }
+
+  return null
+}
+
+function validateAttachments(attachments) {
+  if (!attachments.length) return null
+
+  if (attachments.length > MAX_ATTACHMENT_COUNT) {
+    return buildAttachmentValidationFeedback(
+      '附件数量过多',
+      `当前选择了 ${attachments.length} 个附件。`,
+    )
+  }
+
+  for (const file of attachments) {
+    const originalName = String(file?.name || '').trim() || '未命名附件'
+    if ((file?.size || 0) <= 0) {
+      return buildAttachmentValidationFeedback(
+        '附件为空文件',
+        `当前附件为空文件：${originalName}`,
+      )
+    }
+
+    if (file.size > MAX_ATTACHMENT_SIZE) {
+      return buildAttachmentValidationFeedback(
+        '附件体积超出限制',
+        `当前附件超过 20MB：${originalName}`,
+      )
+    }
+
+    const extension = getFileExtension(originalName)
+    if (!extension) {
+      return buildAttachmentValidationFeedback(
+        '附件缺少扩展名',
+        `当前附件缺少扩展名：${originalName}`,
+      )
+    }
+
+    if (!ALLOWED_ATTACHMENT_EXTENSIONS.includes(extension)) {
+      return buildAttachmentValidationFeedback(
+        '附件不符合要求',
+        `当前附件格式暂不支持：${originalName}`,
+      )
+    }
+  }
+
+  return null
+}
+
+function buildValidationFeedback(title, message) {
+  return {
+    tone: 'warning',
+    kicker: '发布检查',
+    title,
+    message,
+    confirmLabel: '继续填写',
+  }
+}
+
+function buildRestrictionFeedback(isAuthed) {
+  if (!isAuthed) {
+    return {
+      tone: 'warning',
+      kicker: '当前受限',
+      title: '当前还不能提交帖子',
+      message: '游客状态只能先浏览和整理内容，登录后才能把帖子真正提交到社区。',
+      confirmLabel: '知道了',
+    }
+  }
+
+  return {
+    tone: 'warning',
+    kicker: '当前受限',
+    title: '当前账号处于演示模式',
+    message: '演示账号只展示发帖流程，不会真的向后端创建帖子。请切换到真实账号后再提交。',
+    confirmLabel: '知道了',
+  }
+}
+
+function buildSubmitSuccessFeedback(submitAction, nextPostId) {
+  if (submitAction === 'draft') {
+    return {
+      tone: 'success',
+      kicker: '保存成功',
+      title: '草稿已保存',
+      message: '这篇帖子已经保存到你的个人帖子里，你可以稍后继续编辑。',
+      confirmLabel: nextPostId ? '继续编辑' : '返回社区',
+      confirmAction: {
+        type: 'navigate',
+        to: nextPostId ? `/settings/posts/${nextPostId}/edit` : '/community',
+      },
+    }
+  }
+
+  return {
+    tone: 'success',
+    kicker: '提交成功',
+    title: '帖子已提交审核',
+    message: '你的帖子已经提交到社区审核流，审核通过后就会出现在社区目录里。',
+    confirmLabel: nextPostId ? '查看帖子' : '返回社区',
+    confirmAction: {
+      type: 'navigate',
+      to: nextPostId ? `/community/${nextPostId}` : '/community',
+    },
+  }
+}
+
+function buildRequestFailureFeedback(requestError) {
+  const status = typeof requestError?.status === 'number' ? requestError.status : null
+  const rawMessage = String(requestError?.message || '').trim()
+
+  if (status === 401 || status === 403) {
+    return {
+      tone: 'error',
+      kicker: '登录状态异常',
+      title: '登录状态需要重新确认',
+      message: '当前登录状态可能已经失效，请重新登录后再提交帖子。',
+      confirmLabel: '知道了',
+    }
+  }
+
+  if (rawMessage === 'Failed to fetch' || (!status && !rawMessage)) {
+    return {
+      tone: 'error',
+      kicker: '网络异常',
+      title: '网络连接暂时不可用',
+      message: '当前没有成功连上服务，请检查网络或稍后重试。',
+      confirmLabel: '知道了',
+    }
+  }
+
+  if (status !== null && status >= 500) {
+    return {
+      tone: 'error',
+      kicker: '服务异常',
+      title: '服务暂时不可用',
+      message: '服务器暂时没有给出有效响应，请稍后再试。',
+      confirmLabel: '知道了',
+    }
+  }
+
+  const attachmentFeedback = buildAttachmentRequestFailureFeedback(rawMessage)
+  if (attachmentFeedback) {
+    return attachmentFeedback
+  }
+
+  return {
+    tone: 'error',
+    kicker: '系统反馈',
+    title: '提交失败',
+    message: rawMessage || '发帖失败，请稍后再试。',
+    confirmLabel: '继续修改',
+  }
+}
+
 export default function CommunityComposerPage() {
   const navigate = useNavigate()
   const { isAuthed, token } = useAuth()
@@ -46,16 +291,41 @@ export default function CommunityComposerPage() {
   const [form, setForm] = useState(initialForm)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
+  const [feedback, setFeedback] = useState(null)
   const isForcedPreview = shouldForceCommunityPreview(token)
+  const communityTabs = useCommunitySubnavItems(communityTabItems)
+
+  function openFeedback(config) {
+    setFeedback({
+      tone: 'info',
+      kicker: '提交提醒',
+      title: '提醒',
+      message: '',
+      extraMessage: '',
+      confirmLabel: '知道了',
+      confirmAction: null,
+      ...config,
+    })
+  }
+
+  function clearFeedback() {
+    setFeedback(null)
+  }
+
+  function handleFeedbackConfirm() {
+    const nextAction = feedback?.confirmAction
+    clearFeedback()
+    if (nextAction?.type === 'navigate') {
+      navigate(nextAction.to)
+    }
+  }
 
   useEffect(() => {
     let active = true
 
     async function loadCategories() {
       setLoading(true)
-      setError('')
+      clearFeedback()
 
       try {
         const categoryData = isForcedPreview
@@ -69,7 +339,13 @@ export default function CommunityComposerPage() {
         }))
       } catch (requestError) {
         if (!active) return
-        setError(requestError.message || '分类加载失败，请稍后再试。')
+        openFeedback({
+          tone: 'error',
+          kicker: '页面初始化失败',
+          title: '分类加载失败',
+          message: requestError.message || '分类数据暂时没有加载成功，请稍后重试。',
+          confirmLabel: '知道了',
+        })
       } finally {
         if (active) setLoading(false)
       }
@@ -89,6 +365,9 @@ export default function CommunityComposerPage() {
   const estimatedTagList = form.tags
     .map((item) => item.trim())
     .filter(Boolean)
+  const markdownFileSummary = form.markdownFile
+    ? `已选择：${form.markdownFile.name}（${formatFileSize(form.markdownFile.size)}）`
+    : ''
   const identitySummary = !isAuthed
     ? '游客浏览，登录后才能真正提交。'
     : !canSubmitForReal
@@ -101,15 +380,13 @@ export default function CommunityComposerPage() {
     : ''
 
   function updateField(name, value) {
-    setMessage('')
-    setError('')
+    clearFeedback()
     setForm((current) => ({ ...current, [name]: value }))
   }
 
   function updateTagAt(index, value) {
     const nextValue = normalizeTagValue(value)
-    setMessage('')
-    setError('')
+    clearFeedback()
     setForm((current) => ({
       ...current,
       tags: current.tags.map((item, itemIndex) => (itemIndex === index ? nextValue : item)),
@@ -117,8 +394,7 @@ export default function CommunityComposerPage() {
   }
 
   function appendTagField() {
-    setMessage('')
-    setError('')
+    clearFeedback()
     setForm((current) => ({
       ...current,
       tags: [...current.tags, ''],
@@ -126,8 +402,7 @@ export default function CommunityComposerPage() {
   }
 
   function removeTagAt(index) {
-    setMessage('')
-    setError('')
+    clearFeedback()
     setForm((current) => {
       const nextTags = current.tags.filter((_, itemIndex) => itemIndex !== index)
       return {
@@ -139,28 +414,37 @@ export default function CommunityComposerPage() {
 
   async function handleSubmit(submitAction) {
     if (!form.title.trim()) {
-      setError('请先填写帖子标题。')
+      openFeedback(buildValidationFeedback('请先补全标题', '标题是帖子进入社区后的第一眼信息，请先填写标题。'))
       return
     }
     if (!form.categoryCode) {
-      setError('请先选择帖子分类。')
+      openFeedback(buildValidationFeedback('请先选择分类', '分类决定帖子会被归到哪里，请先选好分类再提交。'))
       return
     }
     if (!form.content.trim() && !form.markdownFile) {
-      setError('正文和 Markdown 文件至少填写一种。')
+      openFeedback(buildValidationFeedback('请先补全正文', '正文内容和 Markdown 文件至少要提供一种，帖子才能进入发布流程。'))
       return
     }
-
+    if (form.markdownFile && form.markdownFile.size === 0) {
+      openFeedback(buildValidationFeedback('Markdown 文件为空', '你选择的 Markdown 文件是空文件，请确认内容后重新上传。'))
+      return
+    }
+    if (form.markdownFile && !isMarkdownFileName(form.markdownFile.name)) {
+      openFeedback(buildValidationFeedback('Markdown 格式不支持', '请上传 .md 或 .markdown 格式的正文文件。'))
+      return
+    }
+    const attachmentFeedback = validateAttachments(form.attachments)
+    if (attachmentFeedback) {
+      openFeedback(attachmentFeedback)
+      return
+    }
     if (!canSubmitForReal) {
-      setMessage(isAuthed
-        ? '当前是演示身份，只展示发帖流程，不会真正提交到后端。请用真实账号登录后联调。'
-        : '游客不能发帖，请先登录或注册。')
+      openFeedback(buildRestrictionFeedback(isAuthed))
       return
     }
 
     setSubmitting(true)
-    setError('')
-    setMessage('')
+    clearFeedback()
 
     try {
       const payload = new FormData()
@@ -186,15 +470,9 @@ export default function CommunityComposerPage() {
       })
 
       const result = await communityApi.createPost(payload, token)
-      const nextPostId = result?.id
-
-      if (nextPostId) {
-        navigate(`/community/${nextPostId}`)
-      } else {
-        navigate('/community')
-      }
+      openFeedback(buildSubmitSuccessFeedback(submitAction, result?.id))
     } catch (requestError) {
-      setError(requestError.message || '发帖失败，请稍后再试。')
+      openFeedback(buildRequestFailureFeedback(requestError))
     } finally {
       setSubmitting(false)
     }
@@ -219,8 +497,6 @@ export default function CommunityComposerPage() {
         <SubnavTabs items={communityTabs} />
 
         {preSubmitNotice ? <div className="v2-status-note">{preSubmitNotice}</div> : null}
-        {message ? <div className="v2-status-note">{message}</div> : null}
-        {error ? <div className="v2-status-error">{error}</div> : null}
 
         <section className="v2-article-card">
           <div className="v2-section-head">
@@ -337,7 +613,7 @@ export default function CommunityComposerPage() {
             <label className="v2-field">
               <span>正文内容</span>
               <textarea
-                rows="14"
+                rows="9"
                 value={form.content}
                 placeholder="支持直接粘贴正文，也可以搭配 Markdown 文件上传。"
                 onChange={(event) => updateField('content', event.target.value)}
@@ -348,9 +624,12 @@ export default function CommunityComposerPage() {
               <span>Markdown 文件</span>
               <input
                 type="file"
-                accept=".md,.markdown,.txt"
+                accept=".md,.markdown"
                 onChange={(event) => updateField('markdownFile', event.target.files?.[0] || null)}
               />
+              <small className="v2-field-hint">
+                {markdownFileSummary || '支持 .md / .markdown，选中后会在这里显示文件名。'}
+              </small>
             </label>
           </div>
         </section>
@@ -386,8 +665,8 @@ export default function CommunityComposerPage() {
         </section>
       </div>
 
-      <aside className="v2-side-column">
-        <section className="v2-side-card">
+      <aside className="v2-side-column v2-composer-side-column">
+        <section className="v2-side-card v2-side-card--composer-summary">
           <p className="v2-kicker">提交控制</p>
           <div className="v2-side-action-stack">
             <button
@@ -416,7 +695,7 @@ export default function CommunityComposerPage() {
 
         <section className="v2-side-card">
           <p className="v2-kicker">提交前确认</p>
-          <div className="v2-check-list">
+          <div className="v2-composer-summary">
             <div className="v2-check-row">
               <strong>当前身份</strong>
               <span>{identitySummary}</span>
@@ -462,6 +741,45 @@ export default function CommunityComposerPage() {
           </div>
         </section>
       </aside>
+
+      {feedback ? (
+        <div className="v2-feedback-backdrop" onClick={clearFeedback}>
+          <section
+            aria-labelledby="v2-composer-error-title"
+            aria-modal="true"
+            className="v2-feedback-dialog"
+            data-tone={feedback.tone}
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <div className="v2-feedback-dialog__head">
+              <div>
+                <p className="v2-kicker">{feedback.kicker}</p>
+                <h2 id="v2-composer-error-title">{feedback.title}</h2>
+              </div>
+              <button
+                aria-label="关闭提醒"
+                className="v2-feedback-dialog__close"
+                onClick={clearFeedback}
+                type="button"
+              >
+                关闭
+              </button>
+            </div>
+            <p className="v2-feedback-dialog__message">{feedback.message}</p>
+            {feedback.extraMessage ? (
+              <p className="v2-feedback-dialog__message v2-feedback-dialog__message--muted">
+                {feedback.extraMessage}
+              </p>
+            ) : null}
+            <div className="v2-feedback-dialog__actions">
+              <button className="v2-primary-link" onClick={handleFeedbackConfirm} type="button">
+                {feedback.confirmLabel}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </>
   )
 }

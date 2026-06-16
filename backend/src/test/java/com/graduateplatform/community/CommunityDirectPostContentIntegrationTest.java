@@ -9,6 +9,7 @@ import com.graduateplatform.community.repository.PostCategoryRepository;
 import com.graduateplatform.community.repository.PostRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -83,6 +84,26 @@ class CommunityDirectPostContentIntegrationTest {
             .andExpect(jsonPath("$.data.content").value(org.hamcrest.Matchers.containsString("directly in the composer")))
             .andExpect(jsonPath("$.data.contentFormat").value("markdown"))
             .andExpect(jsonPath("$.data.sourceFileName").value("inline-content.md"));
+    }
+
+    @Test
+    void emptyMarkdownFileShowsAClearValidationMessage() throws Exception {
+        MockMultipartFile emptyMarkdown = new MockMultipartFile(
+            "markdownFile",
+            "empty.md",
+            "text/markdown",
+            new byte[0]
+        );
+
+        mockMvc.perform(multipart("/api/posts")
+                .file(emptyMarkdown)
+                .param("title", "Markdown Upload Title")
+                .param("categoryCode", category.getCode())
+                .param("visibility", "public")
+                .param("status", "PENDING")
+                .header("Authorization", "Bearer " + authorToken))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("你选择的 Markdown 文件是空文件，请确认内容后重新上传。"));
     }
 
     private User oldUser(String name, String role) {

@@ -27,6 +27,9 @@ describe('post markdown editor theme styles', () => {
     expect(editorSection).toContain('var(--v2-paper-soft)')
     expect(editorSection).toContain('var(--v2-line)')
     expect(editorSection).toContain('var(--v2-ink)')
+    expect(editorSection).toContain('--v2-editor-scrollbar-track')
+    expect(editorSection).toContain('--v2-editor-scrollbar-thumb')
+    expect(editorSection).toContain('--v2-editor-scrollbar-thumb-hover')
   })
 
   it('includes dark theme overrides for block type and language select controls', () => {
@@ -48,5 +51,18 @@ describe('post markdown editor theme styles', () => {
     expect(editorSection).toContain('height: 0')
     expect(editorSection).toContain('background: transparent')
     expect(editorSection).toContain('overflow: visible')
+  })
+
+  it('styles editor scrollbars through theme tokens for both rich text and code panes', () => {
+    const editorSection = getSection('.v2-post-workbench-editor {', '.v2-post-workbench-preview {')
+
+    expect(editorSection).toContain('.v2-post-md-editor-content,')
+    expect(editorSection).toContain('.cm-scroller {')
+    expect(editorSection).toContain('scrollbar-color: var(--v2-editor-scrollbar-thumb) var(--v2-editor-scrollbar-track);')
+    expect(editorSection).toContain('.v2-post-md-editor-content::-webkit-scrollbar,')
+    expect(editorSection).toContain('.cm-scroller::-webkit-scrollbar {')
+    expect(editorSection).toContain('background: var(--v2-editor-scrollbar-track);')
+    expect(editorSection).toContain('background: var(--v2-editor-scrollbar-thumb);')
+    expect(editorSection).toContain('background: var(--v2-editor-scrollbar-thumb-hover);')
   })
 })

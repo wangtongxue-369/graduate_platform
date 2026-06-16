@@ -1,6 +1,8 @@
 spring:
   application:
     name: graduate-platform-backend
+  config:
+    import: optional:file:./config/application-local.yml,optional:file:./backend/config/application-local.yml
   datasource:
     url: jdbc:mysql://118.89.81.131:3306/graduate_platform?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf-8
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -28,7 +30,7 @@ spring:
             enable: true
   servlet:
     multipart:
-      max-file-size: 10MB
+      max-file-size: 30MB
       max-request-size: 120MB
 
 server:

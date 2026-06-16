@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -103,7 +105,8 @@ describe('SettingsPostEditPage', () => {
       }, 'remote-token')
     })
 
-    expect(await screen.findByText('帖子内容已保存。')).toBeInTheDocument()
+    const saveToast = await screen.findByText('帖子内容已保存。')
+    expect(saveToast).toHaveClass('v2-floating-toast', 'v2-floating-toast--success')
     expect(screen.getByText('当前分类').parentElement).toHaveTextContent('经验分享')
   })
 
@@ -154,7 +157,45 @@ describe('SettingsPostEditPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '保存并继续编辑' }))
 
     expect(userApiMocks.updateMyPost).not.toHaveBeenCalled()
-    expect(await screen.findByText('帖子编辑：本地预览已更新')).toBeInTheDocument()
+    const previewToast = await screen.findByText('帖子编辑：本地预览已更新')
+    expect(previewToast).toHaveClass('v2-floating-toast', 'v2-floating-toast--success')
     expect(screen.getByDisplayValue('预览帖子已更新标题')).toBeInTheDocument()
+  })
+
+  it('styles the save toast through theme tokens instead of fixed colors', () => {
+    const stylesheet = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8')
+
+    expect(stylesheet).toContain('--v2-toast-success-bg')
+    expect(stylesheet).toContain('--v2-toast-success-border')
+    expect(stylesheet).toContain('--v2-toast-success-ink')
+    expect(stylesheet).toContain('--v2-toast-success-shadow')
+    expect(stylesheet).toContain('border: 1px solid var(--v2-toast-success-border);')
+    expect(stylesheet).toContain('box-shadow: var(--v2-toast-success-shadow);')
+    expect(stylesheet).toContain('color: var(--v2-toast-success-ink);')
+    expect(stylesheet).toContain('background: var(--v2-toast-success-bg);')
+  })
+
+  it('removes redundant helper copy from the edit page shell', async () => {
+    userApiMocks.myPostDetail.mockResolvedValue({
+      id: 101,
+      title: '编辑页文案收口',
+      content: '这是一段足够长的正文内容，用来确保页面加载后可以验证多余说明文案已经移除。',
+      categoryCode: 'kaoyan',
+      category: '考研',
+      tags: '测试',
+      visibility: 'public',
+      anonymous: false,
+      status: 'PUBLISHED',
+      updatedAt: '2026-06-12T10:20:00',
+    })
+
+    renderPage()
+
+    await screen.findByDisplayValue('编辑页文案收口')
+
+    expect(screen.queryByText('这里处理你自己的帖子内容与发布信息，不再跳去公共社区详情页。')).not.toBeInTheDocument()
+    expect(screen.queryByText('把标题、分类、可见范围压缩在上半区，下面优先留给更沉浸的正文编辑体验。')).not.toBeInTheDocument()
+    expect(screen.queryByText('上半区只保留轻量控制，避免挤占下面的正文工作区。')).not.toBeInTheDocument()
+    expect(screen.queryByText('只保留最常看的几项。')).not.toBeInTheDocument()
   })
 })

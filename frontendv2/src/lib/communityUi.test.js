@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { countComments, deleteCommentFromTree, flattenCommentThreadForDisplay } from './communityUi.js'
+import {
+  countComments,
+  deleteCommentFromTree,
+  flattenCommentThreadForDisplay,
+  normalizeCommunityNotification,
+} from './communityUi.js'
 
 describe('communityUi comment deletion helpers', () => {
   it('does not count deleted placeholder comments toward totals', () => {
@@ -127,5 +132,25 @@ describe('communityUi comment deletion helpers', () => {
       replyToAuthorName: 'Child',
     })
     expect(flattened[0].replies[1].replies).toEqual([])
+  })
+})
+
+describe('communityUi notification normalization', () => {
+  it('treats backend readFlag as the canonical read state', () => {
+    expect(
+      normalizeCommunityNotification({
+        id: 1,
+        title: 'Read notification',
+        readFlag: true,
+      }),
+    ).toMatchObject({ read: true })
+
+    expect(
+      normalizeCommunityNotification({
+        id: 2,
+        title: 'Unread notification',
+        readFlag: false,
+      }),
+    ).toMatchObject({ read: false })
   })
 })
