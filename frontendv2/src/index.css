@@ -3418,6 +3418,120 @@ html[data-theme="dark"] .v2-plan-side-fact {
   font-size: 0.86rem;
 }
 
+.v2-kaogong-jobs-side-column,
+.v2-kaogong-score-side-column {
+  gap: 12px;
+  overflow-y: auto !important;
+  padding-right: 6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.v2-kaogong-jobs-side-column::-webkit-scrollbar,
+.v2-kaogong-score-side-column::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.v2-kaogong-filter-card,
+.v2-kaogong-score-filter-card,
+.v2-kaogong-side-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.v2-kaogong-filter-cluster {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 94%, white);
+}
+
+.v2-kaogong-filter-cluster__head {
+  display: grid;
+  gap: 4px;
+}
+
+.v2-kaogong-filter-cluster__head strong {
+  font-size: 0.98rem;
+  color: var(--v2-ink);
+}
+
+.v2-kaogong-filter-cluster__head span {
+  color: var(--v2-soft);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.v2-kaogong-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+
+.v2-kaogong-filter-grid .v2-field--wide {
+  grid-column: 1 / -1;
+}
+
+.v2-kaogong-filter-actions {
+  justify-content: space-between;
+}
+
+.v2-kaogong-filter-actions .v2-segment-button {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
+.v2-kaogong-side-panel .v2-check-list {
+  gap: 10px;
+}
+
+.v2-kaogong-side-panel .v2-check-row {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 94%, white);
+}
+
+.v2-kaogong-side-panel .v2-check-row strong {
+  color: var(--v2-ink);
+}
+
+.v2-kaogong-side-panel .v2-check-row span {
+  color: var(--v2-soft);
+  font-size: 0.86rem;
+}
+
+.v2-kaogong-side-tip {
+  color: var(--v2-soft-strong);
+}
+
+.v2-kaogong-favorite-trigger {
+  width: 100%;
+}
+
+.v2-kaogong-favorite-modal {
+  width: min(560px, 100%);
+  display: grid;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .v2-kaogong-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-kaogong-filter-grid .v2-field--wide {
+    grid-column: auto;
+  }
+}
+
 .v2-room-mini-list {
   display: grid;
   gap: 8px;

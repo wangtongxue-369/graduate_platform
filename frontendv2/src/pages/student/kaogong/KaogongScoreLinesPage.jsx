@@ -15,6 +15,10 @@ import {
   normalizeScoreRows,
 } from '@/pages/student/kaogong/kaogongPageData.js'
 
+const scoreJobCategoryOptions = ['', '综合管理', '行政执法', '专业技术']
+const scoreUnitTypeOptions = ['', '中央机关直属机构', '地方机关', '事业单位']
+const scoreExamTypeOptions = ['', '国家公务员考试', '上海市公务员考试', '浙江省公务员考试']
+
 function createScoreFilters() {
   return {
     region: '',
@@ -35,6 +39,7 @@ export default function KaogongScoreLinesPage() {
   const [notice, setNotice] = useState(previewDataNotice('分数线账本'))
   const [loading, setLoading] = useState(false)
   const [actionPendingId, setActionPendingId] = useState(null)
+  const [favoriteModalOpen, setFavoriteModalOpen] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -60,7 +65,7 @@ export default function KaogongScoreLinesPage() {
         if (!active) return
         setRows(normalizeScoreRows(scoreData, favoriteData))
         setFavoriteRows(normalizeFavoriteScoreLines(favoriteData))
-        setNotice(remoteDataNotice('分数线账本'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createKaogongScorePreviewRows())
@@ -113,6 +118,10 @@ export default function KaogongScoreLinesPage() {
     setAppliedFilters(nextFilters)
   }
 
+  function updateDraftFilter(key, value) {
+    setDraftFilters((current) => ({ ...current, [key]: value }))
+  }
+
   return (
     <>
       <div className="v2-main-column">
@@ -127,7 +136,7 @@ export default function KaogongScoreLinesPage() {
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
-        {loading ? <div className="v2-status-note">正在刷新分数线账本…</div> : null}
+        {loading ? <div className="v2-status-note">正在刷新分数线账本...</div> : null}
 
         <section className="v2-summary-strip" aria-label="分数线账本摘要">
           <article className="v2-summary-card">
@@ -186,8 +195,8 @@ export default function KaogongScoreLinesPage() {
         </section>
       </div>
 
-      <aside className="v2-side-column">
-        <section className="v2-side-card">
+      <aside className="v2-side-column v2-kaogong-score-side-column">
+        <section className="v2-side-card v2-kaogong-filter-card v2-kaogong-score-filter-card">
           <div className="v2-side-card__head">
             <div>
               <p className="v2-kicker">筛选控制器</p>
@@ -195,72 +204,134 @@ export default function KaogongScoreLinesPage() {
             </div>
           </div>
           <form className="v2-filter-form" onSubmit={handleApplyFilters}>
-            <label className="v2-field">
-              <span>地区</span>
-              <input
-                type="text"
-                value={draftFilters.region}
-                onChange={(event) => setDraftFilters((current) => ({ ...current, region: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>年份</span>
-              <input
-                type="text"
-                value={draftFilters.year}
-                onChange={(event) => setDraftFilters((current) => ({ ...current, year: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>岗位类别</span>
-              <input
-                type="text"
-                value={draftFilters.jobCategory}
-                onChange={(event) => setDraftFilters((current) => ({ ...current, jobCategory: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>单位类型</span>
-              <input
-                type="text"
-                value={draftFilters.unitType}
-                onChange={(event) => setDraftFilters((current) => ({ ...current, unitType: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>考试类别</span>
-              <input
-                type="text"
-                value={draftFilters.examType}
-                onChange={(event) => setDraftFilters((current) => ({ ...current, examType: event.target.value }))}
-              />
-            </label>
-            <div className="v2-inline-actions">
+            <section className="v2-kaogong-filter-cluster" aria-label="分数线筛选器">
+              <div className="v2-kaogong-filter-cluster__head">
+                <strong>筛选条件</strong>
+                <span>先把对比范围收紧，再决定哪些年份和岗位线值得继续跟踪。</span>
+              </div>
+              <div className="v2-kaogong-filter-grid">
+                <label className="v2-field">
+                  <span>地区</span>
+                  <input
+                    type="text"
+                    placeholder="如：北京/上海/江苏"
+                    value={draftFilters.region}
+                    onChange={(event) => updateDraftFilter('region', event.target.value)}
+                  />
+                </label>
+                <label className="v2-field">
+                  <span>年份</span>
+                  <input
+                    type="text"
+                    placeholder="如：2026"
+                    value={draftFilters.year}
+                    onChange={(event) => updateDraftFilter('year', event.target.value)}
+                  />
+                </label>
+                <label className="v2-field">
+                  <span>岗位类别</span>
+                  <select
+                    value={draftFilters.jobCategory}
+                    onChange={(event) => updateDraftFilter('jobCategory', event.target.value)}
+                  >
+                    {scoreJobCategoryOptions.map((item) => (
+                      <option key={`score-job-category-${item || 'empty'}`} value={item}>
+                        {item || '全部'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="v2-field">
+                  <span>单位类型</span>
+                  <select
+                    value={draftFilters.unitType}
+                    onChange={(event) => updateDraftFilter('unitType', event.target.value)}
+                  >
+                    {scoreUnitTypeOptions.map((item) => (
+                      <option key={`score-unit-type-${item || 'empty'}`} value={item}>
+                        {item || '全部'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="v2-field v2-field--wide">
+                  <span>考试类别</span>
+                  <select
+                    value={draftFilters.examType}
+                    onChange={(event) => updateDraftFilter('examType', event.target.value)}
+                  >
+                    {scoreExamTypeOptions.map((item) => (
+                      <option key={`score-exam-type-${item || 'empty'}`} value={item}>
+                        {item || '全部'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </section>
+            <div className="v2-inline-actions v2-kaogong-filter-actions">
               <button className="v2-segment-button is-active" type="submit">应用筛选</button>
               <button className="v2-segment-button" type="button" onClick={resetFilters}>重置</button>
             </div>
           </form>
+        </section>
 
-          <div className="v2-room-side-divider" />
+        <section className="v2-side-card v2-kaogong-side-panel">
+          <div className="v2-room-side-section__head">
+            <strong>已收藏分数线</strong>
+            <span>{favoriteRows.length} 项</span>
+          </div>
+          <p className="v2-kaogong-side-tip">
+            {favoriteRows.length
+              ? '右栏只保留入口，全部收藏分数线放到弹窗里集中回看。'
+              : '当前还没有收藏分数线，看到值得持续跟踪的岗位线时可以从这里集中查看。'}
+          </p>
+          <button
+            className="v2-secondary-link v2-kaogong-favorite-trigger"
+            type="button"
+            onClick={() => setFavoriteModalOpen(true)}
+          >
+            查看收藏分数线
+          </button>
+        </section>
+      </aside>
 
-          <section className="v2-room-side-section">
-            <div className="v2-room-side-section__head">
-              <strong>已收藏分数线</strong>
-              <span>{favoriteRows.length} 项</span>
+      {favoriteModalOpen ? (
+        <div className="v2-modal-overlay" onClick={() => setFavoriteModalOpen(false)}>
+          <div
+            aria-label="收藏分数线"
+            aria-modal="true"
+            className="v2-modal-card v2-kaogong-favorite-modal"
+            role="dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="v2-modal-head">
+              <div>
+                <p className="v2-kicker">收藏分数线</p>
+                <h3>关键分数线清单</h3>
+              </div>
+              <button
+                aria-label="关闭收藏分数线弹窗"
+                className="v2-ghost-link"
+                type="button"
+                onClick={() => setFavoriteModalOpen(false)}
+              >
+                关闭
+              </button>
             </div>
             <div className="v2-check-list">
               {favoriteRows.map((item) => (
-                <div className="v2-check-row" key={`favorite-score-${item.id}`}>
+                <div className="v2-check-row" key={`favorite-score-modal-${item.id}`}>
                   <strong>{item.jobName}</strong>
                   <span>{item.region} / {item.year}</span>
                   <span>{item.scoreLine}</span>
                 </div>
               ))}
-              {!favoriteRows.length ? <p>当前还没有收藏分数线，看到值得持续跟踪的岗位线时可以直接钉在这里。</p> : null}
+              {!favoriteRows.length ? <p>当前还没有收藏分数线，先在主区钉住值得持续跟踪的岗位线再回来看。</p> : null}
             </div>
-          </section>
-        </section>
-      </aside>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }

@@ -18,6 +18,12 @@ import {
   normalizeJobRows,
 } from '@/pages/student/kaogong/kaogongPageData.js'
 
+const educationOptions = ['', '大专', '本科', '硕士', '博士']
+const degreeOptions = ['', '学士', '硕士', '博士']
+const politicalStatusOptions = ['', '中共党员', '共青团员', '群众']
+const jobCategoryOptions = ['', '综合管理', '行政执法', '专业技术']
+const unitTypeOptions = ['', '中央机关直属机构', '地方机关', '事业单位']
+
 export default function KaogongJobsPage() {
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
@@ -29,6 +35,7 @@ export default function KaogongJobsPage() {
   const [notice, setNotice] = useState(previewDataNotice('岗位匹配'))
   const [loading, setLoading] = useState(false)
   const [actionPendingId, setActionPendingId] = useState(null)
+  const [favoriteModalOpen, setFavoriteModalOpen] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -111,6 +118,12 @@ export default function KaogongJobsPage() {
     setAppliedFilters(defaultJobCriteria)
   }
 
+  function updateDraftFilter(key, value) {
+    setDraftFilters((current) => ({ ...current, [key]: value }))
+  }
+
+  const latestHistory = histories[0] || null
+
   return (
     <>
       <div className="v2-main-column">
@@ -185,8 +198,8 @@ export default function KaogongJobsPage() {
         </section>
       </div>
 
-      <aside className="v2-side-column">
-        <section className="v2-side-card">
+      <aside className="v2-side-column v2-kaogong-jobs-side-column">
+        <section className="v2-side-card v2-kaogong-filter-card">
           <div className="v2-side-card__head">
             <div>
               <p className="v2-kicker">筛选控制器</p>
@@ -194,95 +207,183 @@ export default function KaogongJobsPage() {
             </div>
           </div>
           <form className="v2-filter-form" onSubmit={handleApplyFilters}>
-            <label className="v2-field">
-              <span>学历</span>
-              <input
-                type="text"
-                value={draftFilters.education}
-                onChange={(event) => setDraftFilters((current) => ({ ...current, education: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>学位</span>
-              <input
-                type="text"
-                value={draftFilters.degree}
-                onChange={(event) => setDraftFilters((current) => ({ ...current, degree: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>专业</span>
-              <input
-                type="text"
-                value={draftFilters.major}
-                onChange={(event) => setDraftFilters((current) => ({ ...current, major: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>地区偏好</span>
-              <input
-                type="text"
-                value={draftFilters.region}
-                onChange={(event) => setDraftFilters((current) => ({ ...current, region: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>政治面貌</span>
-              <input
-                type="text"
-                value={draftFilters.politicalStatus}
-                onChange={(event) => setDraftFilters((current) => ({ ...current, politicalStatus: event.target.value }))}
-              />
-            </label>
-            <label className="v2-field">
-              <span>岗位类别</span>
-              <input
-                type="text"
-                value={draftFilters.jobCategory}
-                onChange={(event) => setDraftFilters((current) => ({ ...current, jobCategory: event.target.value }))}
-              />
-            </label>
-            <div className="v2-inline-actions">
+            <section className="v2-kaogong-filter-cluster" aria-label="岗位筛选器">
+              <div className="v2-kaogong-filter-cluster__head">
+                <strong>筛选条件</strong>
+                <span>沿用旧版字段和筛选方式，把门槛条件与偏好条件收进同一个控制面板。</span>
+              </div>
+              <div className="v2-kaogong-filter-grid">
+                <label className="v2-field">
+                  <span>学历</span>
+                  <select
+                    value={draftFilters.education}
+                    onChange={(event) => updateDraftFilter('education', event.target.value)}
+                  >
+                    {educationOptions.map((item) => (
+                      <option key={`education-${item || 'empty'}`} value={item}>
+                        {item || '不限'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="v2-field">
+                  <span>学位</span>
+                  <select
+                    value={draftFilters.degree}
+                    onChange={(event) => updateDraftFilter('degree', event.target.value)}
+                  >
+                    {degreeOptions.map((item) => (
+                      <option key={`degree-${item || 'empty'}`} value={item}>
+                        {item || '不限'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="v2-field v2-field--wide">
+                  <span>专业</span>
+                  <input
+                    type="text"
+                    value={draftFilters.major}
+                    placeholder="如：计算机科学"
+                    onChange={(event) => updateDraftFilter('major', event.target.value)}
+                  />
+                </label>
+                <label className="v2-field v2-field--wide">
+                  <span>户籍/生源地</span>
+                  <input
+                    type="text"
+                    value={draftFilters.household}
+                    placeholder="如：上海生源"
+                    onChange={(event) => updateDraftFilter('household', event.target.value)}
+                  />
+                </label>
+                <label className="v2-field v2-field--wide">
+                  <span>地区偏好</span>
+                  <input
+                    type="text"
+                    value={draftFilters.region}
+                    placeholder="如：北京/上海/江苏"
+                    onChange={(event) => updateDraftFilter('region', event.target.value)}
+                  />
+                </label>
+                <label className="v2-field">
+                  <span>政治面貌</span>
+                  <select
+                    value={draftFilters.politicalStatus}
+                    onChange={(event) => updateDraftFilter('politicalStatus', event.target.value)}
+                  >
+                    {politicalStatusOptions.map((item) => (
+                      <option key={`political-${item || 'empty'}`} value={item}>
+                        {item || '不限'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="v2-field">
+                  <span>岗位类别</span>
+                  <select
+                    value={draftFilters.jobCategory}
+                    onChange={(event) => updateDraftFilter('jobCategory', event.target.value)}
+                  >
+                    {jobCategoryOptions.map((item) => (
+                      <option key={`job-category-${item || 'empty'}`} value={item}>
+                        {item || '不限'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="v2-field">
+                  <span>单位类型</span>
+                  <select
+                    value={draftFilters.unitType}
+                    onChange={(event) => updateDraftFilter('unitType', event.target.value)}
+                  >
+                    {unitTypeOptions.map((item) => (
+                      <option key={`unit-type-${item || 'empty'}`} value={item}>
+                        {item || '不限'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </section>
+            <div className="v2-inline-actions v2-kaogong-filter-actions">
               <button className="v2-segment-button is-active" type="submit">应用筛选</button>
               <button className="v2-segment-button" type="button" onClick={resetFilters}>重置</button>
             </div>
           </form>
+        </section>
 
-          <div className="v2-room-side-divider" />
+        <section className="v2-side-card v2-kaogong-side-panel">
+          <div className="v2-room-side-section__head">
+            <strong>收藏岗位</strong>
+            <span>{favoriteJobs.length} 项</span>
+          </div>
+          <p className="v2-kaogong-side-tip">
+            {favoriteJobs.length
+              ? '右栏只保留入口，完整收藏清单放进弹窗里查看。'
+              : '当前还没有收藏岗位，命中结果后可以从这里集中查看。'}
+          </p>
+          <button
+            className="v2-secondary-link v2-kaogong-favorite-trigger"
+            type="button"
+            onClick={() => setFavoriteModalOpen(true)}
+          >
+            查看收藏岗位
+          </button>
+        </section>
 
-          <section className="v2-room-side-section">
-            <div className="v2-room-side-section__head">
-              <strong>收藏岗位</strong>
-              <span>{favoriteJobs.length} 项</span>
+        <section className="v2-side-card v2-kaogong-side-panel">
+          <div className="v2-room-side-section__head">
+            <strong>最近匹配</strong>
+            <span>{latestHistory ? '当前结果' : '待生成'}</span>
+          </div>
+          <div className="v2-check-list">
+            {latestHistory ? (
+              <div className="v2-check-row" key={`history-${latestHistory.id}`}>
+                <strong>匹配到 {latestHistory.resultCount} 个岗位</strong>
+                <span>{formatDateTimeLabel(latestHistory.createdAt)}</span>
+              </div>
+            ) : <p>完成一次岗位匹配后，这里只保留当前结果摘要，方便快速确认筛选命中数。</p>}
+          </div>
+        </section>
+      </aside>
+
+      {favoriteModalOpen ? (
+        <div className="v2-modal-overlay" onClick={() => setFavoriteModalOpen(false)}>
+          <div
+            aria-label="收藏岗位"
+            aria-modal="true"
+            className="v2-modal-card v2-kaogong-favorite-modal"
+            role="dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="v2-modal-head">
+              <div>
+                <p className="v2-kicker">收藏岗位</p>
+                <h3>重点岗位清单</h3>
+              </div>
+              <button
+                aria-label="关闭收藏岗位弹窗"
+                className="v2-ghost-link"
+                type="button"
+                onClick={() => setFavoriteModalOpen(false)}
+              >
+                关闭
+              </button>
             </div>
             <div className="v2-check-list">
               {favoriteJobs.map((item) => (
-                <div className="v2-check-row" key={`favorite-job-${item.id}`}>
+                <div className="v2-check-row" key={`favorite-modal-${item.id}`}>
                   <strong>{item.jobName}</strong>
                   <span>{item.region}</span>
                 </div>
               ))}
-              {!favoriteJobs.length ? <p>当前还没有收藏岗位，命中结果后可以把重点岗位钉在这里。</p> : null}
+              {!favoriteJobs.length ? <p>当前还没有收藏岗位，先从匹配结果里钉住几个重点岗位再回来查看。</p> : null}
             </div>
-          </section>
-
-          <section className="v2-room-side-section">
-            <div className="v2-room-side-section__head">
-              <strong>最近匹配</strong>
-              <span>{histories.length} 次</span>
-            </div>
-            <div className="v2-check-list">
-              {histories.map((item) => (
-                <div className="v2-check-row" key={`history-${item.id}`}>
-                  <strong>匹配到 {item.resultCount} 个岗位</strong>
-                  <span>{formatDateTimeLabel(item.createdAt)}</span>
-                </div>
-              ))}
-              {!histories.length ? <p>真实账号完成匹配后，这里会保留最近的匹配记录，方便回看筛选口径。</p> : null}
-            </div>
-          </section>
-        </section>
-      </aside>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }

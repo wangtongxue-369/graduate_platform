@@ -2,10 +2,10 @@ import { ensureArray, ensurePage, formatCountText } from '@/lib/stationData.js'
 import { kaogongWorkspace } from '@/lib/workspacePreview.js'
 
 export const defaultJobCriteria = {
-  education: '本科',
-  degree: '学士',
-  major: '计算机科学与技术',
-  region: '浙江',
+  education: '',
+  degree: '',
+  major: '',
+  region: '',
   household: '',
   politicalStatus: '',
   jobCategory: '',

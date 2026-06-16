@@ -13,7 +13,6 @@ import {
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 import {
   createKaogongOverviewPreview,
-  defaultJobCriteria,
   getInterviewStatusLabel,
   normalizeFavoriteJobs,
   normalizeFavoriteScoreLines,
