@@ -521,12 +521,65 @@ describe('kaogong student split pages', () => {
     await waitFor(() => {
       expect(apiMocks.kaogongApi.scoreLinesPage).toHaveBeenCalled()
     })
+    expect(screen.getByText('共 1 条 · 最高进面线 128.5 · 已收藏 0')).toBeInTheDocument()
     expect(screen.getAllByText('杭州综合岗').length).toBeGreaterThan(0)
+    expect(screen.getByText('进面线')).toBeInTheDocument()
+    expect(screen.getByText('128.5')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '收藏分数线' }))
 
     await waitFor(() => {
       expect(apiMocks.kaogongApi.favoriteScoreLine).toHaveBeenCalledWith(51, 'remote-token')
     })
+  })
+
+  it('sorts score lines in the compact ledger toolbar', async () => {
+    apiMocks.kaogongApi.scoreLinesPage.mockResolvedValue({
+      content: [
+        {
+          id: 71,
+          jobName: '低分岗位',
+          recruitingUnit: '单位A',
+          region: '北京',
+          year: 2024,
+          examType: '国家公务员考试',
+          scoreLine: 121.5,
+          interviewRatio: '3:1',
+          recruitCount: 5,
+          interviewCount: 15,
+          source: '官方公告',
+        },
+        {
+          id: 72,
+          jobName: '高分岗位',
+          recruitingUnit: '单位B',
+          region: '上海',
+          year: 2026,
+          examType: '上海市公务员考试',
+          scoreLine: 136.2,
+          interviewRatio: '3:1',
+          recruitCount: 1,
+          interviewCount: 3,
+          source: '官方公告',
+        },
+      ],
+      totalElements: 2,
+      totalPages: 1,
+    })
+
+    renderPage(<KaogongScoreLinesPage />)
+
+    await waitFor(() => {
+      expect(screen.getByText('高分岗位')).toBeInTheDocument()
+    })
+
+    const ledger = screen.getByLabelText('分数线账本结果')
+    expect(within(ledger).getAllByRole('article')[0]).toHaveTextContent('高分岗位')
+
+    fireEvent.change(screen.getByLabelText('排序'), { target: { value: 'year-desc' } })
+    expect(within(ledger).getAllByRole('article')[0]).toHaveTextContent('高分岗位')
+
+    fireEvent.change(screen.getByLabelText('排序'), { target: { value: 'recruit-desc' } })
+    expect(within(ledger).getAllByRole('article')[0]).toHaveTextContent('低分岗位')
   })
 
   it('matches the legacy score-line filter controls and hides the remote-connected notice', async () => {
@@ -565,6 +618,7 @@ describe('kaogong student split pages', () => {
     apiMocks.kaogongApi.favoriteScoreLines.mockResolvedValue([
       { id: 61, jobName: '信息化岗02', region: '北京', year: 2026, scoreLine: 133.2 },
       { id: 62, jobName: '综合管理岗', region: '上海', year: 2025, scoreLine: 128.6 },
+      { id: 63, jobName: '基层治理岗', region: '浙江', year: 2024, scoreLine: 126.1 },
     ])
 
     renderPage(<KaogongScoreLinesPage />)
@@ -574,14 +628,26 @@ describe('kaogong student split pages', () => {
     })
 
     expect(screen.getByRole('button', { name: '查看收藏分数线' })).toBeInTheDocument()
-    expect(screen.queryByText('信息化岗02')).not.toBeInTheDocument()
-    expect(screen.queryByText('综合管理岗')).not.toBeInTheDocument()
+    expect(screen.getByText('信息化岗02')).toBeInTheDocument()
+    expect(screen.getByText('北京 / 2026 / 133.2')).toBeInTheDocument()
+    expect(screen.getByText('综合管理岗')).toBeInTheDocument()
+    expect(screen.queryByText('基层治理岗')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '查看收藏分数线' }))
 
-    expect(await screen.findByRole('dialog', { name: '收藏分数线' })).toBeInTheDocument()
-    expect(screen.getByText('信息化岗02')).toBeInTheDocument()
-    expect(screen.getByText('综合管理岗')).toBeInTheDocument()
+    const favoriteDialog = await screen.findByRole('dialog', { name: '收藏分数线' })
+    expect(favoriteDialog).toBeInTheDocument()
+    expect(within(favoriteDialog).getByText('已收藏 3 条分数线，最高收藏线 133.2')).toBeInTheDocument()
+    expect(within(favoriteDialog).getByText('信息化岗02')).toBeInTheDocument()
+    expect(within(favoriteDialog).getByText('综合管理岗')).toBeInTheDocument()
+    expect(within(favoriteDialog).getByText('基层治理岗')).toBeInTheDocument()
+    expect(within(favoriteDialog).getAllByText('进面线').length).toBeGreaterThan(0)
+
+    fireEvent.click(within(favoriteDialog).getByRole('button', { name: '取消收藏分数线 信息化岗02' }))
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.unfavoriteScoreLine).toHaveBeenCalledWith(61, 'remote-token')
+    })
 
     fireEvent.click(screen.getByRole('button', { name: '关闭收藏分数线弹窗' }))
 
@@ -708,9 +774,15 @@ describe('kaogong student split pages', () => {
 
     const flowCard = await screen.findByLabelText('exam-flow-card bj::national::2027')
     expect(within(flowCard).getByText('下一节点')).toBeInTheDocument()
-    expect(within(flowCard).getByText('1', { selector: '.v2-calendar-rail__index' })).toBeInTheDocument()
+    expect(within(flowCard).getByText('2027', { selector: '.v2-calendar-wall__marker strong' })).toBeInTheDocument()
+    expect(within(flowCard).queryByRole('list', { name: 'exam-flow-timeline bj::national::2027' })).not.toBeInTheDocument()
 
-    const timeline = within(flowCard).getByRole('list', { name: 'exam-flow-timeline bj::national::2027' })
+    fireEvent.click(within(flowCard).getByRole('button', { name: '查看时间线 · 3 个节点' }))
+
+    const timelineDialog = await screen.findByRole('dialog', { name: '国家公务员考试 时间线' })
+    expect(within(flowCard).queryByRole('list', { name: 'exam-flow-timeline bj::national::2027' })).not.toBeInTheDocument()
+
+    const timeline = within(timelineDialog).getByRole('list', { name: 'exam-flow-timeline bj::national::2027' })
     expect(within(timeline).getAllByRole('listitem')).toHaveLength(3)
     expect(within(timeline).getByText('公告发布')).toBeInTheDocument()
     expect(within(timeline).getByText('报名开始')).toBeInTheDocument()
@@ -718,6 +790,8 @@ describe('kaogong student split pages', () => {
     expect(within(timeline).getByText('2099-05-13')).toBeInTheDocument()
     expect(within(timeline).getByText('2099-05-18')).toBeInTheDocument()
     expect(within(timeline).getByText('2099-06-12')).toBeInTheDocument()
+    fireEvent.click(within(timelineDialog).getByRole('button', { name: '关闭考试时间线弹窗' }))
+    expect(screen.queryByRole('dialog', { name: '国家公务员考试 时间线' })).not.toBeInTheDocument()
   })
 
   it('supports exam subscription actions and reminder updates in the calendar workspace', async () => {
@@ -749,6 +823,16 @@ describe('kaogong student split pages', () => {
           status: 'ACTIVE',
         },
       ])
+      .mockResolvedValue([
+        {
+          id: 91,
+          region: '浙江',
+          examType: '浙江省公务员考试',
+          examYear: '2026',
+          remindBeforeDays: 7,
+          status: 'ACTIVE',
+        },
+      ])
       .mockResolvedValueOnce([
         {
           id: 91,
@@ -766,7 +850,7 @@ describe('kaogong student split pages', () => {
     renderPage(<KaogongCalendarPage />)
 
     expect((await screen.findAllByText('浙江省公务员考试')).length).toBeGreaterThan(0)
-    fireEvent.click(screen.getByRole('button', { name: '订阅考试' }))
+    fireEvent.click(screen.getAllByRole('button', { name: '订阅考试' })[0])
 
     await waitFor(() => {
       expect(apiMocks.kaogongApi.subscribeCalendar).toHaveBeenCalledWith({
@@ -777,7 +861,9 @@ describe('kaogong student split pages', () => {
       }, 'remote-token')
     })
 
-    expect(await screen.findByLabelText('提醒提前天数 91')).toBeInTheDocument()
+    expect(await screen.findByText(/当前提前 3 天提醒/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '修改提醒 91' }))
+    expect(screen.getByLabelText('提醒提前天数 91')).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('提醒提前天数 91'), {
       target: { value: '7' },
     })
@@ -791,6 +877,15 @@ describe('kaogong student split pages', () => {
         remindBeforeDays: 7,
       }, 'remote-token')
     })
+
+    expect(await screen.findByText(/当前提前 7 天提醒/)).toBeInTheDocument()
+    apiMocks.kaogongApi.mySubscriptions.mockResolvedValueOnce([])
+    fireEvent.click(await screen.findByRole('button', { name: '已订阅' }))
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.cancelSubscription).toHaveBeenCalledWith(91, 'remote-token')
+    })
+    expect(await screen.findByRole('button', { name: '订阅考试' })).toBeInTheDocument()
   })
 
   it('supports current-room continue, create room, and join room from the interview hall', async () => {
@@ -825,10 +920,14 @@ describe('kaogong student split pages', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findAllByText('结构化一组')).not.toHaveLength(0)
+    expect(await screen.findByRole('button', { name: /创建房间/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /加入房间/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /评价房间/ })).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: '继续当前房间' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: '进入房间 7' }))
+    fireEvent.click(screen.getByRole('button', { name: /加入房间/ }))
+    expect(await screen.findAllByText('结构化一组')).not.toHaveLength(0)
+    fireEvent.click(screen.getByRole('button', { name: '加入讨论区 7' }))
     expect(await screen.findByText('考公房间占位')).toBeInTheDocument()
     firstView.unmount()
 
@@ -841,17 +940,17 @@ describe('kaogong student split pages', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findAllByText('结构化一组')).not.toHaveLength(0)
-    fireEvent.click(screen.getByRole('button', { name: '新建房间' }))
+    expect(await screen.findByRole('button', { name: /创建房间/ })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /创建房间/ }))
 
-    const createForm = screen.getByRole('button', { name: '创建并进入' }).closest('form')
+    const createForm = screen.getByRole('button', { name: '创建并进入讨论区' }).closest('form')
     expect(createForm).not.toBeNull()
     const formScope = within(createForm)
 
     fireEvent.change(formScope.getByLabelText('房间标题'), { target: { value: '无领导晚场' } })
     fireEvent.change(formScope.getByLabelText('岗位方向'), { target: { value: '无领导/ 综合管理岗' } })
     fireEvent.change(formScope.getByLabelText('面试时间'), { target: { value: '2026-06-20T20:00' } })
-    fireEvent.click(formScope.getByRole('button', { name: '创建并进入' }))
+    fireEvent.click(formScope.getByRole('button', { name: '创建并进入讨论区' }))
 
     await waitFor(() => {
       expect(apiMocks.kaogongApi.createInterviewRoom).toHaveBeenCalled()

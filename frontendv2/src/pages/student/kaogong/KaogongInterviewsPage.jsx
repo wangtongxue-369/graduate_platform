@@ -34,7 +34,7 @@ export default function KaogongInterviewsPage() {
   })
   const [myRooms, setMyRooms] = useState([])
   const [roomForm, setRoomForm] = useState(createInterviewRoomForm())
-  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [view, setView] = useState('home')
   const [notice, setNotice] = useState(previewDataNotice('模拟面试'))
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -120,7 +120,6 @@ export default function KaogongInterviewsPage() {
         inviteNote: roomForm.inviteNote.trim(),
       }, token)
       setRoomForm(createInterviewRoomForm())
-      setShowCreateForm(false)
       navigate(`/station/kaogong/interviews/rooms/${created.id}`)
     } catch (error) {
       setNotice(error.message || '创建模拟面试房间失败。')
@@ -143,177 +142,281 @@ export default function KaogongInterviewsPage() {
     }
   }
 
-  return (
-    <>
-      <div className="v2-main-column">
-        <PageIntro
-          kicker="模拟面试"
-          pathItems={[
-            { label: '考公主站', to: '/station/kaogong' },
-            { label: '房间大厅' },
-          ]}
-          title="大厅只负责找房、建房和续接，真正的答题协作全部进入房间详情。"
-          lead="不再把消息、附件、复盘和筛房混在一页里，大厅只做你进入哪间房之前的那一步判断。"
-        />
+  function handleReviewRoom(roomId) {
+    navigate(`/station/kaogong/interviews/rooms/${roomId}#feedback`)
+  }
 
-        {notice ? <div className="v2-status-note">{notice}</div> : null}
-        {loading ? <div className="v2-status-note">正在刷新模拟面试大厅…</div> : null}
-
-        <section className="v2-summary-strip" aria-label="模拟面试大厅摘要">
-          <article className="v2-summary-card">
-            <span>可进入房间</span>
-            <strong>{roomsPage.content.length}</strong>
-            <p>当前筛选下大厅里能直接加入的房间数量。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>当前房间</span>
-            <strong>{currentRoom?.title || '暂无'}</strong>
-            <p>如果你已经在某个房间里，这里会保留续接入口。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>我参与过</span>
-            <strong>{myRooms.length}</strong>
-            <p>自己参加过的房间会沉在右侧，便于快速回到原上下文。</p>
-          </article>
+  function renderRoomList(isReview = false) {
+    return (
+      <>
+        <section className="v2-kaogong-interview-list-head" aria-label={isReview ? '评价房间选择页头' : '加入房间选择页头'}>
+          <div>
+            <p className="v2-kicker">{isReview ? '评价房间' : '加入房间'}</p>
+            <h2>{isReview ? '选择房间查看复盘评价' : '选择一个面试房间'}</h2>
+            <p>{isReview ? '先选中房间，再进入房间里的复盘评价区域继续补充。' : '先筛选标题、方向和时间，再进入讨论区交流。'}</p>
+          </div>
+          <button className="v2-secondary-link" type="button" onClick={() => setView('home')}>
+            返回
+          </button>
         </section>
 
-        <section className="v2-room-board" aria-label="模拟面试大厅结果">
+        {loading ? <div className="v2-status-note">正在刷新模拟面试大厅…</div> : null}
+
+        <section className="v2-kaogong-interview-room-list" aria-label={isReview ? '评价房间列表' : '加入房间列表'}>
           {roomsPage.content.map((room) => (
-            <article className="v2-room-board__item" key={room.id}>
-              <div className="v2-room-board__main">
-                <strong>{room.title}</strong>
-                <p>{room.jobDirection}</p>
-                <p>{formatDateTimeLabel(room.scheduledAt)} / {room.ownerName} / {room.participantCount} 人</p>
-                <div className="v2-tag-row">
+            <article className="v2-kaogong-interview-room-card" key={room.id}>
+              <div className="v2-kaogong-interview-room-card__main">
+                <div className="v2-kaogong-interview-room-card__title">
+                  <strong>{room.title}</strong>
                   <span>{getInterviewStatusLabel(room.status)}</span>
-                  <span>{room.description}</span>
                 </div>
+                <p>{room.jobDirection}</p>
+                <div className="v2-kaogong-interview-room-card__meta">
+                  <span>{formatDateTimeLabel(room.scheduledAt)}</span>
+                  <span>{room.ownerName || '房主待补充'}</span>
+                  <span>{room.participantCount || 0} 人</span>
+                </div>
+                <p className="v2-kaogong-interview-room-card__desc">{room.description || '暂无房间描述。'}</p>
               </div>
-              <div className="v2-room-board__actions">
-                <button
-                  aria-label={`进入房间 ${room.id}`}
-                  className="v2-segment-button is-active"
-                  type="button"
-                  onClick={() => handleJoinRoom(room.id)}
-                >
-                  进入房间
-                </button>
-              </div>
+              <button
+                aria-label={`${isReview ? '进入评价' : '加入讨论区'} ${room.id}`}
+                className={`v2-segment-button ${room.status === 'COMPLETED' && !isReview ? '' : 'is-active'}`}
+                type="button"
+                disabled={!isReview && room.status === 'COMPLETED'}
+                onClick={() => (isReview ? handleReviewRoom(room.id) : handleJoinRoom(room.id))}
+              >
+                {isReview ? '进入评价' : room.status === 'COMPLETED' ? '已结束' : '加入讨论区'}
+              </button>
             </article>
           ))}
           {!roomsPage.content.length ? (
             <article className="v2-empty-card">
-              <p>当前筛选条件下还没有匹配的房间，右侧可以直接新建一间。</p>
+              <p>当前筛选条件下还没有匹配的房间，可以返回创建一间新的模拟面试房。</p>
             </article>
           ) : null}
         </section>
-      </div>
+      </>
+    )
+  }
 
-      <aside className="v2-side-column">
-        <section className="v2-side-card">
-          <div className="v2-side-card__head">
-            <div>
-              <p className="v2-kicker">筛选与快捷操作</p>
-              <h3>先决定进哪间房，再进入高交互工作区</h3>
-            </div>
-            <button className="v2-segment-button is-active" type="button" onClick={() => setShowCreateForm((current) => !current)}>
-              新建房间
-            </button>
+  function renderCreate() {
+    return (
+      <section className="v2-kaogong-interview-create" aria-label="创建模拟面试房间">
+        <div className="v2-kaogong-interview-list-head">
+          <div>
+            <p className="v2-kicker">创建房间</p>
+            <h2>新建模拟面试</h2>
+            <p>填写房间标题、岗位方向和面试时间，创建后直接进入讨论区。</p>
           </div>
+          <button className="v2-secondary-link" type="button" onClick={() => setView('home')}>
+            返回
+          </button>
+        </div>
 
-          <form className="v2-filter-form" onSubmit={handleApplyFilters}>
+        <form className="v2-side-card v2-kaogong-interview-create-form" onSubmit={handleCreateRoom}>
+          <div className="v2-kaogong-interview-create-grid">
             <label className="v2-field">
               <span>房间标题</span>
               <input
+                aria-label="房间标题"
                 type="text"
-                value={draftFilters.title}
-                onChange={(event) => setDraftFilters((current) => ({ ...current, title: event.target.value }))}
+                value={roomForm.title}
+                onChange={(event) => setRoomForm((current) => ({ ...current, title: event.target.value }))}
               />
             </label>
             <label className="v2-field">
               <span>岗位方向</span>
               <input
+                aria-label="岗位方向"
                 type="text"
-                value={draftFilters.jobDirection}
-                onChange={(event) => setDraftFilters((current) => ({ ...current, jobDirection: event.target.value }))}
+                value={roomForm.jobDirection}
+                onChange={(event) => setRoomForm((current) => ({ ...current, jobDirection: event.target.value }))}
               />
             </label>
             <label className="v2-field">
-              <span>房间状态</span>
-              <div className="v2-segment-group" role="group" aria-label="房间状态">
-                {interviewStatusOptions.map((item) => (
-                  <button
-                    className={`v2-segment-button ${draftFilters.status === item.value ? 'is-active' : ''}`}
-                    key={item.value || 'all'}
-                    type="button"
-                    onClick={() => setDraftFilters((current) => ({ ...current, status: item.value }))}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+              <span>面试时间</span>
+              <input
+                aria-label="面试时间"
+                type="datetime-local"
+                value={roomForm.scheduledAt}
+                onChange={(event) => setRoomForm((current) => ({ ...current, scheduledAt: event.target.value }))}
+              />
             </label>
-            <div className="v2-inline-actions">
-              <button className="v2-segment-button is-active" type="submit">应用筛选</button>
-              <button className="v2-segment-button" type="button" onClick={resetFilters}>重置</button>
-            </div>
-          </form>
+            <label className="v2-field">
+              <span>邀请说明</span>
+              <input
+                aria-label="邀请说明"
+                type="text"
+                value={roomForm.inviteNote}
+                onChange={(event) => setRoomForm((current) => ({ ...current, inviteNote: event.target.value }))}
+              />
+            </label>
+          </div>
+          <label className="v2-field">
+            <span>房间描述</span>
+            <textarea
+              value={roomForm.description}
+              onChange={(event) => setRoomForm((current) => ({ ...current, description: event.target.value }))}
+            />
+          </label>
+          <div className="v2-inline-actions">
+            <button className="v2-segment-button" type="button" onClick={() => setView('home')}>取消</button>
+            <button className="v2-segment-button is-active" disabled={creating} type="submit">
+              {creating ? '创建中...' : '创建并进入讨论区'}
+            </button>
+          </div>
+        </form>
+      </section>
+    )
+  }
 
-          {showCreateForm ? (
-            <>
-              <div className="v2-room-side-divider" />
-              <form className="v2-filter-form" onSubmit={handleCreateRoom}>
+  function renderHome() {
+    return (
+      <>
+        <PageIntro
+          kicker="模拟面试"
+          pathItems={[
+            { label: '考公主站', to: '/station/kaogong' },
+            { label: '模拟面试' },
+          ]}
+          title="模拟面试"
+          lead="先创建房间、加入房间或查看评价，再进入对应的房间工作区。"
+        />
+
+        <section className="v2-kaogong-interview-action-grid" aria-label="模拟面试入口">
+          <button className="v2-kaogong-interview-action-card" type="button" onClick={() => setView('create')}>
+            <span>01</span>
+            <strong>创建房间</strong>
+            <p>发起一场新的模拟面试，创建后直接进入讨论区。</p>
+          </button>
+          <button className="v2-kaogong-interview-action-card" type="button" onClick={() => setView('join')}>
+            <span>02</span>
+            <strong>加入房间</strong>
+            <p>先选择已有房间，再进入房间交流、上传附件和参与练习。</p>
+          </button>
+          <button className="v2-kaogong-interview-action-card" type="button" onClick={() => setView('reviews')}>
+            <span>03</span>
+            <strong>评价房间</strong>
+            <p>查看房间复盘评价，进入后继续补充亮点、问题和建议。</p>
+          </button>
+        </section>
+
+        {/* <section className="v2-summary-strip" aria-label="模拟面试大厅摘要">
+          <article className="v2-summary-card">
+            <span>可进入房间</span>
+            <strong>{roomsPage.content.length}</strong>
+            <p>点击加入房间后再查看完整房间列表。</p>
+          </article>
+          <article className="v2-summary-card">
+            <span>当前房间</span>
+            <strong>{currentRoom?.title || '暂无'}</strong>
+            <p>已加入的进行中房间会保留续接入口。</p>
+          </article>
+          <article className="v2-summary-card">
+            <span>我参与过</span>
+            <strong>{myRooms.length}</strong>
+            <p>你的房间记录会放在右侧，方便回到原上下文。</p>
+          </article>
+        </section> */}
+      </>
+    )
+  }
+
+  return (
+    <>
+      <div className="v2-main-column">
+        {notice ? <div className="v2-status-note">{notice}</div> : null}
+        {view === 'home' ? renderHome() : null}
+        {view === 'create' ? renderCreate() : null}
+        {view === 'join' ? renderRoomList(false) : null}
+        {view === 'reviews' ? renderRoomList(true) : null}
+      </div>
+
+      <aside className="v2-side-column v2-kaogong-interview-side-column">
+        {view === 'join' || view === 'reviews' ? (
+          <section className="v2-side-card v2-kaogong-filter-card">
+            <div className="v2-side-card__head">
+              <div>
+                <p className="v2-kicker">筛选条件</p>
+                <h3>{view === 'reviews' ? '筛选评价房间' : '筛选可加入房间'}</h3>
+              </div>
+            </div>
+
+            <form className="v2-filter-form" onSubmit={handleApplyFilters}>
+              <section className="v2-kaogong-filter-cluster" aria-label="模拟面试房间筛选器">
                 <label className="v2-field">
                   <span>房间标题</span>
                   <input
-                    aria-label="房间标题"
                     type="text"
-                    value={roomForm.title}
-                    onChange={(event) => setRoomForm((current) => ({ ...current, title: event.target.value }))}
+                    value={draftFilters.title}
+                    onChange={(event) => setDraftFilters((current) => ({ ...current, title: event.target.value }))}
+                    placeholder="搜索房间标题"
                   />
                 </label>
                 <label className="v2-field">
                   <span>岗位方向</span>
                   <input
-                    aria-label="岗位方向"
                     type="text"
-                    value={roomForm.jobDirection}
-                    onChange={(event) => setRoomForm((current) => ({ ...current, jobDirection: event.target.value }))}
+                    value={draftFilters.jobDirection}
+                    onChange={(event) => setDraftFilters((current) => ({ ...current, jobDirection: event.target.value }))}
+                    placeholder="税务 / 综合管理"
                   />
                 </label>
                 <label className="v2-field">
-                  <span>面试时间</span>
-                  <input
-                    aria-label="面试时间"
-                    type="datetime-local"
-                    value={roomForm.scheduledAt}
-                    onChange={(event) => setRoomForm((current) => ({ ...current, scheduledAt: event.target.value }))}
-                  />
+                  <span>房间状态</span>
+                  <select
+                    value={draftFilters.status}
+                    onChange={(event) => setDraftFilters((current) => ({ ...current, status: event.target.value }))}
+                  >
+                    {interviewStatusOptions.map((item) => (
+                      <option key={item.value || 'all'} value={item.value}>{item.label}</option>
+                    ))}
+                  </select>
                 </label>
-                <label className="v2-field">
-                  <span>房间描述</span>
-                  <textarea
-                    value={roomForm.description}
-                    onChange={(event) => setRoomForm((current) => ({ ...current, description: event.target.value }))}
-                  />
-                </label>
-                <div className="v2-inline-actions">
-                  <button className="v2-segment-button" type="button" onClick={() => setShowCreateForm(false)}>取消</button>
-                  <button className="v2-segment-button is-active" disabled={creating} type="submit">
-                    {creating ? '创建中...' : '创建并进入'}
-                  </button>
+                <div className="v2-kaogong-filter-grid">
+                  <label className="v2-field">
+                    <span>开始日期</span>
+                    <input
+                      type="date"
+                      value={draftFilters.dateFrom}
+                      onChange={(event) => setDraftFilters((current) => ({ ...current, dateFrom: event.target.value }))}
+                    />
+                  </label>
+                  <label className="v2-field">
+                    <span>结束日期</span>
+                    <input
+                      type="date"
+                      value={draftFilters.dateTo}
+                      onChange={(event) => setDraftFilters((current) => ({ ...current, dateTo: event.target.value }))}
+                    />
+                  </label>
                 </div>
-              </form>
-            </>
-          ) : null}
+              </section>
 
-          <div className="v2-room-side-divider" />
+              <div className="v2-inline-actions v2-kaogong-filter-actions">
+                <button className="v2-segment-button is-active" type="submit" disabled={loading}>
+                  {loading ? '筛选中...' : '应用筛选'}
+                </button>
+                <button className="v2-segment-button" type="button" disabled={loading} onClick={resetFilters}>重置</button>
+              </div>
+            </form>
+          </section>
+        ) : null}
+
+        <section className="v2-side-card v2-kaogong-interview-side-card">
+          <div className="v2-side-card__head">
+            <div>
+              <p className="v2-kicker">房间快捷入口</p>
+              <h3>保留正在进行的房间上下文</h3>
+            </div>
+          </div>
 
           <section className="v2-room-side-section">
             <div className="v2-room-side-section__head">
-              <strong>当前房间</strong>
+              <strong>当前房间：</strong>
               <span>{currentRoom ? '可续接' : '暂无'}</span>
             </div>
+            <span>{currentRoom ? currentRoom.title : '暂无'}</span>
             {currentRoom ? (
               <button
                 className="v2-segment-button is-active"
