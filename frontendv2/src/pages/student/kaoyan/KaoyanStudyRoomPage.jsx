@@ -36,6 +36,7 @@ export default function KaoyanStudyRoomPage() {
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const [realtimeState, setRealtimeState] = useState('preview')
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false)
 
   async function refreshMessages() {
     if (!canUseRemote || !roomId) return
@@ -221,12 +222,31 @@ export default function KaoyanStudyRoomPage() {
           leaderboard={leaderboard}
           members={room.members || []}
           room={room}
-          onCloseRoom={handleCloseRoom}
+          onCloseRoom={() => setShowCloseConfirm(true)}
           onJoinRoom={handleJoinRoom}
           onLeaveRoom={handleLeaveRoom}
           onPeriodChange={setActivePeriod}
         />
       </aside>
+
+      {showCloseConfirm ? (
+        <div className="v2-modal-overlay" onClick={() => setShowCloseConfirm(false)}>
+          <div className="v2-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <h3>关闭自习室</h3>
+            <p style={{ margin: '12px 0 20px', color: 'var(--v2-soft-strong)' }}>
+              确定要关闭此自习室吗？关闭后所有成员将被移出，讨论记录保留但不可继续发言。
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="v2-segment-button" type="button" onClick={() => setShowCloseConfirm(false)}>
+                取消
+              </button>
+              <button className="v2-segment-button is-active" type="button" onClick={handleCloseRoom}>
+                确认关闭
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }

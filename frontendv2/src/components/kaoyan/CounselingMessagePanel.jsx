@@ -12,6 +12,7 @@ export default function CounselingMessagePanel({
   sending,
   onDraftChange,
   onSend,
+  onViewMentor,
 }) {
   const threadRef = useRef(null)
 
@@ -21,21 +22,30 @@ export default function CounselingMessagePanel({
     threadElement.scrollTop = threadElement.scrollHeight
   }, [messages, session?.id])
 
+  const showMentorLink = session && activeTab === 'sent' && session.mentorId
+
   return (
     <section className="v2-article-card v2-counseling-message-card">
       <div className="v2-counseling-message-card__head">
         <div>
           <p className="v2-kicker">当前对话</p>
           <h3>{session ? sessionCounterpart : '先选择一条会话'}</h3>
-          <p className="v2-counseling-message-card__summary">
-            {session
-              ? `${activeTab === 'sent' ? '我发起的咨询' : '我收到的咨询'} · ${session.subject || '未命名咨询'}`
-              : '左侧切换历史会话，右侧会保持同一块聊天工作台。'}
-          </p>
         </div>
-        {session?.createdAt ? (
-          <span className="v2-plan-status-pill">{formatDateTimeLabel(session.createdAt)}</span>
-        ) : null}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {showMentorLink ? (
+            <button
+              className="v2-secondary-link"
+              type="button"
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+              onClick={() => onViewMentor && onViewMentor(session.mentorId)}
+            >
+              查看学长资料
+            </button>
+          ) : null}
+          {session?.createdAt ? (
+            <span className="v2-plan-status-pill">{formatDateTimeLabel(session.createdAt)}</span>
+          ) : null}
+        </div>
       </div>
 
       {!session ? (

@@ -170,8 +170,6 @@ describe('KaoyanMessagesPage auto refresh', () => {
         expect(apiMocks.mentorApi.sessionMessages).toHaveBeenCalledTimes(2)
       })
 
-      const summaryBeforeRefresh = container.querySelector('.v2-counseling-message-card__summary')?.textContent
-      expect(summaryBeforeRefresh).toContain('调剂咨询')
       expect(container.querySelectorAll('.v2-counseling-thread .v2-chat-bubble-row')).toHaveLength(1)
 
       await act(async () => {
@@ -183,7 +181,6 @@ describe('KaoyanMessagesPage auto refresh', () => {
         expect(apiMocks.mentorApi.sessionMessages).toHaveBeenCalledTimes(3)
       })
 
-      expect(container.querySelector('.v2-counseling-message-card__summary')?.textContent).toBe(summaryBeforeRefresh)
       expect(container.querySelectorAll('.v2-counseling-thread .v2-chat-bubble-row')).toHaveLength(2)
     } finally {
       setIntervalSpy.mockRestore()
