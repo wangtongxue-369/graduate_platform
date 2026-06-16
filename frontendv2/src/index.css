@@ -4470,6 +4470,23 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   font-size: 0.92rem;
 }
 
+.v2-employment-confirm,
+.v2-employment-drawer {
+  display: grid;
+  gap: 16px;
+}
+
+.v2-employment-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.v2-employment-workspace-card {
+  display: grid;
+  gap: 12px;
+}
+
 .v2-role-auth-actions {
   display: flex;
   justify-content: flex-end;
