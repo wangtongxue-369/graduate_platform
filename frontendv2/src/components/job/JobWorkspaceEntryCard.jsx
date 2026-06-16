@@ -10,7 +10,7 @@ export default function JobWorkspaceEntryCard({ kicker, title, description, to, 
         </div>
         <span className="v2-feed-action">进入</span>
       </div>
-      <p>{description}</p>
+      {description ? <p>{description}</p> : null}
       <div className="v2-preview-panel__rows">
         {rows.map((row) => (
           <div className="v2-preview-row" key={row.label}>

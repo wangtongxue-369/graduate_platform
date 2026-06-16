@@ -1,4 +1,4 @@
-export default function JobResumeEditor({ draft, onChange, onSubmit }) {
+export default function JobResumeEditor({ draft, onChange, onSubmit, saving = false }) {
   function updateField(key, value) {
     onChange((current) => ({ ...current, [key]: value }))
   }
@@ -8,7 +8,7 @@ export default function JobResumeEditor({ draft, onChange, onSubmit }) {
       <div className="v2-section-head">
         <div>
           <p className="v2-kicker">编辑简历</p>
-          <h3>结构化维护在线简历字段</h3>
+          <h3>在线简历</h3>
         </div>
       </div>
 
@@ -30,12 +30,20 @@ export default function JobResumeEditor({ draft, onChange, onSubmit }) {
           <input value={draft.expectedSalary} onChange={(event) => updateField('expectedSalary', event.target.value)} />
         </label>
         <label className="v2-field">
-          <span>最高学历</span>
+          <span>学历</span>
           <input value={draft.highestEducation} onChange={(event) => updateField('highestEducation', event.target.value)} />
         </label>
         <label className="v2-field">
           <span>专业</span>
           <input value={draft.major} onChange={(event) => updateField('major', event.target.value)} />
+        </label>
+        <label className="v2-field">
+          <span>手机号</span>
+          <input value={draft.phone} onChange={(event) => updateField('phone', event.target.value)} />
+        </label>
+        <label className="v2-field">
+          <span>邮箱</span>
+          <input value={draft.email} onChange={(event) => updateField('email', event.target.value)} />
         </label>
       </div>
 
@@ -48,8 +56,16 @@ export default function JobResumeEditor({ draft, onChange, onSubmit }) {
         <input value={draft.skillTags} onChange={(event) => updateField('skillTags', event.target.value)} />
       </label>
       <label className="v2-field">
-        <span>项目关键词</span>
-        <input value={draft.projectKeywords} onChange={(event) => updateField('projectKeywords', event.target.value)} />
+        <span>项目经历</span>
+        <textarea value={draft.projectExperience} onChange={(event) => updateField('projectExperience', event.target.value)} />
+      </label>
+      <label className="v2-field">
+        <span>工作经历</span>
+        <textarea value={draft.internshipExperience} onChange={(event) => updateField('internshipExperience', event.target.value)} />
+      </label>
+      <label className="v2-field">
+        <span>在校经历</span>
+        <textarea value={draft.educationExperience} onChange={(event) => updateField('educationExperience', event.target.value)} />
       </label>
       <label className="v2-field">
         <span>自我评价</span>
@@ -57,7 +73,9 @@ export default function JobResumeEditor({ draft, onChange, onSubmit }) {
       </label>
 
       <div className="v2-inline-actions">
-        <button className="v2-primary-link" type="submit">保存简历</button>
+        <button className="v2-primary-link" type="submit" disabled={saving}>
+          {saving ? '保存中...' : '保存简历'}
+        </button>
       </div>
     </form>
   )

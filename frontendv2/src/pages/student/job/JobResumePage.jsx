@@ -13,6 +13,7 @@ import {
   fallbackDataNotice,
   previewDataNotice,
   remoteDataNotice,
+  shouldShowStatusNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -24,6 +25,8 @@ function defaultResumeDraft() {
     expectedSalary: '',
     highestEducation: '',
     major: '',
+    phone: '',
+    email: '',
     skillTags: '',
     projectKeywords: '',
     internshipKeywords: '',
@@ -46,6 +49,8 @@ function createResumeDraft(resume) {
     expectedSalary: resume.expectedSalary || '',
     highestEducation: resume.highestEducation || '',
     major: resume.major || '',
+    phone: resume.phone || '',
+    email: resume.email || '',
     skillTags: resume.skillTags || '',
     projectKeywords: resume.projectKeywords || '',
     internshipKeywords: resume.internshipKeywords || '',
@@ -69,6 +74,7 @@ export default function JobResumePage() {
   const [draft, setDraft] = useState(defaultResumeDraft())
   const [notice, setNotice] = useState(previewDataNotice('简历中心'))
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -116,11 +122,19 @@ export default function JobResumePage() {
       return
     }
 
-    const saved = await employmentApi.saveResume(draft, token)
-    const normalized = normalizeResume(saved)
-    setResume(normalized)
-    setDraft(createResumeDraft(normalized))
-    setNotice('在线简历已保存。')
+    setSaving(true)
+    setNotice('正在保存在线简历...')
+    try {
+      const saved = await employmentApi.saveResume(draft, token)
+      const normalized = normalizeResume(saved)
+      setResume(normalized)
+      setDraft(createResumeDraft(normalized))
+      setNotice('在线简历已保存。')
+    } catch (error) {
+      setNotice(`保存失败：${error?.message || '请检查后端服务或登录状态。'}`)
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleExport(format) {
@@ -129,9 +143,14 @@ export default function JobResumePage() {
       return
     }
 
-    await employmentApi.saveResume(draft, token)
-    await employmentApi.exportResume(format, token)
-    setNotice(format === 'pdf' ? 'PDF 简历已导出。' : 'Word 简历已导出。')
+    setNotice('正在保存并导出简历...')
+    try {
+      await employmentApi.saveResume(draft, token)
+      await employmentApi.exportResume(format, token)
+      setNotice(format === 'pdf' ? 'PDF 简历已导出。' : 'Word 简历已导出。')
+    } catch (error) {
+      setNotice(`导出失败：${error?.message || '请检查后端服务或登录状态。'}`)
+    }
   }
 
   async function handleDownloadAttachment() {
@@ -140,7 +159,11 @@ export default function JobResumePage() {
       return
     }
 
-    await employmentApi.downloadResumeFile(token)
+    try {
+      await employmentApi.downloadResumeFile(token)
+    } catch (error) {
+      setNotice(`下载失败：${error?.message || '请检查后端服务或登录状态。'}`)
+    }
   }
 
   async function handleUpload(event) {
@@ -151,19 +174,27 @@ export default function JobResumePage() {
       return
     }
 
-    const uploaded = await employmentApi.uploadResumeFile(file, token)
-    const normalized = normalizeResume({
-      ...resume,
-      resumeFile: uploaded || {
+    setNotice('正在上传附件简历...')
+    try {
+      const uploaded = await employmentApi.uploadResumeFile(file, token)
+      const uploadedResumeFile = uploaded?.resumeFile || uploaded || {
         hasFile: true,
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type,
-      },
-    })
-    setResume(normalized)
-    setNotice('附件简历已上传。')
-    event.target.value = ''
+      }
+      const normalized = normalizeResume(
+        uploaded?.resumeFile
+          ? uploaded
+          : { ...resume, resumeFile: uploadedResumeFile },
+      )
+      setResume(normalized)
+      setDraft(createResumeDraft(normalized))
+      setNotice('附件简历已上传。')
+      event.target.value = ''
+    } catch (error) {
+      setNotice(`上传失败：${error?.message || '请检查文件格式、大小或登录状态。'}`)
+    }
   }
 
   async function confirmDeleteAttachment() {
@@ -173,10 +204,15 @@ export default function JobResumePage() {
       return
     }
 
-    await employmentApi.deleteResumeFile(token)
-    setResume((current) => normalizeResume({ ...current, resumeFile: undefined }))
-    setConfirmDeleteOpen(false)
-    setNotice('附件简历已删除。')
+    try {
+      await employmentApi.deleteResumeFile(token)
+      setResume((current) => normalizeResume({ ...current, resumeFile: undefined }))
+      setNotice('附件简历已删除。')
+    } catch (error) {
+      setNotice(`删除失败：${error?.message || '请检查后端服务或登录状态。'}`)
+    } finally {
+      setConfirmDeleteOpen(false)
+    }
   }
 
   const summaryItems = [
@@ -191,15 +227,13 @@ export default function JobResumePage() {
       <div className="v2-main-column">
         <PageIntro
           kicker="简历中心"
+          kickerAsTitle
           pathItems={[
             { label: '就业主站', to: '/station/job' },
-            { label: '简历档案' },
           ]}
-          title="先确认求职定位和附件状态，再进入简历编辑与导出。"
-          lead="主区在编辑与预览之间切换，右栏专门处理附件与导出。"
         />
 
-        {notice ? <div className="v2-status-note">{notice}</div> : null}
+        {shouldShowStatusNotice(notice) ? <div className="v2-status-note">{notice}</div> : null}
 
         <JobSummaryStrip items={summaryItems} />
 
@@ -220,7 +254,7 @@ export default function JobResumePage() {
         </div>
 
         {mode === 'edit' ? (
-          <JobResumeEditor draft={draft} onChange={setDraft} onSubmit={handleSave} />
+          <JobResumeEditor draft={draft} onChange={setDraft} onSubmit={handleSave} saving={saving} />
         ) : (
           <JobResumePreviewCard resume={normalizeResume({ ...resume, ...draft, resumeFile: resume.resumeFile })} />
         )}

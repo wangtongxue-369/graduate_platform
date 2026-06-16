@@ -244,7 +244,7 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: '先看推进总览，再进入简历、推荐、投递和招聘会工作区。',
+        name: '就业总览',
       }),
     ).toBeInTheDocument()
   })

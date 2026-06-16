@@ -10,7 +10,10 @@ public class ResumeProfileRequest {
     private String expectedIndustries;
     private String expectedSalary;
     private String educationLevel;
+    private String highestEducation;
     private String major;
+    private String phone;
+    private String email;
     private String skillTags;
     private String projectKeywords;
     private String internshipKeywords;

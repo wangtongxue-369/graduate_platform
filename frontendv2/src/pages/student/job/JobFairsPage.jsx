@@ -14,6 +14,7 @@ import {
   fallbackDataNotice,
   previewDataNotice,
   remoteDataNotice,
+  shouldShowStatusNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -31,6 +32,8 @@ const emptyPreference = {
   salaryRange: '',
   companyTypes: '',
 }
+
+const PAGE_SIZE = 10
 
 function createFallbackFairPage() {
   return normalizeFairPage({
@@ -54,6 +57,7 @@ function createFallbackFairPage() {
 
 function compactFilters(filters) {
   const next = {}
+
   Object.entries(filters).forEach(([key, value]) => {
     if (typeof value === 'boolean') {
       if (value) next[key] = value
@@ -62,6 +66,7 @@ function compactFilters(filters) {
 
     if (value) next[key] = value
   })
+
   return next
 }
 
@@ -70,9 +75,10 @@ export default function JobFairsPage() {
   const canUseRemote = canUseRemoteToken(token)
   const [filters, setFilters] = useState(emptyFilters)
   const deferredKeyword = useDeferredValue(filters.keyword)
+  const [page, setPage] = useState(1)
   const [fairPage, setFairPage] = useState(createFallbackFairPage())
   const [preference, setPreference] = useState(emptyPreference)
-  const [notice, setNotice] = useState(previewDataNotice('招聘会工作台'))
+  const [notice, setNotice] = useState(previewDataNotice('招聘会目录'))
   const [selectedFair, setSelectedFair] = useState(null)
   const [preferenceOpen, setPreferenceOpen] = useState(false)
 
@@ -81,9 +87,10 @@ export default function JobFairsPage() {
 
     async function load() {
       if (!canUseRemote) {
+        setPage(1)
         setFairPage(createFallbackFairPage())
         setPreference(emptyPreference)
-        setNotice(previewDataNotice('招聘会工作台'))
+        setNotice(previewDataNotice('招聘会目录'))
         return
       }
 
@@ -97,7 +104,7 @@ export default function JobFairsPage() {
 
         const [fairData, preferenceData] = await withRequestTimeout(
           Promise.all([
-            employmentApi.fairs({ ...requestFilters, page: 1, size: 12 }),
+            employmentApi.fairs({ ...requestFilters, page, size: PAGE_SIZE }),
             employmentApi.preference(token).catch(() => emptyPreference),
           ]),
           8000,
@@ -111,12 +118,12 @@ export default function JobFairsPage() {
           ...emptyPreference,
           ...(preferenceData || {}),
         })
-        setNotice(remoteDataNotice('招聘会工作台'))
+        setNotice(remoteDataNotice('招聘会目录'))
       } catch (error) {
         if (!active) return
         setFairPage(createFallbackFairPage())
         setPreference(emptyPreference)
-        setNotice(fallbackDataNotice('招聘会工作台', error))
+        setNotice(fallbackDataNotice('招聘会目录', error))
       }
     }
 
@@ -124,7 +131,12 @@ export default function JobFairsPage() {
     return () => {
       active = false
     }
-  }, [canUseRemote, deferredKeyword, filters.city, filters.includeExpired, filters.industry, token])
+  }, [canUseRemote, deferredKeyword, filters.city, filters.includeExpired, filters.industry, page, token])
+
+  function updateFilters(updater) {
+    setPage(1)
+    setFilters(updater)
+  }
 
   async function handleOpenDetail(fair) {
     if (!canUseRemote) {
@@ -152,26 +164,39 @@ export default function JobFairsPage() {
   }
 
   const summaryItems = [
-    { label: '会场数量', value: String(fairPage.items.length), note: '当前筛选下仍可浏览的招聘会。' },
-    { label: '偏好城市', value: preference.cities || '待补充', note: preference.industries || '行业偏好待补充。' },
-    { label: '偏好岗位', value: preference.roleTypes || '待补充', note: preference.salaryRange || '薪资偏好待补充。' },
-    { label: '开放报名', value: String(fairPage.items.filter((item) => !item.applicationClosed).length), note: '可继续报名或查看详情的会场数。' },
+    {
+      label: '会场数量',
+      value: String(fairPage.totalItems),
+      note: `当前第 ${page} / ${fairPage.totalPages} 页，每页 ${PAGE_SIZE} 条。`,
+    },
+    {
+      label: '偏好城市',
+      value: preference.cities || '待补充',
+      note: preference.industries || '行业偏好待补充。',
+    },
+    {
+      label: '偏好岗位',
+      value: preference.roleTypes || '待补充',
+      note: preference.salaryRange || '薪资偏好待补充。',
+    },
+    {
+      label: '开放报名',
+      value: String(fairPage.items.filter((item) => !item.applicationClosed).length),
+    },
   ]
 
   return (
     <>
       <div className="v2-main-column" data-testid="job-fairs-page">
         <PageIntro
-          kicker="招聘会工作台"
+          kicker="招聘会目录"
+          kickerAsTitle
           pathItems={[
             { label: '就业主站', to: '/station/job' },
-            { label: '会场目录' },
           ]}
-          title="先按城市和行业筛会场，再决定是现场参加还是继续线上投递。"
-          lead="主区只保留会场目录，提醒偏好收进弹窗。"
         />
 
-        {notice ? <div className="v2-status-note">{notice}</div> : null}
+        {shouldShowStatusNotice(notice) ? <div className="v2-status-note">{notice}</div> : null}
 
         <JobSummaryStrip items={summaryItems} />
 
@@ -206,6 +231,26 @@ export default function JobFairsPage() {
             </article>
           ) : null}
         </section>
+
+        <div className="v2-pagination-row">
+          <button
+            className="v2-secondary-link"
+            type="button"
+            disabled={page <= 1}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+          >
+            上一页
+          </button>
+          <span className="v2-pagination-note">{page} / {fairPage.totalPages}</span>
+          <button
+            className="v2-secondary-link"
+            type="button"
+            disabled={page >= fairPage.totalPages}
+            onClick={() => setPage((current) => (current < fairPage.totalPages ? current + 1 : current))}
+          >
+            下一页
+          </button>
+        </div>
       </div>
 
       <aside className="v2-side-column">
@@ -220,15 +265,15 @@ export default function JobFairsPage() {
           <form className="v2-filter-form" onSubmit={(event) => event.preventDefault()}>
             <label className="v2-field">
               <span>城市</span>
-              <input value={filters.city} onChange={(event) => setFilters((current) => ({ ...current, city: event.target.value }))} />
+              <input value={filters.city} onChange={(event) => updateFilters((current) => ({ ...current, city: event.target.value }))} />
             </label>
             <label className="v2-field">
               <span>行业</span>
-              <input value={filters.industry} onChange={(event) => setFilters((current) => ({ ...current, industry: event.target.value }))} />
+              <input value={filters.industry} onChange={(event) => updateFilters((current) => ({ ...current, industry: event.target.value }))} />
             </label>
             <label className="v2-field">
               <span>关键词</span>
-              <input value={filters.keyword} onChange={(event) => setFilters((current) => ({ ...current, keyword: event.target.value }))} />
+              <input value={filters.keyword} onChange={(event) => updateFilters((current) => ({ ...current, keyword: event.target.value }))} />
             </label>
             <label className="v2-field">
               <span>包含已结束</span>
@@ -241,7 +286,7 @@ export default function JobFairsPage() {
                     key={item.label}
                     className={`v2-segment-button ${filters.includeExpired === item.value ? 'is-active' : ''}`}
                     type="button"
-                    onClick={() => setFilters((current) => ({ ...current, includeExpired: item.value }))}
+                    onClick={() => updateFilters((current) => ({ ...current, includeExpired: item.value }))}
                   >
                     {item.label}
                   </button>

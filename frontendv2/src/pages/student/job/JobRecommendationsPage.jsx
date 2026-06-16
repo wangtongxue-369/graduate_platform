@@ -11,14 +11,14 @@ import JobSummaryStrip from '@/components/job/JobSummaryStrip.jsx'
 import {
   normalizeNotifications,
   normalizePostingDetail,
-  normalizeRecommendations,
+  normalizeRecommendationPage,
 } from '@/lib/job/employmentNormalizers.js'
 import {
   canUseRemoteToken,
   fallbackDataNotice,
-  firstNonEmpty,
   previewDataNotice,
   remoteDataNotice,
+  shouldShowStatusNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -31,12 +31,14 @@ const emptyFilters = {
   onlyApplyable: false,
 }
 
+const PAGE_SIZE = 10
+
 function createFallbackRecommendations() {
-  return normalizeRecommendations([
+  return normalizeRecommendationPage([
     {
       id: 301,
       title: '平台后端工程师',
-      companyName: '云梯教育',
+      companyName: '云阶教育',
       city: '上海',
       industry: '教育科技',
       companyType: '民企',
@@ -47,6 +49,7 @@ function createFallbackRecommendations() {
       matchScore: 88,
       matchReasons: ['后端技能匹配', '教育行业经历相关'],
       description: '适合作为站内预览用的推荐样例。',
+      applyUrl: 'https://example.com/jobs/301',
     },
   ])
 }
@@ -67,6 +70,7 @@ function createFallbackNotifications() {
 
 function compactFilters(filters) {
   const next = {}
+
   Object.entries(filters).forEach(([key, value]) => {
     if (typeof value === 'boolean') {
       if (value) next[key] = value
@@ -75,7 +79,21 @@ function compactFilters(filters) {
 
     if (value) next[key] = value
   })
+
   return next
+}
+
+function buildFilterSummary(filters) {
+  const entries = [
+    filters.keyword ? { label: '关键词', value: filters.keyword.trim() } : null,
+    filters.city ? { label: '城市', value: filters.city.trim() } : null,
+    filters.industry ? { label: '行业', value: filters.industry.trim() } : null,
+    filters.roleType ? { label: '岗位类型', value: filters.roleType.trim() } : null,
+    filters.skills ? { label: '技能', value: filters.skills.trim() } : null,
+    filters.onlyApplyable ? { label: '投递范围', value: '只看可投递' } : null,
+  ].filter(Boolean)
+
+  return entries
 }
 
 function createTrackingSearch(posting) {
@@ -102,7 +120,8 @@ export default function JobRecommendationsPage() {
   const canUseRemote = canUseRemoteToken(token)
   const [filters, setFilters] = useState(emptyFilters)
   const deferredKeyword = useDeferredValue(filters.keyword)
-  const [recommendations, setRecommendations] = useState(createFallbackRecommendations())
+  const [recommendationPage, setRecommendationPage] = useState(createFallbackRecommendations())
+  const [page, setPage] = useState(1)
   const [notifications, setNotifications] = useState(createFallbackNotifications())
   const [notice, setNotice] = useState(previewDataNotice('岗位推荐'))
   const [detail, setDetail] = useState(null)
@@ -113,7 +132,7 @@ export default function JobRecommendationsPage() {
 
     async function load() {
       if (!canUseRemote) {
-        setRecommendations(createFallbackRecommendations())
+        setRecommendationPage(createFallbackRecommendations())
         setNotifications(createFallbackNotifications())
         setNotice(previewDataNotice('岗位推荐'))
         return
@@ -131,7 +150,7 @@ export default function JobRecommendationsPage() {
 
         const [recommendationData, notificationData] = await withRequestTimeout(
           Promise.all([
-            employmentApi.recommendations(requestFilters, token),
+            employmentApi.recommendations({ ...requestFilters, page, size: PAGE_SIZE }, token),
             employmentApi.notifications(token).catch(() => ({ items: [], unreadCount: 0 })),
           ]),
           8000,
@@ -140,12 +159,12 @@ export default function JobRecommendationsPage() {
 
         if (!active) return
 
-        setRecommendations(normalizeRecommendations(recommendationData))
+        setRecommendationPage(normalizeRecommendationPage(recommendationData))
         setNotifications(normalizeNotifications(notificationData))
         setNotice(remoteDataNotice('岗位推荐'))
       } catch (error) {
         if (!active) return
-        setRecommendations(createFallbackRecommendations())
+        setRecommendationPage(createFallbackRecommendations())
         setNotifications(createFallbackNotifications())
         setNotice(fallbackDataNotice('岗位推荐', error))
       }
@@ -155,7 +174,22 @@ export default function JobRecommendationsPage() {
     return () => {
       active = false
     }
-  }, [canUseRemote, deferredKeyword, filters.city, filters.industry, filters.onlyApplyable, filters.roleType, filters.skills, token])
+  }, [
+    canUseRemote,
+    deferredKeyword,
+    filters.city,
+    filters.industry,
+    filters.onlyApplyable,
+    filters.roleType,
+    filters.skills,
+    page,
+    token,
+  ])
+
+  function updateFilters(nextFilters) {
+    setPage(1)
+    setFilters(nextFilters)
+  }
 
   async function handleOpenDetail(posting) {
     if (!canUseRemote) {
@@ -209,26 +243,35 @@ export default function JobRecommendationsPage() {
     setPendingTracking(null)
   }
 
+  const recommendations = recommendationPage.items
+  const activeFilters = buildFilterSummary({
+    ...filters,
+    keyword: deferredKeyword.trim(),
+    city: filters.city.trim(),
+    industry: filters.industry.trim(),
+    roleType: filters.roleType.trim(),
+    skills: filters.skills.trim(),
+  })
   const summaryItems = [
     {
       label: '推荐数量',
-      value: String(recommendations.length),
-      note: '当前筛选下命中的推荐岗位数。',
+      value: String(recommendationPage.totalItems),
+      note: `当前第 ${recommendationPage.page} / ${recommendationPage.totalPages} 页，每页 ${PAGE_SIZE} 条。`,
     },
     {
       label: '最高匹配',
       value: String(recommendations[0]?.matchScore || 0),
-      note: '先看最靠前的匹配岗位，再决定是否展开详情。',
     },
     {
       label: '未读提醒',
       value: String(notifications.unreadCount),
-      note: '提醒被收进右栏，不再打断主区浏览。',
     },
     {
-      label: '当前筛选',
-      value: firstNonEmpty(filters.city, filters.industry, filters.roleType, filters.skills, filters.keyword.trim(), '全部'),
-      note: '主区列表和右栏筛选保持同步。',
+      label: '筛选信息',
+      value: activeFilters.length ? `${activeFilters.length} 项` : '未筛选',
+      note: activeFilters.length
+        ? activeFilters.map((item) => `${item.label}：${item.value}`).join(' / ')
+        : '当前显示全部推荐。',
     },
   ]
 
@@ -237,15 +280,13 @@ export default function JobRecommendationsPage() {
       <div className="v2-main-column" data-testid="job-recommendations-page">
         <PageIntro
           kicker="岗位推荐"
+          kickerAsTitle
           pathItems={[
             { label: '就业主站', to: '/station/job' },
-            { label: '推荐结果' },
           ]}
-          title="先读懂匹配理由，再决定是否进入投递链。"
-          lead="主区看结果，右栏保留筛选和提醒。"
         />
 
-        {notice ? <div className="v2-status-note">{notice}</div> : null}
+        {shouldShowStatusNotice(notice) ? <div className="v2-status-note">{notice}</div> : null}
 
         <JobSummaryStrip items={summaryItems} />
 
@@ -264,7 +305,7 @@ export default function JobRecommendationsPage() {
                 </div>
               </div>
               <div className="v2-feed-side">
-                <span>{item.canApplyDirectly ? '可外链投递' : '建议先进入详情确认'}</span>
+                <span>{item.canApplyDirectly ? '可直接投递' : '建议先查看详情'}</span>
                 <button className="v2-secondary-link" type="button" onClick={() => handleOpenDetail(item)}>查看详情</button>
                 <button className="v2-primary-link" type="button" onClick={() => setPendingTracking(item)}>加入投递跟踪</button>
               </div>
@@ -279,13 +320,33 @@ export default function JobRecommendationsPage() {
             </article>
           ) : null}
         </section>
+
+        <div className="v2-pagination-row">
+          <button
+            className="v2-secondary-link"
+            type="button"
+            disabled={page <= 1}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+          >
+            上一页
+          </button>
+          <span className="v2-pagination-note">{recommendationPage.page} / {recommendationPage.totalPages}</span>
+          <button
+            className="v2-secondary-link"
+            type="button"
+            disabled={page >= recommendationPage.totalPages}
+            onClick={() => setPage((current) => (current < recommendationPage.totalPages ? current + 1 : current))}
+          >
+            下一页
+          </button>
+        </div>
       </div>
 
       <aside className="v2-side-column">
         <JobRecommendationFilters
           filters={filters}
-          onChange={setFilters}
-          onReset={() => setFilters(emptyFilters)}
+          onChange={updateFilters}
+          onReset={() => updateFilters(emptyFilters)}
         />
         <JobNotificationPanel
           notifications={notifications.items}
@@ -293,12 +354,13 @@ export default function JobRecommendationsPage() {
           onMarkRead={handleMarkRead}
           onDelete={handleDeleteNotification}
         />
-        <JobPostingDetailDrawer
-          posting={detail}
-          onClose={() => setDetail(null)}
-          onTrack={(posting) => setPendingTracking(posting)}
-        />
       </aside>
+
+      <JobPostingDetailDrawer
+        posting={detail}
+        onClose={() => setDetail(null)}
+        onTrack={(posting) => setPendingTracking(posting)}
+      />
 
       <EmploymentConfirmModal
         open={Boolean(pendingTracking)}

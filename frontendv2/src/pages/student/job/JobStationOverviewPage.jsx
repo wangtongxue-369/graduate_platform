@@ -18,6 +18,7 @@ import {
   firstNonEmpty,
   previewDataNotice,
   remoteDataNotice,
+  shouldShowStatusNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -113,19 +114,17 @@ export default function JobStationOverviewPage() {
       <div className="v2-main-column">
         <PageIntro
           kicker="就业主站"
-          title="先看推进总览，再进入简历、推荐、投递和招聘会工作区。"
-          lead="主区展示当前求职节奏，右栏只保留提醒和行动建议。"
+          title="就业总览"
         />
 
-        {notice ? <div className="v2-status-note">{notice}</div> : null}
+        {shouldShowStatusNotice(notice) ? <div className="v2-status-note">{notice}</div> : null}
 
         <JobSummaryStrip items={summary.cards} />
 
         <section className="v2-card-grid v2-card-grid--dense" aria-label="就业工作区入口">
           <JobWorkspaceEntryCard
             kicker="简历中心"
-            title="先确认求职定位和附件状态"
-            description="在线简历、附件简历和导出动作都从这里进入。"
+            title="编辑在线简历、附件简历"
             to="/station/job/resume"
             rows={[
               { label: '目标岗位', value: summary.resume.targetRole || '待补充' },
@@ -134,8 +133,7 @@ export default function JobStationOverviewPage() {
           />
           <JobWorkspaceEntryCard
             kicker="岗位推荐"
-            title="先读匹配理由，再决定是否继续投递"
-            description="把高频筛选留在右栏，主区专注看推荐结果。"
+            title="高频筛选，匹配岗位"
             to="/station/job/recommendations"
             rows={summary.recommendations.map((item) => ({
               label: `${item.companyName} / ${item.title}`,
@@ -144,8 +142,7 @@ export default function JobStationOverviewPage() {
           />
           <JobWorkspaceEntryCard
             kicker="投递跟踪"
-            title="把每条投递挂在清楚的推进线上"
-            description="进入状态看板后再处理面试、结果和后续动作。"
+            title="跟踪岗位投递的进度"
             to="/station/job/applications"
             rows={summary.applications.map((item) => ({
               label: `${item.companyName} / ${item.jobTitle}`,
@@ -154,8 +151,7 @@ export default function JobStationOverviewPage() {
           />
           <JobWorkspaceEntryCard
             kicker="招聘会目录"
-            title="先筛会场，再看报名与到场安排"
-            description="浏览筛选和提醒偏好分离，避免把右栏变成长表单。"
+            title="筛选会场，查看报名与到场安排"
             to="/station/job/fairs"
             rows={summary.fairs.map((item) => ({
               label: item.title,

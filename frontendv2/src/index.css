@@ -894,6 +894,15 @@ html[data-theme="dark"] .v2-glass-card {
   text-transform: uppercase;
 }
 
+.v2-article-card--feature .v2-kicker--page-title {
+  color: var(--v2-ink);
+  font-size: clamp(1.45rem, 2vw, 2.05rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .v2-header-nav {
   justify-self: center;
   display: inline-flex;
@@ -1480,6 +1489,35 @@ html[data-theme="dark"] .v2-glass-card {
   gap: 6px;
   justify-items: end;
   text-align: right;
+}
+
+.v2-admin-employment-source-list .v2-feed-body strong,
+.v2-admin-employment-source-list .v2-feed-body p {
+  overflow-wrap: anywhere;
+}
+
+.v2-admin-employment-title-button {
+  width: fit-content;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--v2-ink);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.v2-admin-employment-title-button:hover {
+  color: var(--v2-link);
+}
+
+.v2-admin-employment-empty {
+  margin: 0;
+  padding: 20px;
+  color: var(--v2-soft-strong);
 }
 
 .v2-feed-foot {
@@ -2535,6 +2573,10 @@ html[data-theme="dark"] [class*="_selectItem_"][data-state='checked'] {
 
 .v2-modal-head h3 {
   margin: 0;
+}
+
+.v2-employment-detail-modal {
+  width: min(760px, 100%);
 }
 
 .v2-compare-table-wrap {

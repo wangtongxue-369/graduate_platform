@@ -18,6 +18,7 @@ import {
   formatDateTimeLabel,
   previewDataNotice,
   remoteDataNotice,
+  shouldShowStatusNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -61,7 +62,7 @@ function createFallbackApplications() {
   return normalizeApplications([
     {
       id: 401,
-      companyName: '云梯教育',
+      companyName: '云阶教育',
       jobTitle: '平台后端工程师',
       city: '上海',
       industry: '教育科技',
@@ -158,7 +159,7 @@ export default function JobApplicationsPage() {
   const deferredKeyword = useDeferredValue(filters.keyword)
   const [applications, setApplications] = useState(createFallbackApplications())
   const [resume, setResume] = useState(normalizeResume({}))
-  const [notice, setNotice] = useState(previewDataNotice('投递看板'))
+  const [notice, setNotice] = useState(previewDataNotice('投递跟踪'))
   const [drawerMode, setDrawerMode] = useState('create')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [draft, setDraft] = useState(() => normalizeDraft({}, ''))
@@ -171,7 +172,7 @@ export default function JobApplicationsPage() {
       if (!canUseRemote) {
         setApplications(createFallbackApplications())
         setResume(normalizeResume({}))
-        setNotice(previewDataNotice('投递看板'))
+        setNotice(previewDataNotice('投递跟踪'))
         return
       }
 
@@ -189,12 +190,12 @@ export default function JobApplicationsPage() {
 
         setApplications(normalizeApplications(applicationData))
         setResume(normalizeResume(resumeData))
-        setNotice(remoteDataNotice('投递看板'))
+        setNotice(remoteDataNotice('投递跟踪'))
       } catch (error) {
         if (!active) return
         setApplications(createFallbackApplications())
         setResume(normalizeResume({}))
-        setNotice(fallbackDataNotice('投递看板', error))
+        setNotice(fallbackDataNotice('投递跟踪', error))
       }
     }
 
@@ -232,15 +233,16 @@ export default function JobApplicationsPage() {
 
   const groupedApplications = buildApplicationGroups(applications)
   const keyword = deferredKeyword.trim().toLowerCase()
-  const filteredGroups = groupedApplications.map((group) => ({
-    ...group,
-    items: group.items.filter((item) => {
-      const laneMatch = filters.lane === 'all' || group.key === filters.lane
-      const text = `${item.companyName} ${item.jobTitle} ${item.notes}`.toLowerCase()
-      const keywordMatch = !keyword || text.includes(keyword)
-      return laneMatch && keywordMatch
-    }),
-  }))
+  const filteredGroups = groupedApplications
+    .filter((group) => filters.lane === 'all' || group.key === filters.lane)
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        const text = `${item.companyName} ${item.jobTitle} ${item.notes}`.toLowerCase()
+        const keywordMatch = !keyword || text.includes(keyword)
+        return keywordMatch
+      }),
+    }))
 
   const visibleCount = filteredGroups.reduce((sum, group) => sum + group.items.length, 0)
   const nextStepCount = applications.filter((item) => item.nextStepAt).length
@@ -249,10 +251,14 @@ export default function JobApplicationsPage() {
     .sort((left, right) => String(left.nextStepAt).localeCompare(String(right.nextStepAt)))[0]
 
   const summaryItems = [
-    { label: '全部投递', value: String(applications.length), note: '所有已建立的跟踪记录。' },
+    { label: '全部投递', value: String(applications.length), note: '已建立的跟踪记录' },
     { label: '当前泳道', value: String(visibleCount), note: '筛选后仍保留在看板里的记录。' },
-    { label: '下一步动作', value: String(nextStepCount), note: '仍有后续节点需要跟进。' },
-    { label: '简历状态', value: resume.resumeFile.hasFile ? '附件已就绪' : '待补充附件', note: resume.resumeFile.fileName || '当前只保留在线简历字段。' },
+    { label: '下一步动作', value: String(nextStepCount), note: '需要跟进的后续节点' },
+    {
+      label: '简历状态',
+      value: resume.resumeFile.hasFile ? '附件已就绪' : '待补充附件',
+      note: resume.resumeFile.fileName || '当前只保留在线简历字段。',
+    },
   ]
 
   async function handleSave() {
@@ -300,16 +306,14 @@ export default function JobApplicationsPage() {
     <>
       <div className="v2-main-column" data-testid="job-applications-page">
         <PageIntro
-          kicker="投递看板"
+          kicker="投递跟踪"
+          kickerAsTitle
           pathItems={[
             { label: '就业主站', to: '/station/job' },
-            { label: '投递进度' },
           ]}
-          title="把每条投递挂到清楚的推进线上，下一步动作一眼能看见。"
-          lead="主区只负责推进状态，创建与编辑都收进右侧抽屉。"
         />
 
-        {notice ? <div className="v2-status-note">{notice}</div> : null}
+        {shouldShowStatusNotice(notice) ? <div className="v2-status-note">{notice}</div> : null}
 
         <JobSummaryStrip items={summaryItems} />
 
@@ -325,7 +329,7 @@ export default function JobApplicationsPage() {
           <div className="v2-side-card__head">
             <div>
               <p className="v2-kicker">看板控制台</p>
-              <h3>筛选后再决定是否开抽屉</h3>
+              <h3>筛选后再决定是否开启新记录</h3>
             </div>
             <button className="v2-primary-link" type="button" onClick={openCreateDrawer}>新建记录</button>
           </div>
@@ -371,16 +375,16 @@ export default function JobApplicationsPage() {
             </div>
           </div>
         </section>
-
-        <JobApplicationEditorDrawer
-          open={drawerOpen}
-          mode={drawerMode}
-          draft={draft}
-          onChange={setDraft}
-          onClose={closeDrawer}
-          onSave={handleSave}
-        />
       </aside>
+
+      <JobApplicationEditorDrawer
+        open={drawerOpen}
+        mode={drawerMode}
+        draft={draft}
+        onChange={setDraft}
+        onClose={closeDrawer}
+        onSave={handleSave}
+      />
 
       <EmploymentConfirmModal
         open={Boolean(pendingDelete)}
