@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '@/App.jsx'
@@ -171,7 +171,7 @@ describe('admin kaogong workbench', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: '把岗位台账、进面线索和考试节点收进同一张治理工位。',
+        name: '考公数据治理工作台',
       }),
     ).toBeInTheDocument()
   })
@@ -222,12 +222,14 @@ describe('admin kaogong workbench', () => {
     expect(screen.getByText('7')).toBeInTheDocument()
     expect(screen.getByText('5')).toBeInTheDocument()
 
-    fireEvent.change(screen.getByLabelText('岗位名称'), { target: { value: '税务综合岗' } })
-    fireEvent.change(screen.getByLabelText('招录单位'), { target: { value: '杭州市税务局' } })
-    fireEvent.change(screen.getByLabelText('地区'), { target: { value: '杭州' } })
-    fireEvent.change(screen.getByLabelText('考试类型'), { target: { value: '浙江省公务员考试' } })
-    fireEvent.change(screen.getByLabelText('年份'), { target: { value: '2026' } })
-    fireEvent.click(screen.getByRole('button', { name: '新增岗位记录' }))
+    fireEvent.click(screen.getAllByRole('button', { name: '新增岗位' })[0])
+    const createJobDialog = await screen.findByRole('dialog', { name: '新增岗位' })
+    fireEvent.change(within(createJobDialog).getByLabelText('岗位名称'), { target: { value: '税务综合岗' } })
+    fireEvent.change(within(createJobDialog).getByLabelText('招录单位'), { target: { value: '杭州市税务局' } })
+    fireEvent.change(within(createJobDialog).getByLabelText('地区'), { target: { value: '杭州' } })
+    fireEvent.change(within(createJobDialog).getByLabelText('考试类型'), { target: { value: '浙江省公务员考试' } })
+    fireEvent.change(within(createJobDialog).getByLabelText('年份'), { target: { value: '2026' } })
+    fireEvent.click(within(createJobDialog).getByRole('button', { name: '新增岗位记录' }))
 
     await waitFor(() => {
       expect(apiMocks.adminApi.createKaogongJob).toHaveBeenCalledWith(expect.objectContaining({
@@ -240,8 +242,9 @@ describe('admin kaogong workbench', () => {
     })
 
     fireEvent.click(screen.getByRole('button', { name: '编辑记录 11' }))
-    fireEvent.change(screen.getByLabelText('岗位名称'), { target: { value: '市直综合岗（调整）' } })
-    fireEvent.click(screen.getByRole('button', { name: '保存岗位修改' }))
+    const editJobDialog = await screen.findByRole('dialog', { name: '编辑岗位台账' })
+    fireEvent.change(within(editJobDialog).getByLabelText('岗位名称'), { target: { value: '市直综合岗（调整）' } })
+    fireEvent.click(within(editJobDialog).getByRole('button', { name: '保存岗位修改' }))
 
     await waitFor(() => {
       expect(apiMocks.adminApi.updateKaogongJob).toHaveBeenCalledWith(11, expect.objectContaining({
@@ -314,13 +317,15 @@ describe('admin kaogong workbench', () => {
       </MemoryRouter>,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: '分数线看板' }))
+    fireEvent.click(await screen.findByRole('button', { name: /^分数线看板/ }))
     expect(await screen.findByText('杭州综合岗')).toBeInTheDocument()
-    fireEvent.change(screen.getByLabelText('岗位名称'), { target: { value: '宁波综合岗' } })
-    fireEvent.change(screen.getByLabelText('招录单位'), { target: { value: '宁波市直单位' } })
-    fireEvent.change(screen.getByLabelText('地区'), { target: { value: '宁波' } })
-    fireEvent.change(screen.getByLabelText('进面分数线'), { target: { value: '129.5' } })
-    fireEvent.click(screen.getByRole('button', { name: '新增分数线记录' }))
+    fireEvent.click(screen.getAllByRole('button', { name: '新增分数线' })[0])
+    const createScoreLineDialog = await screen.findByRole('dialog', { name: '新增分数线' })
+    fireEvent.change(within(createScoreLineDialog).getByLabelText('岗位名称'), { target: { value: '宁波综合岗' } })
+    fireEvent.change(within(createScoreLineDialog).getByLabelText('招录单位'), { target: { value: '宁波市直单位' } })
+    fireEvent.change(within(createScoreLineDialog).getByLabelText('地区'), { target: { value: '宁波' } })
+    fireEvent.change(within(createScoreLineDialog).getByLabelText('进面分数线'), { target: { value: '129.5' } })
+    fireEvent.click(within(createScoreLineDialog).getByRole('button', { name: '新增分数线记录' }))
 
     await waitFor(() => {
       expect(apiMocks.adminApi.createKaogongScoreLine).toHaveBeenCalledWith(expect.objectContaining({
@@ -331,11 +336,12 @@ describe('admin kaogong workbench', () => {
       }), 'remote-token')
     })
 
-    fireEvent.click(screen.getByRole('button', { name: '考试节点' }))
+    fireEvent.click(screen.getByRole('button', { name: /^考试节点/ }))
     expect(await screen.findByText('报名开始')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '编辑记录 71' }))
-    fireEvent.change(screen.getByLabelText('标题'), { target: { value: '报名入口开放' } })
-    fireEvent.click(screen.getByRole('button', { name: '保存节点修改' }))
+    const editEventDialog = await screen.findByRole('dialog', { name: '编辑考试节点' })
+    fireEvent.change(within(editEventDialog).getByLabelText('标题'), { target: { value: '报名入口开放' } })
+    fireEvent.click(within(editEventDialog).getByRole('button', { name: '保存节点修改' }))
 
     await waitFor(() => {
       expect(apiMocks.adminApi.updateKaogongCalendarEvent).toHaveBeenCalledWith(71, expect.objectContaining({

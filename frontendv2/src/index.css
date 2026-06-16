@@ -6114,6 +6114,45 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   transform: translateY(-1px);
 }
 
+.v2-admin-kaogong-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+}
+
+.v2-admin-kaogong-tabs {
+  flex: 1;
+}
+
+.v2-admin-kaogong-tabs .v2-segment-button {
+  gap: 8px;
+}
+
+.v2-admin-kaogong-tabs .v2-segment-button span {
+  color: currentColor;
+  font-size: 0.78rem;
+  opacity: 0.72;
+}
+
+.v2-admin-kaogong-metrics .v2-summary-card p {
+  min-height: 3em;
+}
+
+.v2-admin-kaogong-editor-modal {
+  width: min(920px, 100%);
+  padding: 28px;
+}
+
+.v2-admin-kaogong-editor-modal .v2-editor-form {
+  gap: 16px;
+}
+
+.v2-admin-kaogong-editor-modal .v2-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .v2-kaogong-admin-card-head {
   display: flex;
   align-items: start;
@@ -6131,6 +6170,17 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   display: grid;
   place-items: center;
   text-align: center;
+}
+
+@media (max-width: 900px) {
+  .v2-admin-kaogong-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .v2-admin-kaogong-editor-modal .v2-form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .v2-comment-editor--inline {
