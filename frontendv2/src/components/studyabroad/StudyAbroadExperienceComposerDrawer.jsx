@@ -1,4 +1,5 @@
 import { studyAbroadCountryOptions, studyAbroadTopicOptions } from '@/lib/studyabroad/studyAbroadLabels.js'
+import StudyAbroadPageModal from '@/components/studyabroad/StudyAbroadPageModal.jsx'
 
 export default function StudyAbroadExperienceComposerDrawer({
   open,
@@ -20,15 +21,16 @@ export default function StudyAbroadExperienceComposerDrawer({
   }
 
   return (
-    <section className="v2-side-card v2-practice-drawer v2-studyabroad-editor-drawer" data-testid="studyabroad-experience-composer-drawer">
-      <div className="v2-section-head">
-        <div>
-          <p className="v2-kicker">经验抽屉</p>
-          <h3>{editingItem ? '编辑经验' : '发布经验'}</h3>
-        </div>
-        <button className="v2-secondary-link" type="button" onClick={onClose}>关闭</button>
-      </div>
-      <form className="v2-filter-form" onSubmit={handleSubmit}>
+    <StudyAbroadPageModal
+      open={open}
+      kicker="留学经验库"
+      title={editingItem ? '编辑经验帖' : '发布经验帖'}
+      lead="填写标题、摘要和正文。经验帖会展示在留学经验库，其他用户可以点击查看全文。"
+      onClose={onClose}
+      className="v2-studyabroad-editor-drawer"
+      testId="studyabroad-experience-composer-drawer"
+    >
+      <form className="v2-form-grid" onSubmit={handleSubmit}>
         <label className="v2-field">
           <span>标题</span>
           <input value={form.title} onChange={(event) => updateField('title', event.target.value)} />
@@ -57,18 +59,18 @@ export default function StudyAbroadExperienceComposerDrawer({
           <span>标签</span>
           <input value={form.tags} onChange={(event) => updateField('tags', event.target.value)} placeholder="用逗号分隔" />
         </label>
-        <label className="v2-field">
+        <label className="v2-field" style={{ gridColumn: '1 / -1' }}>
           <span>摘要</span>
           <textarea value={form.summary} onChange={(event) => updateField('summary', event.target.value)} />
         </label>
-        <label className="v2-field">
+        <label className="v2-field" style={{ gridColumn: '1 / -1' }}>
           <span>正文</span>
           <textarea value={form.content} onChange={(event) => updateField('content', event.target.value)} />
         </label>
-        <div className="v2-inline-actions">
+        <div className="v2-inline-actions" style={{ gridColumn: '1 / -1' }}>
           <button className="v2-primary-link" type="submit">{editingItem ? '保存经验' : '发布经验'}</button>
         </div>
       </form>
-    </section>
+    </StudyAbroadPageModal>
   )
 }

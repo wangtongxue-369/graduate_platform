@@ -5,6 +5,7 @@ import {
   studyAbroadCountryOptions,
   studyAbroadSubjectOptions,
 } from '@/lib/studyabroad/studyAbroadLabels.js'
+import StudyAbroadPageModal from '@/components/studyabroad/StudyAbroadPageModal.jsx'
 
 export default function AdminStudyAbroadDetailDrawer({
   open,
@@ -21,17 +22,24 @@ export default function AdminStudyAbroadDetailDrawer({
     onChange?.((current) => ({ ...current, [key]: value }))
   }
 
+  const isProgramEditor = mode === 'programs' && form
+  const title = isProgramEditor ? (form?.schoolName || '院校项目') : (item?.title || item?.school || '详情')
+  const lead = isProgramEditor
+    ? '维护院校项目的国家、专业、排名、学费、申请要求和合作项目标记。'
+    : '查看完整内容后再决定是否进行删除等管理操作。'
+
   return (
-    <section className="v2-side-card v2-practice-drawer v2-studyabroad-detail-drawer" data-testid="admin-studyabroad-detail-drawer">
-      <div className="v2-side-card__head">
-        <div>
-          <p className="v2-kicker">{mode === 'programs' ? '项目编辑' : '详情抽屉'}</p>
-          <h3>{mode === 'programs' ? (form?.schoolName || '院校项目') : (item?.title || item?.school || '详情')}</h3>
-        </div>
-        <button className="v2-secondary-link" type="button" onClick={onClose}>关闭</button>
-      </div>
+    <StudyAbroadPageModal
+      open={open}
+      kicker={isProgramEditor ? '院校项目管理' : '留学内容详情'}
+      title={title}
+      lead={lead}
+      onClose={onClose}
+      className="v2-studyabroad-detail-drawer"
+      testId="admin-studyabroad-detail-drawer"
+    >
       {mode === 'programs' && form ? (
-        <form className="v2-filter-form" onSubmit={(event) => {
+        <form className="v2-form-grid" onSubmit={(event) => {
           event.preventDefault()
           onSubmit?.()
         }}
@@ -114,6 +122,6 @@ export default function AdminStudyAbroadDetailDrawer({
           )}
         </div>
       )}
-    </section>
+    </StudyAbroadPageModal>
   )
 }

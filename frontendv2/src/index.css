@@ -4938,6 +4938,50 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   gap: 14px;
 }
 
+.v2-studyabroad-page-modal-overlay {
+  align-items: center;
+}
+
+.v2-studyabroad-page-modal {
+  width: min(1080px, calc(100vw - 48px));
+  max-height: min(90vh, 920px);
+  padding: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.v2-studyabroad-page-modal__head {
+  align-items: flex-start;
+  margin: 0;
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid var(--v2-line);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--v2-paper-strong) 96%, white) 0%,
+      var(--v2-paper-strong) 100%
+    );
+}
+
+.v2-studyabroad-page-modal__head p:not(.v2-kicker) {
+  margin-top: 8px;
+  max-width: 70ch;
+  color: var(--v2-soft-strong);
+  line-height: 1.7;
+}
+
+.v2-studyabroad-page-modal__body {
+  min-height: 0;
+  overflow: auto;
+  padding: 24px 28px 28px;
+}
+
+.v2-studyabroad-page-modal .v2-filter-form,
+.v2-studyabroad-page-modal .v2-form-grid {
+  max-width: none;
+}
+
 .v2-studyabroad-lane {
   min-height: 220px;
 }
@@ -4993,7 +5037,7 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
 }
 
 .v2-studyabroad-reading-modal {
-  max-width: 760px;
+  max-width: 860px;
 }
 
 .v2-studyabroad-reading-body {
@@ -5006,6 +5050,18 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
 
 .v2-studyabroad-reading-body p {
   margin: 0;
+}
+
+@media (max-width: 720px) {
+  .v2-studyabroad-page-modal {
+    width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
+  }
+
+  .v2-studyabroad-page-modal__head,
+  .v2-studyabroad-page-modal__body {
+    padding-inline: 18px;
+  }
 }
 
 .v2-employment-workspace-card {

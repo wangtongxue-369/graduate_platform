@@ -150,7 +150,8 @@ describe('study abroad student pages', () => {
     renderPage(<StudyAbroadCasesPage />)
 
     fireEvent.click(await screen.findByRole('button', { name: '提交案例' }))
-    const submitModal = screen.getByText('匿名提交').closest('.v2-modal-card')
+    expect(screen.getByText('匿名记录你的申请背景、申请结果和经验总结，帮助后续同学做选校参考。')).toBeInTheDocument()
+    const submitModal = screen.getByRole('heading', { name: '提交录取案例' }).closest('.v2-modal-card')
     const modalQueries = within(submitModal)
 
     fireEvent.change(modalQueries.getByLabelText('本科专业'), { target: { value: 'CS' } })

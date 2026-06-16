@@ -1,17 +1,19 @@
 import { getCountryLabel } from '@/lib/studyabroad/studyAbroadLabels.js'
+import StudyAbroadPageModal from '@/components/studyabroad/StudyAbroadPageModal.jsx'
 
 export default function StudyAbroadProgramDetailDrawer({ open, row, onClose }) {
   if (!open || !row) return null
 
   return (
-    <section className="v2-side-card v2-practice-drawer v2-studyabroad-detail-drawer" data-testid="studyabroad-program-detail-drawer">
-      <div className="v2-side-card__head">
-        <div>
-          <p className="v2-kicker">项目详情</p>
-          <h3>{row.schoolName}</h3>
-        </div>
-        <button className="v2-secondary-link" type="button" onClick={onClose}>关闭</button>
-      </div>
+    <StudyAbroadPageModal
+      open={open}
+      kicker="院校项目详情"
+      title={row.schoolName}
+      lead={`${row.programName}，${getCountryLabel(row.country)}，${row.degree}。`}
+      onClose={onClose}
+      className="v2-studyabroad-detail-drawer"
+      testId="studyabroad-program-detail-drawer"
+    >
       <div className="v2-check-list">
         <div className="v2-check-row"><strong>项目</strong><span>{row.programName}</span></div>
         <div className="v2-check-row"><strong>地区</strong><span>{getCountryLabel(row.country)}</span></div>
@@ -23,6 +25,6 @@ export default function StudyAbroadProgramDetailDrawer({ open, row, onClose }) {
         <div className="v2-check-row"><strong>就业政策</strong><span>{row.employmentPolicy}</span></div>
         <div className="v2-check-row"><strong>风险摘要</strong><span>{row.riskSummary}</span></div>
       </div>
-    </section>
+    </StudyAbroadPageModal>
   )
 }
