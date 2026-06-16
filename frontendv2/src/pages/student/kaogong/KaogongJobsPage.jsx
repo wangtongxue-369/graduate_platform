@@ -1,19 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { kaogongApi } from '@legacy/lib/api.js'
-import PageIntro from '@/components/PageIntro.jsx'
 import {
   canUseRemoteToken,
   fallbackDataNotice,
   formatDateLabel,
-  formatDateTimeLabel,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 import {
+  createDefaultJobCriteriaFromUser,
   createKaogongJobPreviewRows,
-  defaultJobCriteria,
   normalizeFavoriteJobs,
   normalizeJobRows,
 } from '@/pages/student/kaogong/kaogongPageData.js'
@@ -25,14 +21,15 @@ const jobCategoryOptions = ['', '综合管理', '行政执法', '专业技术']
 const unitTypeOptions = ['', '中央机关直属机构', '地方机关', '事业单位']
 
 export default function KaogongJobsPage() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
-  const [draftFilters, setDraftFilters] = useState(defaultJobCriteria)
-  const [appliedFilters, setAppliedFilters] = useState(defaultJobCriteria)
+  const profileCriteria = createDefaultJobCriteriaFromUser(user)
+  const [draftFilters, setDraftFilters] = useState(() => profileCriteria)
+  const [appliedFilters, setAppliedFilters] = useState(() => profileCriteria)
   const [rows, setRows] = useState(createKaogongJobPreviewRows())
   const [favoriteJobs, setFavoriteJobs] = useState([])
   const [histories, setHistories] = useState([])
-  const [notice, setNotice] = useState(previewDataNotice('岗位匹配'))
+  const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
   const [actionPendingId, setActionPendingId] = useState(null)
   const [favoriteModalOpen, setFavoriteModalOpen] = useState(false)
@@ -46,7 +43,7 @@ export default function KaogongJobsPage() {
         setRows(previewRows)
         setFavoriteJobs([])
         setHistories([])
-        setNotice(previewDataNotice('岗位匹配'))
+        setNotice('')
         return
       }
 
@@ -65,7 +62,7 @@ export default function KaogongJobsPage() {
         setRows(normalizeJobRows(jobsData, favoriteData))
         setFavoriteJobs(normalizeFavoriteJobs(favoriteData))
         setHistories(Array.isArray(historyData) ? historyData : [])
-        setNotice(remoteDataNotice('岗位匹配'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createKaogongJobPreviewRows())
@@ -114,8 +111,9 @@ export default function KaogongJobsPage() {
   }
 
   function resetFilters() {
-    setDraftFilters(defaultJobCriteria)
-    setAppliedFilters(defaultJobCriteria)
+    const nextCriteria = createDefaultJobCriteriaFromUser(user)
+    setDraftFilters(nextCriteria)
+    setAppliedFilters(nextCriteria)
   }
 
   function updateDraftFilter(key, value) {
@@ -123,57 +121,63 @@ export default function KaogongJobsPage() {
   }
 
   const latestHistory = histories[0] || null
+  const activeFilterChips = [
+    ['学历', appliedFilters.education],
+    ['学位', appliedFilters.degree],
+    ['专业', appliedFilters.major],
+    ['户籍', appliedFilters.household],
+    ['地区', appliedFilters.region],
+    ['政治面貌', appliedFilters.politicalStatus],
+    ['岗位类别', appliedFilters.jobCategory],
+    ['单位类型', appliedFilters.unitType],
+  ].filter(([, value]) => Boolean(value))
+  const summaryText = `共 ${rows.length} 个岗位 · 最高匹配 ${rows[0]?.matchScore || 0}% · 已收藏 ${favoriteJobs.length}`
+  const hasProfileDefaults = Object.values(profileCriteria).some(Boolean)
 
   return (
     <>
       <div className="v2-main-column">
-        <PageIntro
-          kicker="岗位匹配"
-          pathItems={[
-            { label: '考公主站', to: '/station/kaogong' },
-            { label: '岗位决策流' },
-          ]}
-          title="把可报岗位收拢成一条决策流，再决定该把时间投去哪一类岗位。"
-          lead="结果流留在主区，筛选、收藏摘要和匹配历史全部收在右侧，避免再次回到旧版的大表格心智。"
-        />
+        <section className="v2-kaogong-jobs-head" aria-label="岗位匹配页头">
+          <div>
+            <p className="v2-kicker">考公主站 / 岗位匹配</p>
+            <h2>岗位匹配</h2>
+            <p>根据学历、专业、地区筛选可报岗位。</p>
+          </div>
+          <strong>{summaryText}</strong>
+        </section>
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
-        {loading ? <div className="v2-status-note">正在刷新岗位匹配结果…</div> : null}
 
-        <section className="v2-summary-strip" aria-label="岗位匹配摘要">
-          <article className="v2-summary-card">
-            <span>结果数量</span>
-            <strong>{rows.length}</strong>
-            <p>先看命中数量，再判断是否要放宽条件。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>最高匹配</span>
-            <strong>{rows[0]?.matchScore || 0}</strong>
-            <p>优先从匹配度最靠前的岗位开始读报名窗口和条件说明。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>已收藏</span>
-            <strong>{favoriteJobs.length}</strong>
-            <p>重点岗位会沉到底栏固定回看，不再只留在首页摘要里。</p>
-          </article>
+        <section className="v2-kaogong-active-filters" aria-label="当前筛选条件">
+          {activeFilterChips.length ? (
+            activeFilterChips.map(([label, value]) => (
+              <span key={`${label}-${value}`}>{label}：{value}</span>
+            ))
+          ) : (
+            <span>当前未限制筛选条件</span>
+          )}
         </section>
 
         <section className="v2-feed-list" aria-label="岗位匹配结果">
           {rows.map((item) => (
             <article className="v2-feed-item v2-feed-item--kaogong" key={item.id}>
-              <div className="v2-feed-index">{item.matchScore}</div>
+              <div className="v2-feed-index v2-feed-index--match">
+                <strong>{item.matchScore}%</strong>
+                <span>匹配度</span>
+              </div>
               <div className="v2-feed-body">
                 <strong>{item.jobName}</strong>
                 <p>{item.recruitingUnit}</p>
                 <p>{item.region} / {item.examType} / 招录 {item.recruitCount} 人</p>
                 <p>{item.educationRequirement} / {item.majorRequirement}</p>
+                <p>户籍/生源地：{item.householdRequirement || '不限'}</p>
                 <div className="v2-tag-row">
                   {item.matchReasons.map((reason) => <span key={`${item.id}-${reason}`}>{reason}</span>)}
                 </div>
               </div>
               <div className="v2-feed-side">
-                <span>{item.registrationStart ? formatDateLabel(item.registrationStart) : '待补充'}</span>
-                <span>{item.registrationEnd ? formatDateLabel(item.registrationEnd) : '待补充'}</span>
+                <span>报名 {item.registrationStart ? formatDateLabel(item.registrationStart) : '待补充'}</span>
+                <span>截止 {item.registrationEnd ? formatDateLabel(item.registrationEnd) : '待补充'}</span>
                 <div className="v2-inline-actions">
                   <button
                     className={`v2-segment-button ${item.favorite ? 'is-active' : ''}`}
@@ -202,16 +206,13 @@ export default function KaogongJobsPage() {
         <section className="v2-side-card v2-kaogong-filter-card">
           <div className="v2-side-card__head">
             <div>
-              <p className="v2-kicker">筛选控制器</p>
-              <h3>先给画像，再生成匹配</h3>
+              <p className="v2-kicker">筛选条件</p>
+              <h3>调整岗位范围</h3>
+              <p>{hasProfileDefaults ? '已根据个人信息预填，可继续修改。' : '完善个人信息后会自动预填。'}</p>
             </div>
           </div>
           <form className="v2-filter-form" onSubmit={handleApplyFilters}>
             <section className="v2-kaogong-filter-cluster" aria-label="岗位筛选器">
-              <div className="v2-kaogong-filter-cluster__head">
-                <strong>筛选条件</strong>
-                <span>沿用旧版字段和筛选方式，把门槛条件与偏好条件收进同一个控制面板。</span>
-              </div>
               <div className="v2-kaogong-filter-grid">
                 <label className="v2-field">
                   <span>学历</span>
@@ -308,44 +309,26 @@ export default function KaogongJobsPage() {
               </div>
             </section>
             <div className="v2-inline-actions v2-kaogong-filter-actions">
-              <button className="v2-segment-button is-active" type="submit">应用筛选</button>
-              <button className="v2-segment-button" type="button" onClick={resetFilters}>重置</button>
+              <button className="v2-segment-button is-active" type="submit" disabled={loading}>
+                {loading ? '筛选中…' : '应用筛选'}
+              </button>
+              <button className="v2-segment-button" type="button" disabled={loading} onClick={resetFilters}>重置</button>
             </div>
           </form>
-        </section>
-
-        <section className="v2-side-card v2-kaogong-side-panel">
-          <div className="v2-room-side-section__head">
-            <strong>收藏岗位</strong>
-            <span>{favoriteJobs.length} 项</span>
+          <div className="v2-kaogong-filter-foot">
+            <span>已收藏 {favoriteJobs.length} 个岗位</span>
+            <button
+              aria-label="查看收藏岗位"
+              className="v2-secondary-link"
+              type="button"
+              onClick={() => setFavoriteModalOpen(true)}
+            >
+              查看
+            </button>
           </div>
-          <p className="v2-kaogong-side-tip">
-            {favoriteJobs.length
-              ? '右栏只保留入口，完整收藏清单放进弹窗里查看。'
-              : '当前还没有收藏岗位，命中结果后可以从这里集中查看。'}
-          </p>
-          <button
-            className="v2-secondary-link v2-kaogong-favorite-trigger"
-            type="button"
-            onClick={() => setFavoriteModalOpen(true)}
-          >
-            查看收藏岗位
-          </button>
-        </section>
-
-        <section className="v2-side-card v2-kaogong-side-panel">
-          <div className="v2-room-side-section__head">
-            <strong>最近匹配</strong>
-            <span>{latestHistory ? '当前结果' : '待生成'}</span>
-          </div>
-          <div className="v2-check-list">
-            {latestHistory ? (
-              <div className="v2-check-row" key={`history-${latestHistory.id}`}>
-                <strong>匹配到 {latestHistory.resultCount} 个岗位</strong>
-                <span>{formatDateTimeLabel(latestHistory.createdAt)}</span>
-              </div>
-            ) : <p>完成一次岗位匹配后，这里只保留当前结果摘要，方便快速确认筛选命中数。</p>}
-          </div>
+          {latestHistory ? (
+            <p className="v2-kaogong-side-tip">最近一次匹配到 {latestHistory.resultCount} 个岗位。</p>
+          ) : null}
         </section>
       </aside>
 
@@ -362,6 +345,7 @@ export default function KaogongJobsPage() {
               <div>
                 <p className="v2-kicker">收藏岗位</p>
                 <h3>重点岗位清单</h3>
+                <span>已收藏 {favoriteJobs.length} 个岗位，优先回看报名窗口和硬性条件。</span>
               </div>
               <button
                 aria-label="关闭收藏岗位弹窗"
@@ -372,14 +356,52 @@ export default function KaogongJobsPage() {
                 关闭
               </button>
             </div>
-            <div className="v2-check-list">
+            <div className="v2-kaogong-favorite-list">
               {favoriteJobs.map((item) => (
-                <div className="v2-check-row" key={`favorite-modal-${item.id}`}>
-                  <strong>{item.jobName}</strong>
-                  <span>{item.region}</span>
-                </div>
+                <article className="v2-kaogong-favorite-card" key={`favorite-modal-${item.id}`}>
+                  <div className="v2-kaogong-favorite-score">
+                    <span>招录</span>
+                    <strong>{item.recruitCount ? `${item.recruitCount}人` : '-'}</strong>
+                  </div>
+                  <div className="v2-kaogong-favorite-main">
+                    <div className="v2-kaogong-favorite-card__head">
+                      <div>
+                        <strong>{item.jobName}</strong>
+                        <p>{item.recruitingUnit}</p>
+                      </div>
+                      <span>{item.region}</span>
+                    </div>
+                    <div className="v2-kaogong-favorite-meta">
+                      <span>{item.examType} / 招录 {item.recruitCount || 0} 人</span>
+                      <span>{item.educationRequirement} / {item.degreeRequirement}</span>
+                      <span>户籍/生源地：{item.householdRequirement || '不限'}</span>
+                      <span>{item.majorRequirement}</span>
+                    </div>
+                    <div className="v2-kaogong-favorite-foot">
+                      <span>{item.registrationEnd ? `报名截止 ${formatDateLabel(item.registrationEnd)}` : '报名截止待补充'}</span>
+                      <div className="v2-inline-actions">
+                        {item.sourceUrl ? (
+                          <a className="v2-secondary-link" href={item.sourceUrl} rel="noreferrer" target="_blank">查看来源</a>
+                        ) : null}
+                        <button
+                          aria-label={`取消收藏岗位 ${item.jobName}`}
+                          className="v2-segment-button"
+                          type="button"
+                          disabled={!canUseRemote || actionPendingId === item.id}
+                          onClick={() => handleToggleFavorite(item)}
+                        >
+                          {actionPendingId === item.id ? '处理中…' : '取消收藏'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </article>
               ))}
-              {!favoriteJobs.length ? <p>当前还没有收藏岗位，先从匹配结果里钉住几个重点岗位再回来查看。</p> : null}
+              {!favoriteJobs.length ? (
+                <div className="v2-empty-card">
+                  <p>当前还没有收藏岗位，先从匹配结果里钉住几个重点岗位再回来查看。</p>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

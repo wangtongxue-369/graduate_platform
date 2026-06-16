@@ -1469,6 +1469,27 @@ html[data-theme="dark"] .v2-glass-card {
   font-size: 0.8rem;
 }
 
+.v2-feed-index--match {
+  width: 64px;
+  min-height: 52px;
+  height: auto;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 6px;
+  font-family: inherit;
+  line-height: 1.1;
+}
+
+.v2-feed-index--match strong {
+  font-size: 0.96rem;
+  color: var(--v2-link);
+}
+
+.v2-feed-index--match span {
+  color: var(--v2-soft-strong);
+  font-size: 0.72rem;
+}
+
 .v2-feed-body {
   display: grid;
   gap: 8px;
@@ -1931,6 +1952,269 @@ html[data-theme="dark"] .v2-glass-card {
 .v2-preview-row small {
   color: var(--v2-soft-strong);
   line-height: 1.6;
+}
+
+.v2-kaogong-calendar-pill {
+  flex-shrink: 0;
+  font-size: 0.84rem;
+}
+
+.v2-kaogong-subscription-row {
+  gap: 7px;
+}
+
+.v2-kaogong-subscription-label {
+  color: var(--v2-soft-strong);
+  font-size: 0.78rem;
+}
+
+.v2-kaogong-subscription-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--v2-line);
+  color: var(--v2-soft-strong);
+  font-size: 0.9rem;
+}
+
+.v2-kaogong-subscription-foot small {
+  text-align: right;
+  line-height: 1.5;
+}
+
+.v2-kaogong-jobs-head,
+.v2-kaogong-score-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px;
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-radius-lg);
+  background: var(--v2-paper);
+  box-shadow: var(--v2-shadow);
+}
+
+.v2-kaogong-jobs-head > div,
+.v2-kaogong-score-head > div {
+  display: grid;
+  gap: 6px;
+}
+
+.v2-kaogong-jobs-head h2,
+.v2-kaogong-score-head h2 {
+  margin: 0;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-size: clamp(1.65rem, 2.2vw, 2.35rem);
+  line-height: 1.08;
+  color: var(--v2-ink);
+}
+
+.v2-kaogong-jobs-head p,
+.v2-kaogong-score-head p {
+  margin: 0;
+  color: var(--v2-soft-strong);
+  line-height: 1.55;
+}
+
+.v2-kaogong-jobs-head > strong,
+.v2-kaogong-score-head > strong {
+  flex-shrink: 0;
+  color: var(--v2-soft-strong);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.v2-kaogong-score-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--v2-line);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v2-paper) 94%, white);
+}
+
+.v2-kaogong-score-metrics {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.v2-kaogong-score-metrics span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 84%, white);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 94%, white);
+  color: var(--v2-soft-strong);
+  font-size: 0.86rem;
+}
+
+.v2-kaogong-sort-field {
+  width: min(240px, 100%);
+  grid-template-columns: auto minmax(150px, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.v2-kaogong-sort-field span {
+  color: var(--v2-soft);
+  font-size: 0.86rem;
+}
+
+.v2-kaogong-score-row.v2-ledger-row--material {
+  grid-template-columns: 104px minmax(0, 1.55fr) minmax(150px, 0.7fr) auto;
+  gap: 18px;
+  padding-block: 18px;
+}
+
+.v2-kaogong-score-value {
+  width: 92px;
+  min-height: 74px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v2-highlight-soft) 74%, white);
+  color: var(--v2-action);
+}
+
+.v2-kaogong-score-value span {
+  color: var(--v2-soft);
+  font-size: 0.78rem;
+}
+
+.v2-kaogong-score-value strong {
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.v2-kaogong-score-row .v2-ledger-row__main {
+  gap: 7px;
+}
+
+.v2-kaogong-score-row .v2-ledger-row__main > strong {
+  font-size: 1.08rem;
+}
+
+.v2-kaogong-score-row .v2-ledger-row__meta {
+  align-self: center;
+  gap: 6px;
+}
+
+.v2-kaogong-score-row .v2-ledger-row__actions {
+  align-self: center;
+}
+
+.v2-kaogong-score-favorite-preview {
+  display: grid;
+  gap: 8px;
+}
+
+.v2-kaogong-score-favorite-preview .v2-check-row {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.v2-kaogong-score-favorite-preview .v2-check-row span {
+  display: grid;
+  gap: 4px;
+}
+
+.v2-kaogong-score-favorite-preview .v2-check-row small {
+  color: var(--v2-soft);
+  font-size: 0.84rem;
+}
+
+.v2-kaogong-active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.v2-kaogong-active-filters span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--v2-line);
+  border-radius: 999px;
+  background: var(--v2-paper);
+  color: var(--v2-soft-strong);
+  font-size: 0.86rem;
+}
+
+.v2-feed-item--kaogong {
+  grid-template-columns: 72px minmax(0, 1fr) minmax(190px, auto);
+  gap: 18px;
+  padding: 20px 22px;
+}
+
+.v2-feed-item--kaogong .v2-feed-body {
+  gap: 7px;
+}
+
+.v2-feed-item--kaogong .v2-feed-body strong {
+  font-size: 1.06rem;
+}
+
+.v2-feed-item--kaogong .v2-tag-row {
+  margin-top: 2px;
+}
+
+.v2-feed-item--kaogong .v2-feed-side {
+  align-self: center;
+}
+
+.v2-kaogong-filter-card {
+  align-self: start;
+}
+
+.v2-kaogong-filter-card .v2-side-card__head h3 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+.v2-kaogong-filter-card .v2-filter-form {
+  gap: 14px;
+}
+
+.v2-kaogong-filter-card .v2-kaogong-filter-cluster {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.v2-kaogong-filter-card .v2-field {
+  gap: 7px;
+}
+
+.v2-kaogong-filter-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--v2-line);
+  color: var(--v2-soft-strong);
+}
+
+.v2-kaogong-filter-foot .v2-secondary-link {
+  width: auto;
 }
 
 .v2-post-edit-layout {
@@ -3495,6 +3779,561 @@ html[data-theme="dark"] .v2-plan-side-fact {
   font-size: 0.86rem;
 }
 
+.v2-room-current-title {
+  color: var(--v2-ink);
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.v2-room-current-meta {
+  width: fit-content;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 84%, white);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v2-paper) 92%, white);
+  color: var(--v2-soft-strong);
+  font-size: 0.84rem;
+}
+
+.v2-room-mini-list {
+  max-height: min(42vh, 420px);
+  display: grid;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--v2-link) 28%, transparent) transparent;
+}
+
+.v2-room-mini-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.v2-room-mini-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v2-link) 28%, transparent);
+}
+
+.v2-room-mini-button {
+  width: 100%;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--v2-paper) 94%, white);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.v2-room-mini-button:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--v2-active-border) 36%, var(--v2-line));
+  background: color-mix(in srgb, var(--v2-highlight-soft) 52%, white);
+}
+
+.v2-room-mini-button strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-ink);
+  font-size: 0.94rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2-room-mini-button span {
+  color: var(--v2-soft-strong);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.v2-kaogong-interview-action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.v2-kaogong-interview-action-card {
+  min-height: 210px;
+  display: grid;
+  align-content: space-between;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 86%, white);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--v2-highlight-soft) 26%, transparent), transparent 38%),
+    color-mix(in srgb, var(--v2-paper) 96%, white);
+  box-shadow: var(--v2-shadow);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.v2-kaogong-interview-action-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--v2-active-border) 38%, var(--v2-line));
+}
+
+.v2-kaogong-interview-action-card span {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--v2-highlight-soft) 74%, white);
+  color: var(--v2-link);
+  font-weight: 800;
+}
+
+.v2-kaogong-interview-action-card strong {
+  color: var(--v2-ink);
+  font-size: 1.2rem;
+}
+
+.v2-kaogong-interview-action-card p {
+  margin: 0;
+  color: var(--v2-soft-strong);
+  line-height: 1.6;
+}
+
+.v2-kaogong-interview-list-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--v2-paper) 94%, white);
+  box-shadow: var(--v2-shadow);
+}
+
+.v2-kaogong-interview-list-head > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.v2-kaogong-interview-list-head h2 {
+  margin: 0;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-size: clamp(1.7rem, 2.4vw, 2.4rem);
+  line-height: 1.05;
+  color: var(--v2-ink);
+}
+
+.v2-kaogong-interview-list-head p {
+  margin: 0;
+  color: var(--v2-soft-strong);
+  line-height: 1.55;
+}
+
+.v2-kaogong-interview-room-list {
+  display: grid;
+  gap: 12px;
+}
+
+.v2-kaogong-interview-room-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 20px 22px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--v2-paper) 96%, white);
+  box-shadow: var(--v2-shadow);
+}
+
+.v2-kaogong-interview-room-card__main {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.v2-kaogong-interview-room-card__title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.v2-kaogong-interview-room-card__title strong {
+  color: var(--v2-ink);
+  font-size: 1.08rem;
+}
+
+.v2-kaogong-interview-room-card__title span,
+.v2-kaogong-interview-room-card__meta span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 84%, white);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 94%, white);
+  color: var(--v2-soft-strong);
+  font-size: 0.84rem;
+}
+
+.v2-kaogong-interview-room-card p {
+  margin: 0;
+  color: var(--v2-soft-strong);
+  line-height: 1.55;
+}
+
+.v2-kaogong-interview-room-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.v2-kaogong-interview-room-card__desc {
+  max-width: 780px;
+}
+
+.v2-kaogong-interview-create,
+.v2-kaogong-interview-create-form {
+  display: grid;
+  gap: 16px;
+}
+
+.v2-kaogong-interview-create-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.v2-kaogong-interview-side-column {
+  gap: 12px;
+  overflow-y: auto !important;
+  padding-right: 6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.v2-kaogong-interview-side-column::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.v2-kaogong-interview-side-card {
+  display: grid;
+  gap: 16px;
+}
+
+.v2-kaogong-interview-side-column .v2-kaogong-filter-grid {
+  grid-template-columns: 1fr;
+}
+
+.v2-interview-chat-card {
+  min-height: min(62vh, 680px);
+  display: grid;
+  grid-template-rows: auto minmax(280px, 1fr) auto auto;
+  gap: 14px;
+}
+
+.v2-interview-chat-card .v2-counseling-thread {
+  min-height: 320px;
+  max-height: min(56vh, 580px);
+  overflow-y: auto;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--v2-paper-strong) 82%, transparent), color-mix(in srgb, var(--v2-paper) 96%, white));
+}
+
+.v2-interview-composer {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 94%, white);
+}
+
+.v2-icon-button {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 86%, white);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--v2-paper) 96%, white);
+  color: var(--v2-link);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.v2-icon-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--v2-active-border) 42%, var(--v2-line));
+  background: color-mix(in srgb, var(--v2-highlight-soft) 56%, white);
+}
+
+.v2-icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.v2-interview-message-input textarea {
+  min-height: 44px;
+  max-height: 120px;
+  resize: vertical;
+}
+
+.v2-interview-upload-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 220px) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--v2-active-border) 34%, white);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--v2-highlight-soft) 58%, white);
+}
+
+.v2-interview-upload-progress strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2-interview-upload-progress div {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v2-line) 70%, white);
+}
+
+.v2-interview-upload-progress div span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--v2-link);
+}
+
+.v2-interview-upload-progress small {
+  color: var(--v2-soft-strong);
+}
+
+.v2-interview-room-sidebar {
+  gap: 12px;
+  overflow-y: auto !important;
+  padding-right: 6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.v2-interview-room-sidebar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.v2-interview-room-facts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.v2-interview-room-facts div {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.v2-interview-room-facts dt {
+  color: var(--v2-soft);
+  font-size: 0.84rem;
+}
+
+.v2-interview-room-facts dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--v2-ink);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.v2-interview-side-list {
+  max-height: 280px;
+  display: grid;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+
+.v2-interview-side-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--v2-paper) 94%, white);
+}
+
+.v2-interview-side-item div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.v2-interview-side-item strong,
+.v2-interview-side-item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2-interview-side-item strong {
+  color: var(--v2-ink);
+  font-size: 0.92rem;
+}
+
+.v2-interview-side-item span {
+  color: var(--v2-soft-strong);
+  font-size: 0.82rem;
+}
+
+.v2-interview-feedback-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.v2-interview-comment-list {
+  max-height: 420px;
+  display: grid;
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-width: thin;
+}
+
+.v2-interview-comment {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--v2-line) 82%, transparent);
+}
+
+.v2-interview-comment:last-child {
+  border-bottom: 0;
+}
+
+.v2-interview-comment__avatar {
+  width: 42px;
+  height: 42px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--v2-tint) 28%, var(--v2-paper-strong));
+  color: var(--v2-link);
+  font-weight: 800;
+}
+
+.v2-interview-comment__body {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.v2-interview-comment__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.v2-interview-comment__head strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2-interview-comment__head span {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v2-highlight-soft) 58%, white);
+  color: var(--v2-link);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.v2-interview-comment__body p,
+.v2-empty-copy {
+  margin: 0;
+  color: var(--v2-soft-strong);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.v2-interview-comment__body small,
+.v2-interview-comment__body time {
+  color: var(--v2-soft);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.v2-interview-comment-form {
+  display: grid;
+  grid-template-columns: minmax(96px, 128px) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 94%, white);
+}
+
+.v2-interview-score-field input {
+  min-height: 48px;
+}
+
+.v2-interview-comment-input textarea {
+  min-height: 48px;
+  max-height: 130px;
+  resize: vertical;
+}
+
+.v2-room-feedback-modal {
+  width: min(920px, 100%);
+}
+
+.v2-attachment-note-modal {
+  width: min(640px, 100%);
+}
+
 .v2-kaogong-jobs-side-column,
 .v2-kaogong-score-side-column,
 .v2-kaogong-calendar-side-column {
@@ -3566,6 +4405,11 @@ html[data-theme="dark"] .v2-plan-side-fact {
   justify-content: center;
 }
 
+.v2-kaogong-filter-actions .v2-segment-button:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
 .v2-kaogong-side-panel .v2-check-list {
   gap: 10px;
 }
@@ -3597,13 +4441,190 @@ html[data-theme="dark"] .v2-plan-side-fact {
 }
 
 .v2-kaogong-favorite-modal {
-  width: min(560px, 100%);
+  width: min(920px, 100%);
   display: grid;
   gap: 16px;
+  overflow: hidden;
+}
+
+.v2-kaogong-favorite-modal .v2-modal-head span {
+  display: block;
+  margin-top: 6px;
+  color: var(--v2-soft);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.v2-kaogong-favorite-list {
+  display: grid;
+  gap: 12px;
+  max-height: min(58vh, 560px);
+  padding-right: 6px;
+  overflow: auto;
+}
+
+.v2-kaogong-favorite-card {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 86%, white);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v2-paper) 96%, white);
+}
+
+.v2-kaogong-favorite-score {
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  align-content: center;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--v2-highlight-soft) 72%, white);
+  color: var(--v2-action);
+}
+
+.v2-kaogong-favorite-score span {
+  color: var(--v2-soft);
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.v2-kaogong-favorite-score strong {
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.v2-kaogong-favorite-main {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.v2-kaogong-favorite-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.v2-kaogong-favorite-card__head strong {
+  display: block;
+  color: var(--v2-ink);
+  font-size: 1rem;
+}
+
+.v2-kaogong-favorite-card__head p {
+  margin: 4px 0 0;
+  color: var(--v2-soft-strong);
+  line-height: 1.5;
+}
+
+.v2-kaogong-favorite-card__head > span {
+  flex-shrink: 0;
+  color: var(--v2-soft);
+  font-size: 0.92rem;
+}
+
+.v2-kaogong-favorite-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.v2-kaogong-favorite-meta span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 76%, white);
+  border-radius: 999px;
+  color: var(--v2-soft-strong);
+  background: color-mix(in srgb, var(--v2-paper-strong) 90%, white);
+  font-size: 0.88rem;
+}
+
+.v2-kaogong-favorite-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--v2-line) 84%, white);
+  color: var(--v2-soft);
+  font-size: 0.9rem;
+}
+
+.v2-kaogong-favorite-foot .v2-inline-actions {
+  margin-top: 0;
+  justify-content: flex-end;
+}
+
+.v2-kaogong-score-favorite-card {
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.v2-kaogong-score-favorite-badge {
+  width: 96px;
+  height: auto;
+  min-height: 104px;
+  padding: 14px 10px;
+}
+
+.v2-kaogong-score-favorite-badge strong {
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-size: 1.45rem;
 }
 
 .v2-kaogong-calendar-workbench {
   align-items: start;
+}
+
+.v2-kaogong-calendar-topline {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  border: 1px solid var(--v2-line);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--v2-paper) 94%, white);
+  box-shadow: var(--v2-shadow);
+}
+
+.v2-kaogong-calendar-topline > div {
+  display: grid;
+  gap: 6px;
+}
+
+.v2-kaogong-calendar-topline h2 {
+  margin: 0;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-size: clamp(1.65rem, 2.2vw, 2.35rem);
+  line-height: 1.05;
+  color: var(--v2-ink);
+}
+
+.v2-kaogong-calendar-topline p {
+  margin: 0;
+  color: var(--v2-soft-strong);
+  line-height: 1.55;
+}
+
+.v2-kaogong-calendar-topline > strong {
+  flex-shrink: 0;
+  color: var(--v2-soft-strong);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.v2-kaogong-calendar-focus-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+  gap: 16px;
+  align-items: stretch;
 }
 
 .v2-kaogong-calendar-hero-grid {
@@ -3623,9 +4644,35 @@ html[data-theme="dark"] .v2-plan-side-fact {
   gap: 12px;
   align-content: start;
   padding: 22px 24px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 24px;
   background:
     radial-gradient(circle at top right, color-mix(in srgb, var(--v2-highlight-soft) 26%, transparent), transparent 42%),
     linear-gradient(180deg, color-mix(in srgb, var(--v2-paper) 94%, white), color-mix(in srgb, var(--v2-paper-strong) 96%, white));
+  box-shadow: var(--v2-shadow);
+}
+
+.v2-kaogong-calendar-spotlight__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.v2-kaogong-calendar-spotlight__head p {
+  margin: 0;
+}
+
+.v2-kaogong-calendar-spotlight__head span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: var(--v2-link);
+  background: color-mix(in srgb, var(--v2-highlight-soft) 82%, white);
+  font-size: 0.84rem;
+  white-space: nowrap;
 }
 
 .v2-kaogong-calendar-spotlight strong {
@@ -3681,9 +4728,177 @@ html[data-theme="dark"] .v2-plan-side-fact {
   color: var(--v2-soft);
 }
 
+.v2-kaogong-calendar-mini-panel {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  padding: 22px 24px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--v2-paper) 94%, white);
+  box-shadow: var(--v2-shadow);
+}
+
+.v2-kaogong-calendar-subscription-focus-list {
+  display: grid;
+  gap: 10px;
+}
+
+.v2-kaogong-calendar-subscription-focus {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 84%, white);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 96%, white);
+}
+
+.v2-kaogong-calendar-subscription-focus strong {
+  color: var(--v2-ink);
+}
+
+.v2-kaogong-calendar-subscription-focus span,
+.v2-kaogong-calendar-subscription-focus small {
+  color: var(--v2-soft-strong);
+}
+
+.v2-kaogong-calendar-overview {
+  display: grid;
+  gap: 16px;
+  padding: 22px 24px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--v2-highlight-soft) 24%, transparent), transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--v2-paper) 94%, white), color-mix(in srgb, var(--v2-paper-strong) 96%, white));
+  box-shadow: var(--v2-shadow);
+}
+
+.v2-kaogong-calendar-overview__head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 2px;
+}
+
+.v2-kaogong-calendar-overview__head > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.v2-kaogong-calendar-overview__head strong {
+  color: var(--v2-ink);
+  font-size: 1.06rem;
+}
+
+.v2-kaogong-calendar-overview__head span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 82%, white);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 94%, white);
+  color: var(--v2-soft-strong);
+  font-size: 0.84rem;
+}
+
+.v2-kaogong-calendar-overview__grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.v2-kaogong-calendar-overview__item {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding: 14px 15px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 84%, white);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 95%, white);
+}
+
+.v2-kaogong-calendar-overview__item span,
+.v2-kaogong-calendar-overview-subscription span {
+  color: var(--v2-soft);
+  font-size: 0.82rem;
+}
+
+.v2-kaogong-calendar-overview__item strong,
+.v2-kaogong-calendar-overview-subscription strong {
+  color: var(--v2-ink);
+}
+
+.v2-kaogong-calendar-overview__item p,
+.v2-kaogong-calendar-overview-subscription p {
+  margin: 0;
+  color: var(--v2-soft-strong);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.v2-kaogong-calendar-overview-subscription {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 84%, white);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v2-highlight-soft) 38%, white);
+}
+
+html[data-theme="dark"] .v2-kaogong-calendar-overview-subscription {
+  border-color: color-mix(in srgb, var(--v2-active-border) 68%, var(--v2-line));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--v2-paper-strong) 86%, var(--v2-highlight)),
+      color-mix(in srgb, var(--v2-field-bg) 88%, var(--v2-highlight))
+    );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.v2-kaogong-calendar-overview-subscription.is-editing {
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.36fr) auto;
+}
+
+.v2-kaogong-calendar-overview-subscription > div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.v2-kaogong-calendar-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--v2-line);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v2-paper) 94%, white);
+}
+
+.v2-kaogong-calendar-toolbar span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 84%, white);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 94%, white);
+  color: var(--v2-soft-strong);
+  font-size: 0.86rem;
+}
+
 .v2-calendar-wall {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 16px;
   align-items: start;
 }
@@ -3702,15 +4917,49 @@ html[data-theme="dark"] .v2-plan-side-fact {
 
 .v2-calendar-wall__head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 72px minmax(0, 1fr);
   align-items: start;
   gap: 14px;
 }
 
+.v2-calendar-wall__marker {
+  min-height: 70px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 80%, white);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v2-highlight-soft) 72%, white);
+  color: var(--v2-link);
+}
+
+.v2-calendar-wall__head .v2-calendar-wall__marker strong {
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-size: 1.08rem;
+  line-height: 1;
+}
+
+.v2-calendar-wall__marker span {
+  color: var(--v2-soft-strong);
+  font-size: 0.82rem;
+}
+
 .v2-calendar-wall__title {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
+}
+
+.v2-calendar-wall__title-line {
+  display: block;
+}
+
+.v2-calendar-wall__title-line > strong {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .v2-calendar-wall__head strong {
@@ -3725,11 +4974,25 @@ html[data-theme="dark"] .v2-plan-side-fact {
 }
 
 .v2-calendar-wall__meta {
-  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.v2-calendar-wall__head .v2-segment-button {
+.v2-calendar-wall__meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.v2-calendar-wall__meta-row .v2-segment-button {
   flex-shrink: 0;
+  min-width: 86px;
+  max-width: 100%;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .v2-calendar-flow-summary {
@@ -3832,9 +5095,128 @@ html[data-theme="dark"] .v2-plan-side-fact {
   line-height: 1.58;
 }
 
+.v2-calendar-wall__expand {
+  width: 100%;
+  justify-content: center;
+  border-style: dashed;
+  background: color-mix(in srgb, var(--v2-paper-strong) 96%, white);
+}
+
+.v2-kaogong-calendar-timeline-modal {
+  width: min(720px, 100%);
+  display: grid;
+  gap: 14px;
+}
+
+.v2-calendar-rail--modal {
+  max-height: min(58vh, 560px);
+  padding-right: 6px;
+  overflow: auto;
+}
+
+.v2-calendar-rail--modal .v2-calendar-rail__item {
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 82%, white);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 96%, white);
+}
+
+.v2-calendar-rail--modal .v2-calendar-rail__item:first-child {
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--v2-line) 82%, white);
+}
+
 .v2-kaogong-calendar-panel {
   display: grid;
   gap: 16px;
+}
+
+.v2-kaogong-calendar-subscription-list,
+.v2-kaogong-calendar-notice-list {
+  display: grid;
+  gap: 10px;
+}
+
+.v2-kaogong-calendar-subscription-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 94%, white);
+}
+
+.v2-kaogong-calendar-subscription-row.is-editing {
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.45fr) auto;
+}
+
+.v2-kaogong-calendar-subscription-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.v2-kaogong-calendar-subscription-main small {
+  color: var(--v2-soft);
+}
+
+.v2-kaogong-calendar-reminder-field {
+  gap: 6px;
+}
+
+.v2-kaogong-calendar-reminder-field span {
+  font-size: 0.82rem;
+}
+
+.v2-kaogong-calendar-subscription-row strong,
+.v2-kaogong-calendar-notice-row strong {
+  color: var(--v2-ink);
+}
+
+.v2-kaogong-calendar-subscription-row span,
+.v2-kaogong-calendar-notice-row p,
+.v2-kaogong-calendar-notice-row time {
+  color: var(--v2-soft-strong);
+}
+
+.v2-kaogong-calendar-notice-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 88%, white);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v2-paper-strong) 94%, white);
+}
+
+.v2-kaogong-calendar-notice-row > span {
+  width: 44px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v2-highlight-soft) 82%, white);
+  color: var(--v2-link);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.v2-kaogong-calendar-notice-row > div {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.v2-kaogong-calendar-notice-row p {
+  margin: 0;
+  line-height: 1.55;
+  font-size: 0.94rem;
+}
+
+.v2-kaogong-calendar-notice-row time {
+  font-size: 0.86rem;
 }
 
 .v2-kaogong-calendar-panel .v2-check-list {
@@ -3871,6 +5253,55 @@ html[data-theme="dark"] .v2-plan-side-fact {
     grid-column: auto;
   }
 
+  .v2-kaogong-interview-action-grid,
+  .v2-kaogong-interview-create-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-kaogong-interview-list-head,
+  .v2-kaogong-interview-room-card {
+    display: grid;
+    align-items: start;
+  }
+
+  .v2-kaogong-interview-room-card .v2-segment-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .v2-kaogong-calendar-topline,
+  .v2-kaogong-calendar-spotlight__head {
+    display: grid;
+    align-items: start;
+    text-align: left;
+  }
+
+  .v2-kaogong-calendar-topline > strong {
+    text-align: left;
+  }
+
+  .v2-kaogong-calendar-overview__head,
+  .v2-calendar-wall__meta-row {
+    display: grid;
+    align-items: start;
+  }
+
+  .v2-kaogong-calendar-overview__head span,
+  .v2-calendar-wall__meta-row .v2-segment-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .v2-kaogong-calendar-overview__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-kaogong-calendar-overview-subscription,
+  .v2-kaogong-calendar-overview-subscription.is-editing {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-kaogong-calendar-focus-grid,
   .v2-kaogong-calendar-hero-grid {
     grid-template-columns: 1fr;
   }
@@ -3887,11 +5318,6 @@ html[data-theme="dark"] .v2-plan-side-fact {
     grid-template-columns: 1fr;
   }
 
-  .v2-calendar-wall__head .v2-segment-button {
-    width: 100%;
-    justify-content: center;
-  }
-
   .v2-calendar-rail__line {
     display: grid;
     justify-content: start;
@@ -3900,6 +5326,15 @@ html[data-theme="dark"] .v2-plan-side-fact {
   .v2-kaogong-calendar-spotlight__band {
     flex-direction: column;
     align-items: start;
+  }
+
+  .v2-kaogong-calendar-subscription-row {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-kaogong-calendar-subscription-row select,
+  .v2-kaogong-calendar-inline-actions {
+    width: 100%;
   }
 }
 
@@ -4777,6 +6212,45 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   transform: translateY(-1px);
 }
 
+.v2-admin-kaogong-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+}
+
+.v2-admin-kaogong-tabs {
+  flex: 1;
+}
+
+.v2-admin-kaogong-tabs .v2-segment-button {
+  gap: 8px;
+}
+
+.v2-admin-kaogong-tabs .v2-segment-button span {
+  color: currentColor;
+  font-size: 0.78rem;
+  opacity: 0.72;
+}
+
+.v2-admin-kaogong-metrics .v2-summary-card p {
+  min-height: 3em;
+}
+
+.v2-admin-kaogong-editor-modal {
+  width: min(920px, 100%);
+  padding: 28px;
+}
+
+.v2-admin-kaogong-editor-modal .v2-editor-form {
+  gap: 16px;
+}
+
+.v2-admin-kaogong-editor-modal .v2-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .v2-kaogong-admin-card-head {
   display: flex;
   align-items: start;
@@ -4794,6 +6268,17 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   display: grid;
   place-items: center;
   text-align: center;
+}
+
+@media (max-width: 900px) {
+  .v2-admin-kaogong-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .v2-admin-kaogong-editor-modal .v2-form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .v2-comment-editor--inline {
@@ -5216,6 +6701,17 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
     grid-template-columns: 1fr;
   }
 
+  .v2-kaogong-score-row.v2-ledger-row--material {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-kaogong-score-value {
+    width: max-content;
+    min-width: 92px;
+    justify-items: start;
+    padding: 12px 14px;
+  }
+
   .v2-ledger-table {
     min-width: 920px;
   }
@@ -5279,6 +6775,31 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
     flex-basis: calc(50% - 8px);
   }
 
+  .v2-kaogong-favorite-card {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-kaogong-favorite-score {
+    width: max-content;
+    min-width: 48px;
+  }
+
+  .v2-kaogong-score-favorite-badge {
+    min-width: 96px;
+    min-height: 56px;
+    justify-items: start;
+  }
+
+  .v2-kaogong-favorite-card__head,
+  .v2-kaogong-favorite-foot {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .v2-kaogong-favorite-foot .v2-inline-actions {
+    justify-content: flex-start;
+  }
+
   .v2-counseling-board {
     grid-template-columns: 1fr;
   }
@@ -5292,6 +6813,15 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   .v2-counseling-session-list,
   .v2-counseling-thread {
     max-height: none;
+  }
+
+  .v2-interview-composer,
+  .v2-interview-comment-form {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-interview-composer .v2-icon-button {
+    justify-self: start;
   }
 
   .v2-post-workbench-head {

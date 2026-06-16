@@ -41,6 +41,19 @@ public class KaoGongService {
         ".txt", ".md", ".png", ".jpg", ".jpeg", ".gif",
         ".mp3", ".wav", ".m4a", ".mp4", ".zip", ".rar"
     );
+    private static final Map<String, Integer> EDUCATION_RANKS = Map.of(
+        "大专", 1,
+        "专科", 1,
+        "本科", 2,
+        "硕士", 3,
+        "研究生", 3,
+        "博士", 4
+    );
+    private static final Map<String, Integer> DEGREE_RANKS = Map.of(
+        "学士", 1,
+        "硕士", 2,
+        "博士", 3
+    );
     private static final long ROOM_STREAM_TIMEOUT_MS = 30L * 60L * 1000L;
 
     private final CivilServicePostRepository postRepository;
@@ -837,35 +850,55 @@ public class KaoGongService {
         } else if (!blank(region)) {
             return null;
         }
-        if (!blank(education) && requirementMatches(post.getEducationRequirement(), education)) {
-            score += 12;
-            reasons.add("学历符合");
-        } else if (!blank(education) && !unlimited(post.getEducationRequirement())) {
-            return null;
+        if (!blank(education)) {
+            if (unlimited(post.getEducationRequirement())) {
+                // 不限条件允许通过，但不作为专项匹配加分。
+            } else if (rankedRequirementMatches(post.getEducationRequirement(), education, EDUCATION_RANKS)) {
+                score += 12;
+                reasons.add("学历符合");
+            } else {
+                return null;
+            }
         }
-        if (!blank(degree) && requirementMatches(post.getDegreeRequirement(), degree)) {
-            score += 8;
-            reasons.add("学位符合");
-        } else if (!blank(degree) && !unlimited(post.getDegreeRequirement())) {
-            return null;
+        if (!blank(degree)) {
+            if (unlimited(post.getDegreeRequirement())) {
+                // 不限条件允许通过，但不作为专项匹配加分。
+            } else if (rankedRequirementMatches(post.getDegreeRequirement(), degree, DEGREE_RANKS)) {
+                score += 8;
+                reasons.add("学位符合");
+            } else {
+                return null;
+            }
         }
-        if (!blank(major) && requirementMatches(post.getMajorRequirement(), major)) {
-            score += 14;
-            reasons.add("专业条件匹配");
-        } else if (!blank(major) && !unlimited(post.getMajorRequirement())) {
-            return null;
+        if (!blank(major)) {
+            if (unlimited(post.getMajorRequirement())) {
+                // 不限条件允许通过，但不作为专项匹配加分。
+            } else if (requirementMatches(post.getMajorRequirement(), major)) {
+                score += 14;
+                reasons.add("专业条件匹配");
+            } else {
+                return null;
+            }
         }
-        if (!blank(household) && requirementMatches(post.getHouseholdRequirement(), household)) {
-            score += 8;
-            reasons.add("户籍/生源地符合");
-        } else if (!blank(household) && !unlimited(post.getHouseholdRequirement())) {
-            return null;
+        if (!blank(household)) {
+            if (unlimited(post.getHouseholdRequirement())) {
+                // 不限条件允许通过，但不作为专项匹配加分。
+            } else if (requirementMatches(post.getHouseholdRequirement(), household)) {
+                score += 8;
+                reasons.add("户籍/生源地符合");
+            } else {
+                return null;
+            }
         }
-        if (!blank(politicalStatus) && requirementMatches(post.getPoliticalStatusRequirement(), politicalStatus)) {
-            score += 8;
-            reasons.add("政治面貌符合");
-        } else if (!blank(politicalStatus) && !unlimited(post.getPoliticalStatusRequirement())) {
-            return null;
+        if (!blank(politicalStatus)) {
+            if (unlimited(post.getPoliticalStatusRequirement())) {
+                // 不限条件允许通过，但不作为专项匹配加分。
+            } else if (requirementMatches(post.getPoliticalStatusRequirement(), politicalStatus)) {
+                score += 8;
+                reasons.add("政治面貌符合");
+            } else {
+                return null;
+            }
         }
         if (!blank(jobCategory) && eq(post.getJobCategory(), jobCategory)) {
             score += 6;
@@ -1063,6 +1096,40 @@ public class KaoGongService {
         String req = requirement.trim();
         String val = value.trim();
         return req.contains(val) || val.contains(req);
+    }
+
+    private boolean rankedRequirementMatches(String requirement, String value, Map<String, Integer> ranks) {
+        if (blank(value) || unlimited(requirement)) return true;
+        Integer candidateRank = rankOf(value, ranks);
+        if (candidateRank == null) {
+            return requirementMatches(requirement, value);
+        }
+
+        String req = requirement.trim();
+        List<Integer> requiredRanks = ranks.entrySet().stream()
+            .filter(entry -> req.contains(entry.getKey()))
+            .map(Map.Entry::getValue)
+            .distinct()
+            .sorted()
+            .toList();
+        if (requiredRanks.isEmpty()) {
+            return requirementMatches(requirement, value);
+        }
+
+        if (req.contains("及以上") || req.contains("以上") || req.contains("及其以上")) {
+            return candidateRank >= requiredRanks.get(0);
+        }
+        return requiredRanks.contains(candidateRank);
+    }
+
+    private Integer rankOf(String value, Map<String, Integer> ranks) {
+        if (blank(value)) return null;
+        String normalized = value.trim();
+        return ranks.entrySet().stream()
+            .filter(entry -> normalized.contains(entry.getKey()))
+            .map(Map.Entry::getValue)
+            .max(Integer::compareTo)
+            .orElse(null);
     }
 
     private boolean unlimited(String requirement) {
