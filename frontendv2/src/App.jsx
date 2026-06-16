@@ -303,6 +303,15 @@ export default function App() {
           <Route path="/settings/practice" element={<SettingsPracticePage />} />
           <Route path="/settings/security" element={<SettingsSecurityPage />} />
         </Route>
+
+        <Route path="/studyabroad" element={<Navigate replace to="/station/studyabroad" />} />
+        <Route path="/studyabroad/applications" element={<Navigate replace to="/station/studyabroad/applications" />} />
+        <Route path="/studyabroad/timeline" element={<Navigate replace to="/station/studyabroad/timeline" />} />
+        <Route path="/studyabroad/materials" element={<Navigate replace to="/station/studyabroad/materials" />} />
+        <Route path="/studyabroad/experience" element={<Navigate replace to="/station/studyabroad/experiences" />} />
+        <Route path="/studyabroad/experiences" element={<Navigate replace to="/station/studyabroad/experiences" />} />
+        <Route path="/studyabroad/admission-cases" element={<Navigate replace to="/station/studyabroad/cases" />} />
+        <Route path="/studyabroad/schools" element={<Navigate replace to="/station/studyabroad/programs" />} />
       </Routes>
     </Suspense>
   )

@@ -166,6 +166,15 @@ describe('frontendv2 route gating', () => {
     expect(await screen.findByRole('heading', { name: '留学经验' })).toBeInTheDocument()
   })
 
+  it('redirects legacy study abroad experience URLs into frontend v2 routes', async () => {
+    authState.isAuthed = true
+    authState.user = { id: 7, name: 'Test User', role: 'user', target: 'liuxue' }
+
+    renderApp(['/studyabroad/experience'])
+
+    expect(await screen.findByRole('heading', { name: '留学经验' })).toBeInTheDocument()
+  })
+
   it('routes admins into the study abroad overview console', async () => {
     authState.isAuthed = true
     authState.user = { id: 1, name: 'Admin', role: 'admin', target: 'job' }

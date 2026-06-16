@@ -38,6 +38,7 @@ export default function StudyAbroadExperiencesPage() {
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(createEmptyStudyAbroadExperienceForm())
   const [pendingDelete, setPendingDelete] = useState(null)
+  const [readingItem, setReadingItem] = useState(null)
 
   useEffect(() => {
     let active = true
@@ -82,7 +83,7 @@ export default function StudyAbroadExperiencesPage() {
   }, [canUseRemote, deferredKeyword, filters.country, filters.topic, page, token])
 
   const myExperienceCount = useMemo(
-    () => rows.filter((item) => item.authorId === user?.id).length,
+    () => rows.filter((item) => canManageExperience(item, user)).length,
     [rows, user?.id],
   )
 
@@ -93,6 +94,7 @@ export default function StudyAbroadExperiencesPage() {
   }
 
   function openEditDrawer(item) {
+    setReadingItem(null)
     setEditingItem(item)
     setForm({
       ...createEmptyStudyAbroadExperienceForm(),
@@ -163,7 +165,7 @@ export default function StudyAbroadExperiencesPage() {
         <section className="v2-feed-list" aria-label="留学经验列表">
           {rows.map((item) => (
             <article className="v2-feed-item" key={item.id}>
-              <div className="v2-feed-index">{item.readTime}</div>
+              <div className="v2-feed-index">{formatPublishedAt(item.createdAt)}</div>
               <div className="v2-feed-body">
                 <strong>{item.title}</strong>
                 <p>{item.authorName} / {getTopicLabel(item.topic)}</p>
@@ -171,9 +173,12 @@ export default function StudyAbroadExperiencesPage() {
               </div>
               <div className="v2-feed-side">
                 <span>{item.country}</span>
-                <button className="v2-secondary-link" type="button" onClick={() => openEditDrawer(item)}>查看 / 编辑</button>
-                {item.authorId === user?.id ? (
-                  <button className="v2-secondary-link" type="button" onClick={() => setPendingDelete(item)}>删除</button>
+                <button className="v2-secondary-link" type="button" onClick={() => setReadingItem(item)}>查看全文</button>
+                {canManageExperience(item, user) ? (
+                  <>
+                    <button className="v2-secondary-link" type="button" onClick={() => openEditDrawer(item)}>编辑</button>
+                    <button className="v2-secondary-link" type="button" onClick={() => setPendingDelete(item)}>删除</button>
+                  </>
                 ) : null}
               </div>
             </article>
@@ -236,6 +241,46 @@ export default function StudyAbroadExperiencesPage() {
         onConfirm={confirmDelete}
         onClose={() => setPendingDelete(null)}
       />
+
+      {readingItem ? (
+        <div className="v2-modal-overlay" onClick={() => setReadingItem(null)}>
+          <article className="v2-modal-card v2-studyabroad-reading-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="v2-modal-head">
+              <div>
+                <p className="v2-kicker">{readingItem.authorName} / {formatPublishedAt(readingItem.createdAt)}</p>
+                <h3>{readingItem.title}</h3>
+              </div>
+              <button className="v2-secondary-link" type="button" onClick={() => setReadingItem(null)}>关闭</button>
+            </div>
+            <div className="v2-check-list">
+              <div className="v2-check-row"><strong>主题</strong><span>{getTopicLabel(readingItem.topic)}</span></div>
+              <div className="v2-check-row"><strong>国家 / 地区</strong><span>{readingItem.country}</span></div>
+            </div>
+            <p className="v2-status-note">{readingItem.summary}</p>
+            <div className="v2-studyabroad-reading-body">
+              {(readingItem.content || readingItem.summary || '').split('\n').filter(Boolean).map((paragraph, index) => (
+                <p key={`${readingItem.id}-${index}`}>{paragraph}</p>
+              ))}
+            </div>
+            {readingItem.tags?.length ? (
+              <div className="v2-inline-actions">
+                {readingItem.tags.map((tag) => <span className="v2-tag" key={tag}>{tag}</span>)}
+              </div>
+            ) : null}
+          </article>
+        </div>
+      ) : null}
     </>
   )
+}
+
+function canManageExperience(item, user) {
+  return item.authorId != null && user?.id != null && String(item.authorId) === String(user.id)
+}
+
+function formatPublishedAt(value) {
+  if (!value) return '发布时间待补充'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
+  return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
 }

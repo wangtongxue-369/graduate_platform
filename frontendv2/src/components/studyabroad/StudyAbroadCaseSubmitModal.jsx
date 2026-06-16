@@ -81,6 +81,14 @@ export default function StudyAbroadCaseSubmitModal({
             <span>总结</span>
             <textarea value={form.summary} onChange={(event) => updateField('summary', event.target.value)} />
           </label>
+          <label className="v2-field v2-form-grid--single" style={{ gridColumn: '1 / -1' }}>
+            <span>联系方式</span>
+            <input
+              value={form.contact}
+              onChange={(event) => updateField('contact', event.target.value)}
+              placeholder="可选：邮箱、微信或站内联系说明"
+            />
+          </label>
           <div className="v2-inline-actions" style={{ gridColumn: '1 / -1' }}>
             <button className="v2-primary-link" type="submit">提交案例</button>
           </div>

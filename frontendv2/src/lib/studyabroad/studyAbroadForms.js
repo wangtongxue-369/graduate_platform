@@ -68,7 +68,6 @@ export function createEmptyStudyAbroadExperienceForm() {
     country: 'UK',
     topic: 'Application',
     authorName: '',
-    readTime: '5 min',
     summary: '',
     content: '',
     tags: '',
@@ -94,6 +93,7 @@ export function createEmptyStudyAbroadCaseForm() {
     applicationMode: '',
     tags: '',
     summary: '',
+    contact: '',
   }
 }
 
@@ -169,7 +169,6 @@ export function buildExperiencePayload(form) {
     country: form.country,
     topic: form.topic,
     authorName: String(form.authorName || '').trim(),
-    readTime: String(form.readTime || '').trim(),
     summary: String(form.summary || '').trim(),
     content: String(form.content || '').trim(),
     tags: normalizeCsv(form.tags),
@@ -195,6 +194,7 @@ export function buildAdmissionCasePayload(form) {
     applicationMode: String(form.applicationMode || '').trim(),
     tags: normalizeCsv(form.tags),
     summary: String(form.summary || '').trim(),
+    contact: String(form.contact || '').trim(),
   }
 }
 

@@ -1,8 +1,9 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import StudyAbroadActionPanel from '@/components/studyabroad/StudyAbroadActionPanel.jsx'
 import StudyAbroadApplicationsPage from '@/pages/student/studyabroad/StudyAbroadApplicationsPage.jsx'
+import StudyAbroadCasesPage from '@/pages/student/studyabroad/StudyAbroadCasesPage.jsx'
 import StudyAbroadExperiencesPage from '@/pages/student/studyabroad/StudyAbroadExperiencesPage.jsx'
 import StudyAbroadMaterialsPage from '@/pages/student/studyabroad/StudyAbroadMaterialsPage.jsx'
 import StudyAbroadProgramsPage from '@/pages/student/studyabroad/StudyAbroadProgramsPage.jsx'
@@ -94,15 +95,79 @@ describe('study abroad student pages', () => {
 
   it('renders the dedicated experiences route with publish action', async () => {
     apiMocks.studyAbroadApi.experiencesPage.mockResolvedValue({
-      content: [],
+      content: [
+        {
+          id: 101,
+          title: 'UCL 申请复盘',
+          country: 'UK',
+          topic: 'Application',
+          authorName: '留学同学',
+          summary: '摘要内容',
+          content: '第一段正文\n第二段正文',
+          tags: ['申请'],
+          authorId: 22,
+          createdAt: '2026-06-12T10:00:00',
+        },
+      ],
       totalPages: 1,
-      totalElements: 0,
+      totalElements: 1,
     })
 
     renderPage(<StudyAbroadExperiencesPage />)
 
     expect(await screen.findByRole('heading', { name: '把可复用的申请经验沉淀成可筛选、可阅读、可维护的经验流。' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '发布经验' })).toBeInTheDocument()
+    expect(screen.getByText('2026/06/12')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '查看全文' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '编辑' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '查看全文' }))
+    expect(screen.getByText('第一段正文')).toBeInTheDocument()
+  })
+
+  it('submits admission case contact information from frontend v2', async () => {
+    apiMocks.studyAbroadApi.admissionCasesPage.mockResolvedValue({
+      content: [],
+      totalPages: 1,
+      totalElements: 0,
+    })
+    apiMocks.studyAbroadApi.createAdmissionCase.mockResolvedValue({
+      id: 501,
+      applicationYear: '2026',
+      studentMajor: 'CS',
+      gpa: '3.8',
+      languageType: 'IELTS',
+      languageScore: '7.0',
+      country: 'UK',
+      school: 'UCL',
+      program: 'MSc CS',
+      degree: 'Master',
+      admissionResult: 'admit',
+      summary: '录取复盘',
+      contact: 'wechat-demo',
+      authorId: 9,
+    })
+
+    renderPage(<StudyAbroadCasesPage />)
+
+    fireEvent.click(await screen.findByRole('button', { name: '提交案例' }))
+    const submitModal = screen.getByText('匿名提交').closest('.v2-modal-card')
+    const modalQueries = within(submitModal)
+
+    fireEvent.change(modalQueries.getByLabelText('本科专业'), { target: { value: 'CS' } })
+    fireEvent.change(modalQueries.getByLabelText('GPA'), { target: { value: '3.8' } })
+    fireEvent.change(modalQueries.getByLabelText('语言成绩'), { target: { value: '7.0' } })
+    fireEvent.change(modalQueries.getByLabelText('学校'), { target: { value: 'UCL' } })
+    fireEvent.change(modalQueries.getByLabelText('项目'), { target: { value: 'MSc CS' } })
+    fireEvent.change(modalQueries.getByLabelText('总结'), { target: { value: '录取复盘' } })
+    fireEvent.change(modalQueries.getByLabelText('联系方式'), { target: { value: 'wechat-demo' } })
+    fireEvent.click(modalQueries.getByRole('button', { name: '提交案例' }))
+
+    await waitFor(() => {
+      expect(apiMocks.studyAbroadApi.createAdmissionCase).toHaveBeenCalledWith(
+        expect.objectContaining({ contact: 'wechat-demo' }),
+        'remote-token',
+      )
+    })
   })
 
   it('opens the project compare rail from the split programs page', async () => {

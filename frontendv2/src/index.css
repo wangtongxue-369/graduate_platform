@@ -4972,6 +4972,22 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   margin-top: 6px;
 }
 
+.v2-studyabroad-reading-modal {
+  max-width: 760px;
+}
+
+.v2-studyabroad-reading-body {
+  display: grid;
+  gap: 12px;
+  color: var(--v2-text-muted);
+  line-height: 1.75;
+  margin: 16px 0;
+}
+
+.v2-studyabroad-reading-body p {
+  margin: 0;
+}
+
 .v2-employment-workspace-card {
   display: grid;
   gap: 12px;
