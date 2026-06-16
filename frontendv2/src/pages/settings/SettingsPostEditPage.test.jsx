@@ -174,4 +174,28 @@ describe('SettingsPostEditPage', () => {
     expect(stylesheet).toContain('color: var(--v2-toast-success-ink);')
     expect(stylesheet).toContain('background: var(--v2-toast-success-bg);')
   })
+
+  it('removes redundant helper copy from the edit page shell', async () => {
+    userApiMocks.myPostDetail.mockResolvedValue({
+      id: 101,
+      title: '编辑页文案收口',
+      content: '这是一段足够长的正文内容，用来确保页面加载后可以验证多余说明文案已经移除。',
+      categoryCode: 'kaoyan',
+      category: '考研',
+      tags: '测试',
+      visibility: 'public',
+      anonymous: false,
+      status: 'PUBLISHED',
+      updatedAt: '2026-06-12T10:20:00',
+    })
+
+    renderPage()
+
+    await screen.findByDisplayValue('编辑页文案收口')
+
+    expect(screen.queryByText('这里处理你自己的帖子内容与发布信息，不再跳去公共社区详情页。')).not.toBeInTheDocument()
+    expect(screen.queryByText('把标题、分类、可见范围压缩在上半区，下面优先留给更沉浸的正文编辑体验。')).not.toBeInTheDocument()
+    expect(screen.queryByText('上半区只保留轻量控制，避免挤占下面的正文工作区。')).not.toBeInTheDocument()
+    expect(screen.queryByText('只保留最常看的几项。')).not.toBeInTheDocument()
+  })
 })

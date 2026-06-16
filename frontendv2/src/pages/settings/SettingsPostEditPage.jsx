@@ -236,7 +236,6 @@ export default function SettingsPostEditPage() {
           { label: '编辑帖子' },
         ]}
         title="编辑个人帖子"
-        lead="这里处理你自己的帖子内容与发布信息，不再跳去公共社区详情页。"
         actions={(
           <div className="v2-form-actions">
             <Link className="v2-secondary-link" to="/settings/posts">返回帖子列表</Link>
@@ -265,7 +264,6 @@ export default function SettingsPostEditPage() {
               <div className="v2-settings-section-head v2-post-edit-head">
                 <p className="v2-kicker">内容编辑</p>
                 <h3>先维护必要元信息</h3>
-                <p>把标题、分类、可见范围压缩在上半区，下面优先留给更沉浸的正文编辑体验。</p>
               </div>
 
               <div className="v2-form-grid v2-post-edit-grid">
@@ -327,7 +325,6 @@ export default function SettingsPostEditPage() {
                     type="checkbox"
                   />
                 </label>
-                <span className="v2-post-edit-inline-note">上半区只保留轻量控制，避免挤占下面的正文工作区。</span>
               </div>
             </section>
 
@@ -335,7 +332,6 @@ export default function SettingsPostEditPage() {
               <div className="v2-settings-section-head v2-post-edit-summary-head">
                 <p className="v2-kicker">帖子概览</p>
                 <h3>发布状态简要确认</h3>
-                <p>只保留最常看的几项。</p>
               </div>
 
               <div className="v2-preview-row v2-post-edit-summary-row">

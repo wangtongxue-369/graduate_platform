@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import AdminShell from './AdminShell.jsx'
@@ -111,5 +111,28 @@ describe('stack shells', () => {
     )
 
     expect(screen.getByRole('link', { name: '练习摘要' })).toHaveAttribute('href', '/settings/practice')
+  })
+
+  it('keeps only theme and account sections in the settings popover', () => {
+    render(
+      <MemoryRouter initialEntries={['/settings/profile']}>
+        <Routes>
+          <Route element={<SettingsShell />}>
+            <Route
+              path="/settings/profile"
+              element={<div className="v2-main-column"><h1>个人信息</h1></div>}
+            />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: '打开偏好与账户设置' }))
+
+    expect(screen.getByRole('heading', { name: '偏好与账户设置' })).toBeInTheDocument()
+    expect(screen.queryByText('语言')).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: '语言切换' })).not.toBeInTheDocument()
+    expect(screen.getByText('主题')).toBeInTheDocument()
+    expect(screen.getByText('账户')).toBeInTheDocument()
   })
 })

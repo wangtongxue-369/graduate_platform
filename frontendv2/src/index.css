@@ -35,6 +35,9 @@
   --v2-danger-soft: rgba(161, 77, 72, 0.12);
   --v2-success: #2f6f63;
   --v2-success-soft: rgba(47, 111, 99, 0.12);
+  --v2-editor-scrollbar-track: color-mix(in srgb, var(--v2-paper-soft) 84%, rgba(126, 161, 199, 0.12));
+  --v2-editor-scrollbar-thumb: color-mix(in srgb, var(--v2-highlight) 68%, white);
+  --v2-editor-scrollbar-thumb-hover: color-mix(in srgb, var(--v2-accent) 72%, white);
   --v2-toast-success-bg:
     linear-gradient(
       135deg,
@@ -86,6 +89,9 @@ html[data-theme="dark"] {
   --v2-danger-soft: rgba(217, 130, 122, 0.12);
   --v2-success: #65b0a0;
   --v2-success-soft: rgba(101, 176, 160, 0.12);
+  --v2-editor-scrollbar-track: color-mix(in srgb, var(--v2-paper-soft) 88%, rgba(8, 13, 20, 0.72));
+  --v2-editor-scrollbar-thumb: color-mix(in srgb, var(--v2-highlight) 72%, rgba(214, 231, 246, 0.18));
+  --v2-editor-scrollbar-thumb-hover: color-mix(in srgb, var(--v2-accent-strong) 78%, rgba(126, 166, 210, 0.24));
   --v2-toast-success-bg:
     linear-gradient(
       135deg,
@@ -2089,6 +2095,35 @@ html[data-theme="dark"] .v2-glass-card {
   font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
   background: transparent;
   color: var(--v2-ink);
+}
+
+.v2-post-md-editor > .v2-post-md-editor-surface .v2-post-md-editor-content,
+.v2-post-md-editor > .v2-post-md-editor-surface .cm-scroller {
+  scrollbar-width: thin;
+  scrollbar-color: var(--v2-editor-scrollbar-thumb) var(--v2-editor-scrollbar-track);
+}
+
+.v2-post-md-editor > .v2-post-md-editor-surface .v2-post-md-editor-content::-webkit-scrollbar,
+.v2-post-md-editor > .v2-post-md-editor-surface .cm-scroller::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.v2-post-md-editor > .v2-post-md-editor-surface .v2-post-md-editor-content::-webkit-scrollbar-track,
+.v2-post-md-editor > .v2-post-md-editor-surface .cm-scroller::-webkit-scrollbar-track {
+  background: var(--v2-editor-scrollbar-track);
+}
+
+.v2-post-md-editor > .v2-post-md-editor-surface .v2-post-md-editor-content::-webkit-scrollbar-thumb,
+.v2-post-md-editor > .v2-post-md-editor-surface .cm-scroller::-webkit-scrollbar-thumb {
+  border: 2px solid var(--v2-editor-scrollbar-track);
+  border-radius: 999px;
+  background: var(--v2-editor-scrollbar-thumb);
+}
+
+.v2-post-md-editor > .v2-post-md-editor-surface .v2-post-md-editor-content::-webkit-scrollbar-thumb:hover,
+.v2-post-md-editor > .v2-post-md-editor-surface .cm-scroller::-webkit-scrollbar-thumb:hover {
+  background: var(--v2-editor-scrollbar-thumb-hover);
 }
 
 .v2-post-md-editor > .v2-post-md-editor-surface .v2-post-md-editor-content:focus {
