@@ -1,4 +1,5 @@
 import { formatDateTimeLabel } from '@/lib/stationData.js'
+import { filterOpenStudyRooms } from '@/pages/student/kaoyan/kaoyanPageData.js'
 
 function formatDuration(seconds) {
   const total = Number(seconds || 0)
@@ -9,6 +10,14 @@ function formatDuration(seconds) {
   return `${minutes || 1} 分钟`
 }
 
+function leaderboardDisplaySeconds(entry, nowMs) {
+  const base = Number(entry?.totalDurationSeconds ?? entry?.durationSeconds ?? 0)
+  if (!entry?.sessionStartedAt) return base
+  const startMs = new Date(entry.sessionStartedAt).getTime()
+  if (Number.isNaN(startMs)) return base
+  return base + Math.max(0, Math.floor((nowMs - startMs) / 1000))
+}
+
 export default function StudyRoomSidebar({
   room,
   members,
@@ -16,6 +25,8 @@ export default function StudyRoomSidebar({
   activePeriod,
   currentRoom,
   createdRooms,
+  myElapsedSeconds = 0,
+  tickNow = Date.now(),
   canJoin,
   canLeave,
   canClose,
@@ -24,6 +35,8 @@ export default function StudyRoomSidebar({
   onLeaveRoom,
   onCloseRoom,
 }) {
+  const openCreatedRooms = filterOpenStudyRooms(createdRooms)
+
   return (
     <>
       <section className="v2-side-card">
@@ -43,8 +56,8 @@ export default function StudyRoomSidebar({
             <span>{room.memberCount} 人</span>
           </div>
           <div className="v2-check-row">
-            <strong>当前状态</strong>
-            <span>{room.closed ? '已关闭' : '开放中'}</span>
+            <strong>我的学习时长</strong>
+            <span>{formatDuration(myElapsedSeconds)}</span>
           </div>
           <div className="v2-inline-actions">
             {canJoin ? <button className="v2-segment-button is-active" type="button" onClick={onJoinRoom}>加入房间</button> : null}
@@ -73,12 +86,19 @@ export default function StudyRoomSidebar({
           ))}
         </div>
         <div className="v2-check-list">
-          {leaderboard.map((item, index) => (
-            <div className="v2-check-row" key={item.userId}>
-              <strong>{index + 1}. {item.userName}</strong>
-              <span>{formatDuration(item.durationSeconds || item.totalDurationSeconds)}</span>
-            </div>
-          ))}
+          {leaderboard
+            .map((item) => ({
+              ...item,
+              _sortKey: leaderboardDisplaySeconds(item, tickNow),
+            }))
+            .sort((a, b) => b._sortKey - a._sortKey)
+            .map((item, index) => (
+              <div className="v2-leaderboard-row" key={item.userId}>
+                <span className="v2-leaderboard-rank">{index + 1}</span>
+                <span className="v2-leaderboard-name">{item.userName}</span>
+                <span className="v2-leaderboard-duration">{formatDuration(item._sortKey)}</span>
+              </div>
+            ))}
           {!leaderboard.length ? <p>当前周期下还没有排行数据。</p> : null}
         </div>
       </section>
@@ -105,14 +125,14 @@ export default function StudyRoomSidebar({
               <span>{currentRoom.name || `房间 ${currentRoom.roomId || currentRoom.id}`}</span>
             </div>
           ) : null}
-          {createdRooms.map((item) => (
+          {openCreatedRooms.map((item) => (
             <div className="v2-check-row" key={item.id}>
               <strong>{item.name}</strong>
               <span>{item.schoolName || '院校待补充'} / {item.major || '专业待补充'}</span>
               <span>{formatDateTimeLabel(item.createdAt)}</span>
             </div>
           ))}
-          {!currentRoom?.id && !createdRooms.length ? <p>当前还没有已加入或已创建的房间。</p> : null}
+          {!currentRoom?.id && !openCreatedRooms.length ? <p>当前还没有已加入或已创建的房间。</p> : null}
         </div>
       </section>
     </>

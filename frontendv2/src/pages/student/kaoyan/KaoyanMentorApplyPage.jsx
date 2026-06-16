@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { mentorApi } from '@legacy/lib/api.js'
 import PageIntro from '@/components/PageIntro.jsx'
@@ -15,6 +15,7 @@ import {
 } from '@/lib/stationData.js'
 
 export default function KaoyanMentorApplyPage() {
+  const navigate = useNavigate()
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [form, setForm] = useState(createEmptyMentorProfileForm())
@@ -22,6 +23,7 @@ export default function KaoyanMentorApplyPage() {
   const [notice, setNotice] = useState(previewDataNotice('学长学姐入驻'))
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -61,7 +63,11 @@ export default function KaoyanMentorApplyPage() {
   async function handleSubmit(event) {
     event.preventDefault()
     if (!canUseRemote || !token) return
+    setShowConfirm(true)
+  }
 
+  async function confirmSubmit() {
+    setShowConfirm(false)
     setSaving(true)
     try {
       await mentorApi.saveProfile({
@@ -74,7 +80,7 @@ export default function KaoyanMentorApplyPage() {
         examSubjects: form.examSubjects.trim(),
       }, token)
       setProfile({ ...form })
-      setNotice('学长学姐入驻信息已提交。')
+      navigate('/station/kaoyan/support/mentors')
     } catch (error) {
       setNotice(error.message || '入驻提交失败。')
     } finally {
@@ -99,14 +105,6 @@ export default function KaoyanMentorApplyPage() {
   }
 
   const currentStatus = profile ? '已入驻' : '未入驻'
-  const profilePreviewRows = [
-    { label: '展示昵称', value: form.nickname || '待填写' },
-    { label: '毕业院校', value: form.graduateSchool || '待填写' },
-    { label: '专业方向', value: form.major || '待填写' },
-    { label: '擅长科目', value: form.expertiseSubjects || '待填写' },
-    { label: '考试科目', value: form.examSubjects || '待填写' },
-  ]
-
   return (
     <>
       <div className="v2-main-column">
@@ -268,22 +266,26 @@ export default function KaoyanMentorApplyPage() {
           </ul>
         </section>
 
-        <section className="v2-side-card">
-          <p className="v2-kicker">当前档案预览</p>
-          <div className="v2-check-list">
-            {profilePreviewRows.map((item) => (
-              <div className="v2-check-row" key={item.label}>
-                <strong>{item.label}</strong>
-                <span>{item.value}</span>
-              </div>
-            ))}
-            <div className="v2-check-row">
-              <strong>个人简介</strong>
-              <span>{form.bio || '待填写'}</span>
+      </aside>
+
+      {showConfirm ? (
+        <div className="v2-modal-overlay" onClick={() => setShowConfirm(false)}>
+          <div className="v2-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <h3>确认提交入驻申请</h3>
+            <p style={{ margin: '12px 0 20px', color: 'var(--v2-soft-strong)' }}>
+              提交后你的资料将出现在 1v1咨询的学长学姐列表中，确认要继续吗？
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="v2-segment-button" type="button" onClick={() => setShowConfirm(false)}>
+                再检查一下
+              </button>
+              <button className="v2-segment-button is-active" type="button" disabled={saving} onClick={confirmSubmit}>
+                {saving ? '提交中…' : '确认提交'}
+              </button>
             </div>
           </div>
-        </section>
-      </aside>
+        </div>
+      ) : null}
     </>
   )
 }

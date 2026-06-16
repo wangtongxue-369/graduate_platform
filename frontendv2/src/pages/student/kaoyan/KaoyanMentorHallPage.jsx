@@ -235,7 +235,9 @@ export default function KaoyanMentorHallPage() {
           actions={(
             <>
               <Link className="v2-secondary-link" to="/station/kaoyan/support/messages">咨询消息</Link>
-              <Link className="v2-secondary-link" to="/station/kaoyan/support/mentors/apply">申请入驻</Link>
+              <Link className="v2-secondary-link" to="/station/kaoyan/support/mentors/apply">
+                {myProfile ? '查看我的入驻' : '申请入驻'}
+              </Link>
             </>
           )}
         />

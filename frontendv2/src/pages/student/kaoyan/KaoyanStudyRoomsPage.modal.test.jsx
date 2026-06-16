@@ -163,4 +163,18 @@ describe('KaoyanStudyRoomsPage modal layout', () => {
     expect(screen.getByLabelText('我创建的房间快捷入口')).toBeInTheDocument()
     expect(screen.getByText('教育学晚自习')).toBeInTheDocument()
   })
+
+  it('hides closed rooms from my created room shortcuts', async () => {
+    apiMocks.studyRoomApi.myCreatedRooms.mockResolvedValue([
+      { id: 31, name: 'Open Created Room', schoolName: 'ECNU', major: 'Education', status: 'OPEN', createdAt: '2026-06-12T21:00:00' },
+      { id: 32, name: 'Closed Status Room', schoolName: 'ECNU', major: 'Education', status: 'CLOSED', createdAt: '2026-06-13T21:00:00' },
+      { id: 33, name: 'Closed Flag Room', schoolName: 'ECNU', major: 'Education', closed: true, createdAt: '2026-06-14T21:00:00' },
+    ])
+
+    renderPage()
+
+    expect(await screen.findByText('Open Created Room')).toBeInTheDocument()
+    expect(screen.queryByText('Closed Status Room')).not.toBeInTheDocument()
+    expect(screen.queryByText('Closed Flag Room')).not.toBeInTheDocument()
+  })
 })

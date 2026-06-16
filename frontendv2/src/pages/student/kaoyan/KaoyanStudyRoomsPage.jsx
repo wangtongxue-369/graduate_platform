@@ -8,6 +8,7 @@ import {
   createEmptyRoomForm,
   createKaoyanSchoolPreviewRows,
   createKaoyanSupportPreview,
+  filterOpenStudyRooms,
   paginateRows,
 } from '@/pages/student/kaoyan/kaoyanPageData.js'
 import {
@@ -122,7 +123,7 @@ export default function KaoyanStudyRoomsPage() {
         setTotalElements(Number(roomData?.totalElements || 0))
         setTotalPages(Math.max(1, Number(roomData?.totalPages || 1)))
         setCurrentRoom(currentRoomData || null)
-        setCreatedRooms(Array.isArray(createdRoomsData) ? createdRoomsData : [])
+        setCreatedRooms(filterOpenStudyRooms(createdRoomsData))
         setNotice('')
       } catch (error) {
         if (!active) return
@@ -223,13 +224,12 @@ export default function KaoyanStudyRoomsPage() {
     <>
       <div className="v2-main-column">
         <PageIntro
-          kicker="同频自习室"
+          kicker="考研自习"
           pathItems={[
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '同频自习室' },
           ]}
-          title="找房间和筛房间都留在大厅，创建房间改成更轻的弹窗动作。"
-          lead="主区只保留结果列表，右侧负责筛选与快捷操作，进入房间后再继续实时学习和讨论。"
+          title="同频自习室"
           actions={(
             <>
               <Link className="v2-secondary-link" to="/station/kaoyan/support/mentors">去 1v1 咨询</Link>

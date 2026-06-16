@@ -171,9 +171,7 @@ describe('admin kaoyan split pages', () => {
     )
 
     expect(
-      await screen.findByRole('heading', {
-        name: '把待审、通过和拒绝的资料拆成明确队列，而不是继续沿用旧版混排卡片。',
-      }),
+      await screen.findByRole('heading', { name: '资料审核' }),
     ).toBeInTheDocument()
   })
 

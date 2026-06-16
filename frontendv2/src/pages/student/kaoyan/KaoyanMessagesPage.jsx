@@ -230,6 +230,16 @@ export default function KaoyanMessagesPage() {
         if (!active) return
         setMessages(normalizeCounselingMessages(data))
         await mentorApi.markAsRead(selectedSessionId, token).catch(() => {})
+        // Immediately zero the unread badge in local state so the UI
+        // responds instantly (same as v1 behaviour). The next SSE / poll
+        // cycle will reconcile with the authoritative backend count.
+        setSessions((prev) =>
+          prev.map((s) =>
+            String(s.id) === String(selectedSessionId)
+              ? { ...s, unreadCount: 0 }
+              : s,
+          ),
+        )
       } catch {
         if (!active) return
         setMessages([])
@@ -255,6 +265,13 @@ export default function KaoyanMessagesPage() {
       const data = await mentorApi.sessionMessages(selectedSession.id, token)
       setMessages(normalizeCounselingMessages(data))
       await mentorApi.markAsRead(selectedSession.id, token).catch(() => {})
+      setSessions((prev) =>
+        prev.map((s) =>
+          String(s.id) === String(selectedSession.id)
+            ? { ...s, unreadCount: 0 }
+            : s,
+        ),
+      )
     } finally {
       setSending(false)
     }

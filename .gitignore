@@ -25,6 +25,7 @@ logs/
 # IDE / OS files
 .idea/
 .vscode/
+.codex/
 .claude/
 *.iml
 .DS_Store

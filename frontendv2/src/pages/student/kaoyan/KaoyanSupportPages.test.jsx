@@ -180,6 +180,87 @@ describe('kaoyan support split pages', () => {
     )
   })
 
+  it('drops the long lead sentence from the kaoyan overview page', () => {
+    // The lead prop was removed; the long "把择校、计划、资料…" sentence
+    // must not appear anywhere in the overview page tree.
+    render(
+      <MemoryRouter>
+        <KaoyanOverviewPage />
+      </MemoryRouter>,
+    )
+    expect(
+      screen.queryByText(/把择校、计划、资料、1v1咨询和同频自习室收进一张考研推进台/),
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders the kaoyan overview title as 考研总览', () => {
+    render(
+      <MemoryRouter>
+        <KaoyanOverviewPage />
+      </MemoryRouter>,
+    )
+    expect(
+      screen.getByRole('heading', { name: '考研总览' }),
+    ).toBeInTheDocument()
+  })
+
+  it('fetches real backend data on the kaoyan overview page when authed', async () => {
+    // The page no longer relies on static preview data; it must call all
+    // six backend endpoints in parallel and use the live result.
+    authState.token = 'remote-token'
+    apiMocks.kaoyanApi.schoolsPage.mockResolvedValue({
+      content: [{ id: 1, name: '清华大学', region: '北京' }],
+      totalElements: 1,
+      totalPages: 1,
+    })
+    apiMocks.kaoyanApi.scoreLinesPage.mockResolvedValue({
+      content: [],
+      totalElements: 0,
+      totalPages: 1,
+    })
+    apiMocks.studyPlanApi.myPlans.mockResolvedValue([
+      { id: 1, name: '基础阶段', status: '进行中', description: '高数基础过一遍' },
+    ])
+    apiMocks.materialApi.listPage.mockResolvedValue({
+      content: [{ id: 1, title: '高数真题', materialType: '真题', description: '近十年' }],
+      totalElements: 1,
+      totalPages: 1,
+    })
+    apiMocks.mentorApi.mentorsPage.mockResolvedValue({
+      content: [
+        { id: 1, nickname: '李学姐', major: '计算机', expertiseSubjects: '数据结构' },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+    apiMocks.studyRoomApi.roomList.mockResolvedValue({
+      content: [
+        { id: 1, name: '冲刺房', major: '计算机', memberCount: 12 },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+
+    render(
+      <MemoryRouter>
+        <KaoyanOverviewPage />
+      </MemoryRouter>,
+    )
+
+    await waitFor(() => {
+      expect(apiMocks.kaoyanApi.schoolsPage).toHaveBeenCalled()
+      expect(apiMocks.kaoyanApi.scoreLinesPage).toHaveBeenCalled()
+      expect(apiMocks.studyPlanApi.myPlans).toHaveBeenCalled()
+      expect(apiMocks.materialApi.listPage).toHaveBeenCalled()
+      expect(apiMocks.mentorApi.mentorsPage).toHaveBeenCalled()
+      expect(apiMocks.studyRoomApi.roomList).toHaveBeenCalled()
+    })
+
+    // Live values should be rendered (real 清华大学 row, not the preview school).
+    expect(await screen.findByText('清华大学')).toBeInTheDocument()
+    expect(await screen.findByText('冲刺房')).toBeInTheDocument()
+  })
+
   it('keeps the legacy support route as a neutral split page instead of a primary module name', async () => {
     apiMocks.mentorApi.unreadCount.mockResolvedValue({ count: 3 })
     apiMocks.studyRoomApi.myCurrentRoom.mockResolvedValue({ id: 19, name: '政治晨读房' })
@@ -712,6 +793,6 @@ describe('kaoyan support split pages', () => {
     })
     expect(await screen.findByRole('heading', { name: '晨间背书房' })).toBeInTheDocument()
     expect(screen.getByText('开始今天的背书。')).toBeInTheDocument()
-    expect(screen.getByText('考研测试用户')).toBeInTheDocument()
+    expect(screen.getAllByText('考研测试用户').length).toBeGreaterThanOrEqual(1)
   })
 })
