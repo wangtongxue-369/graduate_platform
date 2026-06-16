@@ -1,6 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import JobRecommendationsPage from './JobRecommendationsPage.jsx'
 import JobStationOverviewPage from './JobStationOverviewPage.jsx'
 import JobResumePage from './JobResumePage.jsx'
 
@@ -46,9 +47,15 @@ vi.mock('@legacy/context/AuthContext.jsx', () => ({
 
 vi.mock('@legacy/lib/api.js', () => apiMocks)
 
+function RouteLocationProbe() {
+  const location = useLocation()
+  return <div data-testid="route-location">{`${location.pathname}${location.search}`}</div>
+}
+
 function renderRoute(initialEntry, node) {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
+      <RouteLocationProbe />
       {node}
     </MemoryRouter>,
   )
@@ -137,5 +144,88 @@ describe('student employment pages', () => {
     expect(screen.getByRole('button', { name: '预览' })).toBeInTheDocument()
     expect(screen.getByText('resume-final.pdf')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '导出 Word' })).toBeInTheDocument()
+  })
+
+  it('renders the recommendations workspace with detail drawer, notification actions, and tracking confirmation', async () => {
+    apiMocks.employmentApi.recommendations.mockResolvedValue([
+      {
+        id: 21,
+        title: '后端开发工程师',
+        companyName: '星河科技',
+        city: '上海',
+        industry: '教育科技',
+        companyType: '民企',
+        roleType: '后端',
+        salaryRange: '18k-24k',
+        educationRequirement: '本科',
+        majorKeywords: '计算机',
+        skillTags: 'Java, Spring Boot',
+        matchScore: 93,
+        matchReasons: ['Java 技能匹配'],
+        description: '负责就业平台服务接口与数据工作。',
+        applyUrl: 'https://example.com/jobs/21',
+      },
+    ])
+    apiMocks.employmentApi.notifications.mockResolvedValue({
+      items: [
+        {
+          id: 42,
+          title: '新推荐已到达',
+          content: '星河科技更新了后端岗位用人标准。',
+          readFlag: false,
+        },
+      ],
+      unreadCount: 1,
+    })
+    apiMocks.employmentApi.postingDetail.mockResolvedValue({
+      id: 21,
+      title: '后端开发工程师',
+      companyName: '星河科技',
+      city: '上海',
+      industry: '教育科技',
+      companyType: '民企',
+      roleType: '后端',
+      salaryRange: '18k-24k',
+      educationRequirement: '本科',
+      majorKeywords: '计算机',
+      skillTags: 'Java, Spring Boot',
+      description: '负责就业平台服务接口与数据工作。',
+      responsibilities: '维护接口与算法推荐支撑。',
+      requirements: '具备 Java 和 Spring Boot 开发经验。',
+      applyUrl: 'https://example.com/jobs/21',
+    })
+    apiMocks.employmentApi.markNotificationRead.mockResolvedValue({})
+    apiMocks.employmentApi.deleteNotification.mockResolvedValue({})
+
+    renderRoute('/station/job/recommendations', <JobRecommendationsPage />)
+
+    expect(await screen.findByTestId('job-recommendations-page')).toBeInTheDocument()
+    expect(screen.getByText('提醒收件箱')).toBeInTheDocument()
+    expect(screen.getByText('推荐数量')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '标记已读' }))
+    await waitFor(() => {
+      expect(apiMocks.employmentApi.markNotificationRead).toHaveBeenCalledWith(42, 'remote-token')
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '查看详情' }))
+    await waitFor(() => {
+      expect(apiMocks.employmentApi.postingDetail).toHaveBeenCalledWith(21)
+    })
+
+    expect(await screen.findByTestId('job-posting-detail-drawer')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '星河科技 / 后端开发工程师' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByRole('button', { name: '加入投递跟踪' })[0])
+    expect(screen.getByText('加入投递跟踪前，先把这条推荐带到投递看板。')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '去建立跟踪条目' }))
+
+    await waitFor(() => {
+      const locationText = screen.getByTestId('route-location').textContent || ''
+      expect(locationText).toContain('/station/job/applications?')
+      expect(locationText).toContain('jobPostingId=21')
+      expect(locationText).toContain('openDrawer=create')
+    })
   })
 })
