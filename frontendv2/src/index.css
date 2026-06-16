@@ -710,10 +710,25 @@ html[data-theme="dark"] .v2-glass-card {
   align-self: stretch;
   min-height: 0;
   height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
   display: grid;
   align-content: start;
   gap: 14px;
+  scrollbar-width: thin;
+  -ms-overflow-style: auto;
+}
+
+.v2-stack-frame > .v2-side-column::-webkit-scrollbar {
+  width: 6px;
+}
+
+.v2-stack-frame > .v2-side-column::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.v2-stack-frame > .v2-side-column::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
 }
 
 @media (max-width: 1380px) {
