@@ -25,10 +25,12 @@ vi.mock('@legacy/lib/api.js', () => ({
 }))
 
 vi.mock('@/components/PageIntro.jsx', () => ({
-  default: function PageIntroMock({ title, actions }) {
+  default: function PageIntroMock({ kicker, title, lead, actions }) {
     return (
       <section>
+        <p>{kicker}</p>
         <h1>{title}</h1>
+        <p>{lead}</p>
         <div>{actions}</div>
       </section>
     )
@@ -131,6 +133,23 @@ describe('CommunityHubPage', () => {
 
     const links = await screen.findAllByRole('link')
     expect(links.some((link) => link.getAttribute('href') === '/community/new')).toBe(true)
+  })
+
+  it('uses reader-facing intro copy instead of workflow-style helper text', async () => {
+    render(
+      <MemoryRouter initialEntries={['/community']}>
+        <CommunityHubPage />
+      </MemoryRouter>,
+    )
+
+    await screen.findAllByText('Roadmap Post')
+
+    expect(screen.getByRole('heading', { name: '社区交流与资料分享' })).toBeInTheDocument()
+    expect(
+      screen.getByText('先按分类、排序或关键词缩小范围，再进入帖子查看全文、附件和评论。'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('先筛目录，再进入单篇帖子处理内容。')).not.toBeInTheDocument()
+    expect(screen.queryByText('登录后可直接从目录进入发帖、通知与评论互动。')).not.toBeInTheDocument()
   })
 
   it('passes the current filter path into the detail route state', async () => {
