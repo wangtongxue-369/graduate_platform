@@ -27,7 +27,7 @@ export default function AdminStudyAbroadExperiencesPage() {
   const [page, setPage] = useState(0)
   const [rows, setRows] = useState(createFallbackExperiences())
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: createFallbackExperiences().length })
-  const [notice, setNotice] = useState(previewDataNotice('经验治理'))
+  const [notice, setNotice] = useState(previewDataNotice('经验内容管理'))
   const [activeItem, setActiveItem] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
 
@@ -38,7 +38,7 @@ export default function AdminStudyAbroadExperiencesPage() {
       if (!canUseRemote) {
         setRows(createFallbackExperiences())
         setPageInfo({ totalPages: 1, totalElements: createFallbackExperiences().length })
-        setNotice(previewDataNotice('经验治理'))
+        setNotice(previewDataNotice('经验内容管理'))
         return
       }
 
@@ -52,18 +52,18 @@ export default function AdminStudyAbroadExperiencesPage() {
             keyword: deferredKeyword,
           }, token),
           8000,
-          '经验治理读取超时，请检查后端服务。',
+          '经验内容管理读取超时，请检查后端服务。',
         )
         if (!active) return
         const normalized = normalizeExperiencesPage(data)
         setRows(normalized.content)
         setPageInfo({ totalPages: normalized.totalPages, totalElements: normalized.totalElements })
-        setNotice(remoteDataNotice('经验治理'))
+        setNotice(remoteDataNotice('经验内容管理'))
       } catch (error) {
         if (!active) return
         setRows(createFallbackExperiences())
         setPageInfo({ totalPages: 1, totalElements: createFallbackExperiences().length })
-        setNotice(fallbackDataNotice('经验治理', error))
+        setNotice(fallbackDataNotice('经验内容管理', error))
       }
     }
 
@@ -74,7 +74,7 @@ export default function AdminStudyAbroadExperiencesPage() {
   }, [canUseRemote, deferredKeyword, filters.country, filters.topic, page, token])
 
   const summaryItems = useMemo(() => ([
-    { label: '当前页经验', value: String(rows.length), note: '当前分页里可直接治理的经验数' },
+    { label: '当前页经验', value: String(rows.length), note: '当前分页里展示的经验帖数量' },
     { label: '经验总数', value: String(pageInfo.totalElements), note: '来自后端分页结果的经验总量' },
     { label: '文书主题', value: String(rows.filter((item) => item.topic === 'Writing').length), note: '当前页里与文书相关的经验数' },
   ]), [pageInfo.totalElements, rows])
@@ -94,21 +94,22 @@ export default function AdminStudyAbroadExperiencesPage() {
     <>
       <div className="v2-main-column">
         <PageIntro
-          kicker="经验治理"
+          kicker="经验内容管理"
           pathItems={[
             { label: '管理员主站', to: '/admin' },
             { label: '留学管理', to: '/admin/studyabroad' },
             { label: '留学经验' },
           ]}
-          title="把经验筛选、详情查看和内容清理放进独立治理页。"
-          lead="治理页只负责查看与清理，不在这里叠加替用户写稿的后台动作。"
+          title="经验内容管理"
+          lead="查看学生发布的留学经验帖全文。点击查看详情后，会弹出独立页面浏览内容，删除操作单独确认。"
+          compact
         />
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         <AdminStudyAbroadSummaryStrip items={summaryItems} />
-        <section className="v2-feed-list" aria-label="经验治理列表">
+        <section className="v2-feed-list" aria-label="经验内容管理列表">
           {rows.map((item) => (
             <article className="v2-feed-item" key={item.id}>
-              <div className="v2-feed-index">{item.readTime}</div>
+              <div className="v2-feed-index">{formatPublishedAt(item.createdAt)}</div>
               <div className="v2-feed-body">
                 <strong>{item.title}</strong>
                 <p>{item.authorName} / {getTopicLabel(item.topic)}</p>
@@ -151,11 +152,18 @@ export default function AdminStudyAbroadExperiencesPage() {
       <EmploymentConfirmModal
         open={Boolean(pendingDelete)}
         title="确认删除这条经验记录？"
-        body="删除后会从当前经验治理列表中移除这条记录。"
+        body="删除后会从当前经验内容列表中移除这条记录。"
         confirmLabel="删除经验"
         onConfirm={confirmDelete}
         onClose={() => setPendingDelete(null)}
       />
     </>
   )
+}
+
+function formatPublishedAt(value) {
+  if (!value) return '待补充'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
+  return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
 }

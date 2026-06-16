@@ -25,8 +25,8 @@ export default function AdminStudyAbroadDetailDrawer({
   const isProgramEditor = mode === 'programs' && form
   const title = isProgramEditor ? (form?.schoolName || '院校项目') : (item?.title || item?.school || '详情')
   const lead = isProgramEditor
-    ? '维护院校项目的国家、专业、排名、学费、申请要求和合作项目标记。'
-    : '查看完整内容后再决定是否进行删除等管理操作。'
+    ? '在这个页面中维护院校项目的国家、专业、排名、学费、申请要求和合作项目标记。'
+    : '在这个页面中查看完整内容，确认无误后再执行删除等管理操作。'
 
   return (
     <StudyAbroadPageModal
@@ -109,19 +109,33 @@ export default function AdminStudyAbroadDetailDrawer({
             <>
               <div className="v2-check-row"><strong>院校 / 项目</strong><span>{item?.school} / {item?.program}</span></div>
               <div className="v2-check-row"><strong>地区 / 结果</strong><span>{getCountryLabel(item?.country)} / {getAdmissionResultLabel(item?.admissionResult)}</span></div>
-              <div className="v2-check-row"><strong>背景</strong><span>{item?.studentMajor} / GPA {item?.gpa}</span></div>
+              <div className="v2-check-row"><strong>硬背景</strong><span>{item?.studentMajor} / GPA {item?.gpa}{item?.rankPercent ? ` / ${item.rankPercent}` : ''}</span></div>
+              <div className="v2-check-row"><strong>语言与标化</strong><span>{item?.languageType} {item?.languageScore}{item?.standardizedScore ? ` / ${item.standardizedScore}` : ''}</span></div>
+              <div className="v2-check-row"><strong>软背景</strong><span>{item?.softBackground || '未填写'}</span></div>
+              <div className="v2-check-row"><strong>奖学金 / 方式</strong><span>{item?.scholarship || '无'} / {item?.applicationMode || '未填写'}</span></div>
+              <div className="v2-check-row"><strong>年份 / 联系方式</strong><span>{item?.applicationYear || '未填写'} / {item?.contact || '未公开'}</span></div>
               <div className="v2-check-row"><strong>总结</strong><span>{item?.summary}</span></div>
+              {item?.tags?.length ? <div className="v2-check-row"><strong>标签</strong><span>{item.tags.join('、')}</span></div> : null}
             </>
           ) : (
             <>
               <div className="v2-check-row"><strong>标题</strong><span>{item?.title}</span></div>
               <div className="v2-check-row"><strong>地区 / 主题</strong><span>{getCountryLabel(item?.country)} / {getTopicLabel(item?.topic)}</span></div>
+              <div className="v2-check-row"><strong>作者 / 发布时间</strong><span>{item?.authorName || '匿名作者'} / {formatPublishedAt(item?.createdAt)}</span></div>
               <div className="v2-check-row"><strong>摘要</strong><span>{item?.summary}</span></div>
               <div className="v2-check-row"><strong>正文</strong><span>{item?.content}</span></div>
+              {item?.tags?.length ? <div className="v2-check-row"><strong>标签</strong><span>{item.tags.join('、')}</span></div> : null}
             </>
           )}
         </div>
       )}
     </StudyAbroadPageModal>
   )
+}
+
+function formatPublishedAt(value) {
+  if (!value) return '待补充'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
+  return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
 }
