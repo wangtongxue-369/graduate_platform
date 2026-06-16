@@ -6154,6 +6154,13 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   gap: 10px;
 }
 
+.v2-comment-thread__empty {
+  border-style: solid;
+  border-color: var(--v2-line);
+  color: var(--v2-soft);
+  background: color-mix(in srgb, var(--v2-paper-soft) 92%, var(--v2-highlight-soft));
+}
+
 .v2-comment-card {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);

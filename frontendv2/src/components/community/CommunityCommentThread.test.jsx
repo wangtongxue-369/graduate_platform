@@ -3,6 +3,24 @@ import { describe, expect, it, vi } from 'vitest'
 import CommunityCommentThread from './CommunityCommentThread.jsx'
 
 describe('CommunityCommentThread', () => {
+  it('renders a dedicated empty-state hook when there are no comments yet', () => {
+    const { container } = render(
+      <CommunityCommentThread
+        comments={[]}
+        activeCommentId={null}
+        currentUserId={10}
+        isAdmin={false}
+        onReply={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onReport={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('当前还没有评论，可以直接在评论区下方写下第一条。')).toBeInTheDocument()
+    expect(container.querySelector('.v2-comment-thread__empty')).not.toBeNull()
+  })
+
   it('collapses replies by default and shows the reply count toggle', () => {
     render(
       <CommunityCommentThread

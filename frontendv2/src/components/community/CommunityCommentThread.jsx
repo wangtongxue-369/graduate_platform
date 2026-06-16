@@ -146,7 +146,7 @@ export default function CommunityCommentThread({
   onReport,
 }) {
   if (!comments.length) {
-    return <div className="v2-empty-card">当前还没有评论，可以直接在评论区下方写下第一条。</div>
+    return <div className="v2-empty-card v2-comment-thread__empty">当前还没有评论，可以直接在评论区下方写下第一条。</div>
   }
 
   return (
