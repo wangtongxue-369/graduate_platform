@@ -54,8 +54,8 @@ export default function StudyAbroadCommandDeck({
         <article className="v2-side-card">
           <div className="v2-side-card__head">
             <div>
-              <p className="v2-kicker">项目速览</p>
-              <h3>先看项目，再决定比较对象</h3>
+              <p className="v2-kicker">院校项目库</p>
+              <h3>可浏览的院校和专业项目</h3>
             </div>
           </div>
           <div className="v2-check-list">
@@ -72,8 +72,8 @@ export default function StudyAbroadCommandDeck({
         <article className="v2-side-card">
           <div className="v2-side-card__head">
             <div>
-              <p className="v2-kicker">案例速览</p>
-              <h3>先看相近背景，再判断风险</h3>
+              <p className="v2-kicker">录取案例库</p>
+              <h3>往届学生录取和拒信案例</h3>
             </div>
           </div>
           <div className="v2-check-list">
@@ -91,8 +91,8 @@ export default function StudyAbroadCommandDeck({
       <section className="v2-side-card">
         <div className="v2-side-card__head">
           <div>
-            <p className="v2-kicker">风险带</p>
-            <h3>先处理最容易拖慢推进节奏的点</h3>
+            <p className="v2-kicker">截止提醒</p>
+            <h3>优先处理临近截止和逾期事项</h3>
           </div>
         </div>
         <div className="v2-check-list">
@@ -105,7 +105,7 @@ export default function StudyAbroadCommandDeck({
           )) : (
             <div className="v2-check-row">
               <strong>当前没有高风险提醒</strong>
-              <span>可以转去项目目录或经验页继续推进。</span>
+              <span>可以进入院校项目库或留学经验库继续查看。</span>
             </div>
           )}
         </div>

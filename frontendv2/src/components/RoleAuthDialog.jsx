@@ -26,7 +26,7 @@ const roleOptions = [
     key: 'liuxue',
     label: '留学',
     eyebrow: 'overseas roadmap',
-    desc: '进入留学主站，查看项目目录、案例档案、申请路线和材料清单。',
+    desc: '进入留学主站，管理申请项目、申请时间线、材料清单，并查看院校项目和录取案例。',
   },
   {
     key: 'admin',

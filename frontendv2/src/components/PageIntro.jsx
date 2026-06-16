@@ -6,9 +6,10 @@ export default function PageIntro({
   lead,
   actions,
   pathItems = [],
+  compact = false,
 }) {
   return (
-    <section className="v2-article-card v2-article-card--feature">
+    <section className={`v2-article-card v2-article-card--feature ${compact ? 'v2-page-intro--compact' : ''}`}>
       {pathItems.length ? (
         <nav aria-label="页面路径" className="v2-page-trail">
           {pathItems.map((item, index) => (

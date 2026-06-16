@@ -37,12 +37,12 @@ const directionNavMap = {
   ],
   liuxue: [
     { label: '留学总览', to: '/station/studyabroad' },
-    { label: '项目目录', to: '/station/studyabroad/programs' },
-    { label: '案例档案', to: '/station/studyabroad/cases' },
-    { label: '申请跟踪', to: '/station/studyabroad/applications' },
-    { label: '时间线', to: '/station/studyabroad/timeline' },
+    { label: '院校项目库', to: '/station/studyabroad/programs' },
+    { label: '录取案例库', to: '/station/studyabroad/cases' },
+    { label: '申请项目管理', to: '/station/studyabroad/applications' },
+    { label: '申请时间线', to: '/station/studyabroad/timeline' },
     { label: '材料清单', to: '/station/studyabroad/materials' },
-    { label: '留学经验', to: '/station/studyabroad/experiences' },
+    { label: '留学经验库', to: '/station/studyabroad/experiences' },
   ],
 }
 
@@ -136,5 +136,5 @@ export function getShellDescription(user, mode = 'app') {
   if (user?.role === 'admin') {
     return '以治理队列为入口，再进入各管理模块处理真实后端业务。'
   }
-  return '公共功能与方向能力在同一套左栏中汇流，进入具体页面再逐层深入。'
+  return '左侧选择功能页面，右侧完成查询、记录和管理。'
 }

@@ -202,8 +202,9 @@ export default function StudyAbroadMaterialsPage() {
             { label: '留学总览', to: '/station/studyabroad' },
             { label: '材料清单' },
           ]}
-          title="把材料状态、完成缺口和附件操作留在同一张材料工作区。"
-          lead="先判断缺口，再决定是编辑条目、切换状态还是直接处理附件。"
+          title="材料清单"
+          lead="管理文书、成绩单、推荐信、语言成绩等申请材料，支持记录完成状态并上传、下载、删除附件。"
+          compact
         />
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         <section className="v2-summary-strip">
@@ -260,8 +261,8 @@ export default function StudyAbroadMaterialsPage() {
         <section className="v2-side-card">
           <div className="v2-side-card__head">
             <div>
-              <p className="v2-kicker">材料控制器</p>
-              <h3>筛选后再决定条目操作</h3>
+              <p className="v2-kicker">筛选条件</p>
+              <h3>筛选材料条目</h3>
             </div>
             <button className="v2-primary-link" type="button" onClick={openCreateDrawer}>新增材料</button>
           </div>
