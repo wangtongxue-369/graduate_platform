@@ -62,7 +62,7 @@ export const kaoyanWorkspace = {
     badge: 'KY',
     kicker: 'study planning',
     title: '考研主站',
-    description: '把院校比较、分数线、计划、资料和陪跑关系放进同一条复习推进链路。',
+    description: '把院校比较、分数线、计划、资料、1v1咨询和同频自习室放进同一条复习推进链路。',
     metrics: [
       { label: '计划天数', value: '42' },
       { label: '关注分数线', value: '3' },
@@ -74,7 +74,8 @@ export const kaoyanWorkspace = {
     { label: '院校比较', to: '/station/kaoyan/schools', summary: '对应 schools 与 score-lines' },
     { label: '学习计划', to: '/station/kaoyan/plans', summary: '对应 plans 与 checkins' },
     { label: '资料架', to: '/station/kaoyan/materials', summary: '对应 materials 审核前后的展示' },
-    { label: '陪跑协同', to: '/station/kaoyan/support', summary: '对应 mentors 与 study-rooms' },
+    { label: '1v1咨询', to: '/station/kaoyan/support/mentors', summary: '对应 mentors 与 messages' },
+    { label: '同频自习室', to: '/station/kaoyan/support/rooms', summary: '对应 study-rooms 与房间详情' },
   ],
   compareBoard: [
     { school: '华东师范大学', major: '教育学原理', line: '372', trend: '+8', note: '复试窗口关闭较早' },

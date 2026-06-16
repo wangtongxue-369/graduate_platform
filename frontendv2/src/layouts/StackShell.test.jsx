@@ -49,7 +49,7 @@ describe('stack shells', () => {
     expect(screen.getByRole('link', { name: '个人设置' })).toHaveAttribute('href', '/settings/profile')
     expect(screen.getByRole('link', { name: '社区' })).toHaveAttribute('href', '/community')
     expect(screen.getByRole('link', { name: '题库' })).toHaveAttribute('href', '/practice')
-    expect(screen.getByRole('link', { name: '院校比较' })).toHaveAttribute('href', '/station/kaoyan/schools')
+    expect(screen.getByRole('link', { name: '择校账本' })).toHaveAttribute('href', '/station/kaoyan/schools')
   })
 
   it('shows governance modules for admins', () => {
@@ -76,7 +76,7 @@ describe('stack shells', () => {
     expect(screen.getByRole('link', { name: '社区治理' })).toHaveAttribute('href', '/admin/community')
     expect(screen.getByRole('link', { name: '题库治理' })).toHaveAttribute('href', '/admin/question-banks')
     expect(screen.getByRole('link', { name: '就业运营' })).toHaveAttribute('href', '/admin/employment')
-    expect(screen.queryByRole('link', { name: '院校比较' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: '择校账本' })).not.toBeInTheDocument()
   })
 
   it('shows a way back to the main site from settings', () => {
@@ -94,5 +94,22 @@ describe('stack shells', () => {
     )
 
     expect(screen.getByRole('link', { name: '返回主站' })).toHaveAttribute('href', '/community')
+  })
+
+  it('renames the settings practice entry to summary-oriented copy', () => {
+    render(
+      <MemoryRouter initialEntries={['/settings/profile']}>
+        <Routes>
+          <Route element={<SettingsShell />}>
+            <Route
+              path="/settings/profile"
+              element={<div className="v2-main-column"><h1>个人信息</h1></div>}
+            />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('link', { name: '练习摘要' })).toHaveAttribute('href', '/settings/practice')
   })
 })

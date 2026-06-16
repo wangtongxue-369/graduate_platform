@@ -1,18 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  KaoyanSchoolsPage,
-} from '@/pages/student/kaoyan/KaoyanStationPage.jsx'
-import {
-  KaogongCalendarPage,
-} from '@/pages/student/kaogong/KaogongStationPage.jsx'
-import {
-  JobResumePage,
-} from '@/pages/student/job/JobStationPage.jsx'
-import {
-  StudyAbroadProgramsPage,
-} from '@/pages/student/studyabroad/StudyAbroadStationPage.jsx'
+import KaoyanSchoolsPage from '@/pages/student/kaoyan/KaoyanSchoolsPage.jsx'
+import { KaogongCalendarPage } from '@/pages/student/kaogong/KaogongStationPage.jsx'
+import JobStationPage, { JobResumePage } from '@/pages/student/job/JobStationPage.jsx'
+import { StudyAbroadProgramsPage } from '@/pages/student/studyabroad/StudyAbroadStationPage.jsx'
 
 const authState = vi.hoisted(() => ({
   user: {
@@ -28,6 +20,8 @@ const apiMocks = vi.hoisted(() => ({
   kaoyanApi: {
     schoolsPage: vi.fn(),
     scoreLinesPage: vi.fn(),
+    favoriteScoreLine: vi.fn(),
+    unfavoriteScoreLine: vi.fn(),
   },
   materialApi: {
     listPage: vi.fn(),
@@ -136,13 +130,22 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
 
     renderPage(<KaoyanSchoolsPage />)
 
-    expect(screen.getByText('院校比较')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', {
+        name: '把院校档案、分数线和收藏动作叠在同一张比较账本里。',
+      }),
+    ).toBeInTheDocument()
     expect(screen.getByText('筛选控制器')).toBeInTheDocument()
-    expect(screen.getByLabelText('院校地区')).toBeInTheDocument()
+    expect(screen.getByLabelText('院校名称')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: '院校' })).toBeInTheDocument()
 
+    await waitFor(() => {
+      expect(apiMocks.kaoyanApi.schoolsPage).toHaveBeenCalled()
+      expect(apiMocks.kaoyanApi.scoreLinesPage).toHaveBeenCalled()
+    })
     expect(await screen.findByText('浙江大学')).toBeInTheDocument()
     expect(screen.getByText('计算机科学与技术')).toBeInTheDocument()
-    expect(screen.getByText(/总分线 390/)).toBeInTheDocument()
+    expect(screen.getByText('390')).toBeInTheDocument()
   })
 
   it('renders remote kaogong exam groups and subscriptions with rightbar filters', async () => {
@@ -178,14 +181,14 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
 
     renderPage(<KaogongCalendarPage />)
 
-    expect(screen.getByText('筛选控制器')).toBeInTheDocument()
+    expect(screen.getByText('筛选与订阅')).toBeInTheDocument()
     expect(screen.getByLabelText('地区')).toBeInTheDocument()
 
     await waitFor(() => {
       expect(apiMocks.kaogongApi.calendarExamGroupsPage).toHaveBeenCalled()
     })
     expect(screen.getAllByText('浙江省公务员考试').length).toBeGreaterThan(0)
-    expect(screen.getByText(/^报名开始$/)).toBeInTheDocument()
+    expect(screen.getByText(/^报名开始/)).toBeInTheDocument()
     expect(screen.getByText('距离报名开始还有 3 天')).toBeInTheDocument()
   })
 
@@ -212,7 +215,38 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
     expect(screen.getAllByText('平台后端工程师').length).toBeGreaterThan(0)
     expect(screen.getAllByText('resume-final.pdf').length).toBeGreaterThan(0)
     expect(screen.getAllByText('上海, 杭州').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Java, Spring Boot, MySQL').length).toBeGreaterThan(0)
+    expect(screen.getByDisplayValue('Java, Spring Boot, MySQL')).toBeInTheDocument()
+  })
+
+  it('keeps the legacy job station entry pointed at the new overview workspace', async () => {
+    apiMocks.employmentApi.resume.mockResolvedValue({
+      targetRole: '平台后端工程师',
+      resumeFile: { hasFile: true, fileName: 'resume-final.pdf' },
+    })
+    apiMocks.employmentApi.recommendations.mockResolvedValue([
+      { id: 1, title: '后端开发', companyName: '星河科技', matchScore: 92, matchReasons: ['技能匹配'] },
+    ])
+    apiMocks.employmentApi.applications.mockResolvedValue([
+      { id: 7, companyName: '星河科技', jobTitle: '后端开发', status: 'FIRST_INTERVIEW', nextStepAt: '2026-06-20T14:00:00' },
+    ])
+    apiMocks.employmentApi.fairs.mockResolvedValue({
+      items: [{ id: 4, title: '上海春招专场', city: '上海', industry: '互联网' }],
+      totalItems: 1,
+      totalPages: 1,
+      page: 1,
+    })
+    apiMocks.employmentApi.notifications.mockResolvedValue({
+      items: [{ id: 30, title: '推荐提醒', readFlag: false }],
+      unreadCount: 1,
+    })
+
+    renderPage(<JobStationPage />)
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '先看推进总览，再进入简历、推荐、投递和招聘会工作区。',
+      }),
+    ).toBeInTheDocument()
   })
 
   it('renders remote study-abroad program data with rightbar filters', async () => {

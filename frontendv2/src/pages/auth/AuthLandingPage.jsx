@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
+import AppBootScreen from '@/components/AppBootScreen.jsx'
 import AuthHeroShell from '@/components/AuthHeroShell.jsx'
 import ForgotPasswordForm from '@/components/AuthForms/ForgotPasswordForm.jsx'
 import LoginForm from '@/components/AuthForms/LoginForm.jsx'
@@ -17,7 +18,14 @@ export default function AuthLandingPage() {
   const [mode, setMode] = useState('login')
   const [activeTab, setActiveTab] = useState('overview')
 
-  if (loading) return null
+  if (loading) {
+    return (
+      <AppBootScreen
+        title="正在准备登录入口"
+        message="正在确认你的登录状态，请稍候..."
+      />
+    )
+  }
   if (isAuthed && user) return <Navigate replace to="/app" />
 
   const currentIntro = introTabs.find((item) => item.key === activeTab) || introTabs[0]
@@ -80,6 +88,12 @@ export default function AuthLandingPage() {
           {mode === 'reset' ? (
             <ForgotPasswordForm onSwitchLogin={() => setMode('login')} />
           ) : null}
+        </div>
+
+        <div className="v2-auth-actions-row">
+          <Link className="v2-secondary-link" to="/role-auth">
+            直接预览不同身份
+          </Link>
         </div>
       </section>
     </AuthHeroShell>

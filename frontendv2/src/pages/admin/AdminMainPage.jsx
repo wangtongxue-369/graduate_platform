@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import PageIntro from '@/components/PageIntro.jsx'
 import { adminWorkspace } from '@/lib/workspacePreview.js'
 
@@ -38,6 +39,14 @@ export default function AdminMainPage() {
             <p>{item.summary}</p>
           </article>
         ))}
+        <article className="v2-module-card">
+          <strong>留学管理</strong>
+          <p>先看总览，再切到院校项目、案例与经验治理。</p>
+          <p>这里会承接 frontendv2 的完整留学后台工作台。</p>
+          <div className="v2-inline-actions">
+            <Link className="v2-primary-link" to="/admin/studyabroad">进入留学后台</Link>
+          </div>
+        </article>
       </section>
 
       <section className="v2-feed-list" aria-label="最近处理">
@@ -170,7 +179,7 @@ export function AdminKaoyanPage() {
     <AdminDomainPage
       domainKey="kaoyan"
       title="先保证资料质量，再放大考研内容规模。"
-      lead="围绕资料审核、分数线维护与导师入驻。"
+      lead="围绕资料审核、分数线维护与学长学姐入驻。"
     />
   )
 }
@@ -189,8 +198,8 @@ export function AdminEmploymentPage() {
   return (
     <AdminDomainPage
       domainKey="employment"
-      title="先处理招聘会、岗位和通知，再谈运营效果。"
-      lead="先处理招聘会、岗位清洗和通知触达。"
+      title="先切换治理对象，再处理招聘会、岗位、提醒触达与简历状态。"
+      lead="先看总览指标，再进入当前治理对象的工作区。"
     />
   )
 }

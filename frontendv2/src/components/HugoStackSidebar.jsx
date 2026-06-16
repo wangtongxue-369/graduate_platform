@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import {
   DEFAULT_PREFERENCES,
@@ -49,6 +49,7 @@ function getAvatarText(name = '') {
 }
 
 export default function HugoStackSidebar({ mode = 'app' }) {
+  const location = useLocation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const [languageMode, setLanguageMode] = useState(readLanguageMode)
@@ -56,8 +57,8 @@ export default function HugoStackSidebar({ mode = 'app' }) {
   const sidebarRef = useRef(null)
 
   const groups = useMemo(() => (
-    mode === 'settings' ? getSettingsNavigation() : getAppNavigation(user)
-  ), [mode, user])
+    mode === 'settings' ? getSettingsNavigation() : getAppNavigation(user, location.pathname)
+  ), [location.pathname, mode, user])
 
   const profilePath = '/settings/profile'
   const homePath = getRoleLandingPath(user)
@@ -111,7 +112,7 @@ export default function HugoStackSidebar({ mode = 'app' }) {
             <div className="v2-stack-profile__copy">
               <p className="v2-kicker">profile hub</p>
               <strong>{user?.name || '当前用户'}</strong>
-              <span>{getShellTitle(user, mode)}</span>
+              <span>{getShellTitle(user, mode, location.pathname)}</span>
               <small>{getShellDescription(user, mode)}</small>
               <div className="v2-stack-profile__actions">
                 <Link aria-label="返回主站" className="v2-secondary-link v2-stack-profile__home" to={homePath}>
@@ -130,7 +131,7 @@ export default function HugoStackSidebar({ mode = 'app' }) {
             <div className="v2-stack-profile__copy v2-stack-profile__copy--app">
               <p className="v2-kicker">graduate platform</p>
               <strong>{user?.name || '当前用户'}</strong>
-              <span>{getShellTitle(user, mode)}</span>
+              <span>{getShellTitle(user, mode, location.pathname)}</span>
               <small>{getShellDescription(user, mode)}</small>
             </div>
           </Link>
@@ -210,7 +211,7 @@ export default function HugoStackSidebar({ mode = 'app' }) {
                 <div className="v2-stack-settings-account">
                   <div className="v2-stack-settings-account__meta">
                     <strong>{user?.name || '游客状态'}</strong>
-                    <span>{user ? getShellTitle(user, mode) : '先登录后进入对应主站'}</span>
+                    <span>{user ? getShellTitle(user, mode, location.pathname) : '先登录后进入对应主站'}</span>
                   </div>
                   <button className="v2-primary-link v2-stack-settings-action" onClick={handleLogout} type="button">
                     {user ? '退出登录' : '登录 / 注册'}

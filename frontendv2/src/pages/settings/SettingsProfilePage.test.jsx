@@ -20,6 +20,7 @@ const authState = vi.hoisted(() => ({
     status: 'normal',
   },
   token: 'remote-token',
+  syncUser: vi.fn(),
 }))
 
 const userApiMocks = vi.hoisted(() => ({
@@ -62,9 +63,41 @@ describe('SettingsProfilePage', () => {
       status: 'normal',
     }
     authState.token = 'remote-token'
+    authState.syncUser.mockReset()
     userApiMocks.profile.mockReset()
     userApiMocks.dashboard.mockReset()
     userApiMocks.updateProfile.mockReset()
+  })
+
+  it('syncs the auth user after saving a new target', async () => {
+    userApiMocks.profile.mockResolvedValue({
+      ...authState.user,
+      security: {},
+    })
+    userApiMocks.dashboard.mockResolvedValue({
+      postCount: 0,
+      commentCount: 0,
+      attemptCount: 0,
+      checkinCount: 0,
+    })
+    userApiMocks.updateProfile.mockResolvedValue({
+      ...authState.user,
+      target: 'job',
+    })
+
+    renderPage()
+
+    await screen.findByText('陈曦')
+
+    fireEvent.click(screen.getByRole('button', { name: '编辑资料' }))
+    fireEvent.click(screen.getByRole('button', { name: '就业' }))
+    fireEvent.click(screen.getByRole('button', { name: '保存资料' }))
+
+    await waitFor(() => {
+      expect(authState.syncUser).toHaveBeenCalledWith(expect.objectContaining({
+        target: 'job',
+      }))
+    })
   })
 
   it('allows saving profile edits through the backend and reflects the updated information', async () => {

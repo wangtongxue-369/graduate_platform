@@ -61,7 +61,7 @@ function getTargetLabel(target) {
 }
 
 export default function SettingsProfilePage() {
-  const { user, token } = useAuth()
+  const { user, token, syncUser } = useAuth()
   const initialProfile = createSettingsProfile(user)
   const [profile, setProfile] = useState(initialProfile)
   const [dashboard, setDashboard] = useState(createSettingsDashboard())
@@ -153,6 +153,7 @@ export default function SettingsProfilePage() {
     if (!token || token === 'dev-token') {
       const nextProfile = createSettingsProfile({ ...profile, ...payload })
       setProfile(nextProfile)
+      syncUser?.(nextProfile)
       setForm(createEditableProfileForm(nextProfile))
       setEditing(false)
       setSaving(false)
@@ -169,6 +170,7 @@ export default function SettingsProfilePage() {
         security: updated?.security || profile.security,
       })
       setProfile(nextProfile)
+      syncUser?.(nextProfile)
       setForm(createEditableProfileForm(nextProfile))
       setEditing(false)
       setFeedbackTone('note')

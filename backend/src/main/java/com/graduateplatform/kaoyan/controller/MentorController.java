@@ -1,12 +1,22 @@
 package com.graduateplatform.kaoyan.controller;
 
 import com.graduateplatform.common.dto.ApiResponse;
-import com.graduateplatform.common.exception.BusinessException;
+import com.graduateplatform.common.exception.UnauthorizedException;
+import com.graduateplatform.common.security.JwtTokenProvider;
 import com.graduateplatform.kaoyan.entity.MentorProfile;
 import com.graduateplatform.kaoyan.service.MentorService;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
 
@@ -15,9 +25,11 @@ import java.util.Map;
 public class MentorController {
 
     private final MentorService mentorService;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    public MentorController(MentorService mentorService) {
+    public MentorController(MentorService mentorService, JwtTokenProvider jwtTokenProvider) {
         this.mentorService = mentorService;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @PostMapping
@@ -28,7 +40,7 @@ public class MentorController {
     @GetMapping("/me")
     public ApiResponse<?> getMyProfile(Authentication auth) {
         Long userId = requiredUserId(auth);
-        var profile = mentorService.getMyProfile(userId);
+        Object profile = mentorService.getMyProfile(userId);
         if (profile == null) {
             return ApiResponse.fail("暂无入驻信息");
         }
@@ -50,8 +62,6 @@ public class MentorController {
         mentorService.deactivateProfile(requiredUserId(auth));
         return ApiResponse.ok(null, "已注销入驻");
     }
-
-    // ========== Counseling ==========
 
     @PostMapping("/counseling/sessions")
     public ApiResponse<?> createSession(@RequestBody Map<String, Object> body, Authentication auth) {
@@ -91,16 +101,26 @@ public class MentorController {
         return ApiResponse.ok(Map.of("count", mentorService.getUnreadCount(requiredUserId(auth))));
     }
 
+    @GetMapping(value = "/counseling/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter counselingStream(@RequestParam String token) {
+        if (!jwtTokenProvider.validateToken(token)) {
+            throw new UnauthorizedException("登录状态已失效，请重新登录");
+        }
+        return mentorService.subscribeCounseling(jwtTokenProvider.getUserId(token));
+    }
+
     private Long requiredUserId(Authentication auth) {
         if (auth == null || auth.getPrincipal() == null) {
-            throw new com.graduateplatform.common.exception.BusinessException("用户未登录");
+            throw new UnauthorizedException("用户未登录");
         }
         Object principal = auth.getPrincipal();
-        if (principal instanceof Long) return (Long) principal;
+        if (principal instanceof Long userId) {
+            return userId;
+        }
         try {
             return Long.parseLong(principal.toString());
         } catch (NumberFormatException e) {
-            throw new com.graduateplatform.common.exception.BusinessException("用户标识无效");
+            throw new UnauthorizedException("用户标识无效");
         }
     }
 }

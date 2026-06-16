@@ -320,13 +320,13 @@ public class PracticeService {
             .mapToInt(Integer::intValue)
             .sum();
         long accuracyCount = sessions.stream().filter(session -> session.getAccuracy() != null).count();
-        int averageAccuracy = accuracyCount == 0 ? 0 : Math.round(accuracySum / (float) accuracyCount);
+        Integer averageAccuracy = accuracyCount == 0 ? null : Math.round(accuracySum / (float) accuracyCount);
 
         Map<String, List<PracticeSession>> grouped = sessions.stream()
             .collect(Collectors.groupingBy(session -> groupKey(session.getSubmittedAt(), finalGroup), TreeMap::new, Collectors.toList()));
         List<Map<String, Object>> trend = grouped.entrySet().stream().map(entry -> {
             List<PracticeSession> items = entry.getValue();
-            int itemAccuracy = average(items.stream()
+            Integer itemAccuracy = averageNullable(items.stream()
                 .map(PracticeSession::getAccuracy)
                 .filter(value -> value != null)
                 .toList());
@@ -559,9 +559,9 @@ public class PracticeService {
         return Math.min(limit, total);
     }
 
-    private int average(List<Integer> values) {
+    private Integer averageNullable(List<Integer> values) {
         if (values.isEmpty()) {
-            return 0;
+            return null;
         }
         return Math.round(values.stream().mapToInt(Integer::intValue).sum() / (float) values.size());
     }
