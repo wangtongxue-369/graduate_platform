@@ -2,7 +2,10 @@ export default function JobFairDetailDrawer({ fair, onClose }) {
   if (!fair) return null
 
   return (
-    <section className="v2-side-card v2-practice-drawer v2-employment-drawer">
+    <section
+      className="v2-side-card v2-practice-drawer v2-employment-drawer"
+      data-testid="job-fair-detail-drawer"
+    >
       <div className="v2-section-head">
         <div>
           <p className="v2-kicker">招聘会详情</p>

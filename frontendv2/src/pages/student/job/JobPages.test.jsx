@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import JobApplicationsPage from './JobApplicationsPage.jsx'
+import JobFairsPage from './JobFairsPage.jsx'
 import JobRecommendationsPage from './JobRecommendationsPage.jsx'
 import JobStationOverviewPage from './JobStationOverviewPage.jsx'
 import JobResumePage from './JobResumePage.jsx'
@@ -298,6 +299,78 @@ describe('student employment pages', () => {
 
     await waitFor(() => {
       expect(apiMocks.employmentApi.deleteApplication).toHaveBeenCalledWith(71, 'remote-token')
+    })
+  })
+
+  it('renders the fairs workspace with preference modal and detail drawer', async () => {
+    apiMocks.employmentApi.fairs.mockResolvedValue({
+      items: [
+        {
+          id: 51,
+          title: '上海春招双选会',
+          city: '上海',
+          industry: '教育科技',
+          location: '浦东会展中心',
+          description: '聚焦教育科技和平台研发岗位。',
+          startTime: '2026-06-22T09:00:00',
+          applyDeadline: '2026-06-21T18:00:00',
+          applyUrl: 'https://example.com/fairs/51',
+        },
+      ],
+      totalItems: 1,
+      totalPages: 1,
+      page: 1,
+    })
+    apiMocks.employmentApi.preference.mockResolvedValue({
+      cities: '上海, 杭州',
+      industries: '教育科技',
+      roleTypes: '后端, 产品',
+      salaryRange: '15k-25k',
+      companyTypes: '民企, 外企',
+    })
+    apiMocks.employmentApi.fairDetail.mockResolvedValue({
+      id: 51,
+      title: '上海春招双选会',
+      city: '上海',
+      industry: '教育科技',
+      location: '浦东会展中心',
+      targetRoles: '后端, 产品',
+      description: '聚焦教育科技和平台研发岗位。',
+      applyDeadline: '2026-06-21T18:00:00',
+      applyUrl: 'https://example.com/fairs/51',
+    })
+    apiMocks.employmentApi.savePreference.mockResolvedValue({
+      cities: '上海, 杭州, 苏州',
+      industries: '教育科技',
+      roleTypes: '后端, 产品',
+      salaryRange: '15k-25k',
+      companyTypes: '民企, 外企',
+    })
+
+    renderRoute('/station/job/fairs', <JobFairsPage />)
+
+    expect(await screen.findByTestId('job-fairs-page')).toBeInTheDocument()
+    expect(screen.getByText('偏好摘要')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '编辑偏好' }))
+    expect(await screen.findByTestId('job-preference-modal')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('偏好城市'), {
+      target: { value: '上海, 杭州, 苏州' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '保存偏好' }))
+
+    await waitFor(() => {
+      expect(apiMocks.employmentApi.savePreference).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cities: '上海, 杭州, 苏州',
+        }),
+        'remote-token',
+      )
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '查看详情' }))
+    await waitFor(() => {
+      expect(apiMocks.employmentApi.fairDetail).toHaveBeenCalledWith(51)
     })
   })
 })
