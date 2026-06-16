@@ -6,9 +6,6 @@ import PageIntro from '@/components/PageIntro.jsx'
 import AdminStudyAbroadSummaryStrip from '@/components/studyabroad/AdminStudyAbroadSummaryStrip.jsx'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -22,7 +19,7 @@ export default function AdminStudyAbroadOverviewPage() {
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [dashboard, setDashboard] = useState(fallbackDashboard)
-  const [notice, setNotice] = useState(previewDataNotice('留学管理'))
+  const [notice, setNotice] = useState('')
 
   useEffect(() => {
     let active = true
@@ -30,7 +27,7 @@ export default function AdminStudyAbroadOverviewPage() {
     async function loadDashboard() {
       if (!canUseRemote) {
         setDashboard(fallbackDashboard)
-        setNotice(previewDataNotice('留学管理'))
+        setNotice('')
         return
       }
 
@@ -42,11 +39,11 @@ export default function AdminStudyAbroadOverviewPage() {
         )
         if (!active) return
         setDashboard(data || fallbackDashboard)
-        setNotice(remoteDataNotice('留学管理'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setDashboard(fallbackDashboard)
-        setNotice(fallbackDataNotice('留学管理', error))
+        setNotice('留学管理数据暂时不可用，请稍后再试。')
       }
     }
 

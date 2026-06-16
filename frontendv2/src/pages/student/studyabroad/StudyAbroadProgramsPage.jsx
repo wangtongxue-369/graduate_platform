@@ -14,9 +14,6 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -33,7 +30,7 @@ export default function StudyAbroadProgramsPage() {
   const [page, setPage] = useState(0)
   const [rows, setRows] = useState(createFallbackPrograms())
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: createFallbackPrograms().length })
-  const [notice, setNotice] = useState(previewDataNotice('院校项目库'))
+  const [notice, setNotice] = useState('')
   const [selectedIds, setSelectedIds] = useState([])
   const [activeProgram, setActiveProgram] = useState(null)
 
@@ -44,7 +41,7 @@ export default function StudyAbroadProgramsPage() {
       if (!canUseRemote) {
         setRows(createFallbackPrograms())
         setPageInfo({ totalPages: 1, totalElements: createFallbackPrograms().length })
-        setNotice(previewDataNotice('院校项目库'))
+        setNotice('')
         return
       }
 
@@ -68,12 +65,12 @@ export default function StudyAbroadProgramsPage() {
           totalPages: normalized.totalPages,
           totalElements: normalized.totalElements,
         })
-        setNotice(remoteDataNotice('院校项目库'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createFallbackPrograms())
         setPageInfo({ totalPages: 1, totalElements: createFallbackPrograms().length })
-        setNotice(fallbackDataNotice('院校项目库', error))
+        setNotice('院校项目库暂时不可用，请稍后再试。')
       }
     }
 
@@ -119,7 +116,7 @@ export default function StudyAbroadProgramsPage() {
             <p>当前列表页里可直接进入对比的项目数。</p>
           </article>
           <article className="v2-summary-card">
-            <span>对比带</span>
+            <span>已选项目</span>
             <strong>{selectedRows.length}</strong>
             <p>最多保留 3 个项目进行横向判断。</p>
           </article>

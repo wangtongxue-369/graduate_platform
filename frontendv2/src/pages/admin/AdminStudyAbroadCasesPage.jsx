@@ -15,9 +15,6 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -29,7 +26,7 @@ export default function AdminStudyAbroadCasesPage() {
   const [page, setPage] = useState(0)
   const [rows, setRows] = useState(createFallbackCases())
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: createFallbackCases().length })
-  const [notice, setNotice] = useState(previewDataNotice('录取案例管理'))
+  const [notice, setNotice] = useState('')
   const [activeItem, setActiveItem] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
 
@@ -40,7 +37,7 @@ export default function AdminStudyAbroadCasesPage() {
       if (!canUseRemote) {
         setRows(createFallbackCases())
         setPageInfo({ totalPages: 1, totalElements: createFallbackCases().length })
-        setNotice(previewDataNotice('录取案例管理'))
+        setNotice('')
         return
       }
 
@@ -61,12 +58,12 @@ export default function AdminStudyAbroadCasesPage() {
         const normalized = normalizeCasesPage(data)
         setRows(normalized.content)
         setPageInfo({ totalPages: normalized.totalPages, totalElements: normalized.totalElements })
-        setNotice(remoteDataNotice('录取案例管理'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createFallbackCases())
         setPageInfo({ totalPages: 1, totalElements: createFallbackCases().length })
-        setNotice(fallbackDataNotice('录取案例管理', error))
+        setNotice('录取案例管理暂时不可用，请稍后再试。')
       }
     }
 

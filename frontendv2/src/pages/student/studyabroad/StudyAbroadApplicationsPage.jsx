@@ -20,10 +20,7 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
   formatDateLabel,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -33,7 +30,7 @@ export default function StudyAbroadApplicationsPage() {
   const [filters, setFilters] = useState({ lane: 'all', keyword: '', view: 'board' })
   const deferredKeyword = useDeferredValue(filters.keyword)
   const [rows, setRows] = useState(createFallbackApplications())
-  const [notice, setNotice] = useState(previewDataNotice('申请项目管理'))
+  const [notice, setNotice] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(createEmptyStudyAbroadApplicationForm())
@@ -45,7 +42,7 @@ export default function StudyAbroadApplicationsPage() {
     async function loadApplications() {
       if (!canUseRemote) {
         setRows(createFallbackApplications())
-        setNotice(previewDataNotice('申请项目管理'))
+        setNotice('')
         return
       }
 
@@ -57,11 +54,11 @@ export default function StudyAbroadApplicationsPage() {
         )
         if (!active) return
         setRows(normalizeApplications(data))
-        setNotice(remoteDataNotice('申请项目管理'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createFallbackApplications())
-        setNotice(fallbackDataNotice('申请项目管理', error))
+        setNotice('申请项目暂时不可用，请稍后再试。')
       }
     }
 
@@ -150,7 +147,7 @@ export default function StudyAbroadApplicationsPage() {
           <article className="v2-summary-card">
             <span>全部项目</span>
             <strong>{rows.length}</strong>
-            <p>当前账号下的全部申请项目。</p>
+            <p>本人的全部申请项目。</p>
           </article>
           <article className="v2-summary-card">
             <span>筛选后</span>

@@ -5031,6 +5031,23 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   border-bottom: none;
 }
 
+.v2-studyabroad-compare-modal {
+  width: min(1180px, calc(100vw - 48px));
+}
+
+.v2-studyabroad-compare-table {
+  min-width: 1120px;
+}
+
+.v2-studyabroad-compare-table td {
+  max-width: 240px;
+}
+
+.v2-studyabroad-compare-cell {
+  display: grid;
+  gap: 8px;
+}
+
 .v2-studyabroad-board .v2-side-card,
 .v2-studyabroad-lane-board .v2-side-card {
   background:
