@@ -16,6 +16,7 @@ const loadAdminShell = () => import('@/layouts/AdminShell.jsx')
 const loadSettingsShell = () => import('@/layouts/SettingsShell.jsx')
 
 const loadAuthLandingPage = () => import('@/pages/auth/AuthLandingPage.jsx')
+const loadRoleAuthRoutePage = () => import('@/pages/auth/RoleAuthRoutePage.jsx')
 const loadCommunityComposerPage = () => import('@/pages/community/CommunityComposerPage.jsx')
 const loadCommunityHubPage = () => import('@/pages/community/CommunityHubPage.jsx')
 const loadCommunityNotificationsPage = () => import('@/pages/community/CommunityNotificationsPage.jsx')
@@ -32,9 +33,19 @@ const loadJobRecommendationsPage = () => import('@/pages/student/job/JobRecommen
 const loadJobApplicationsPage = () => import('@/pages/student/job/JobApplicationsPage.jsx')
 const loadJobFairsPage = () => import('@/pages/student/job/JobFairsPage.jsx')
 const loadKaogongStationPage = () => import('@/pages/student/kaogong/KaogongStationPage.jsx')
-const loadStudyAbroadStationPage = () => import('@/pages/student/studyabroad/StudyAbroadStationPage.jsx')
+const loadStudyAbroadOverviewPage = () => import('@/pages/student/studyabroad/StudyAbroadOverviewPage.jsx')
+const loadStudyAbroadProgramsPage = () => import('@/pages/student/studyabroad/StudyAbroadProgramsPage.jsx')
+const loadStudyAbroadCasesPage = () => import('@/pages/student/studyabroad/StudyAbroadCasesPage.jsx')
+const loadStudyAbroadApplicationsPage = () => import('@/pages/student/studyabroad/StudyAbroadApplicationsPage.jsx')
+const loadStudyAbroadTimelinePage = () => import('@/pages/student/studyabroad/StudyAbroadTimelinePage.jsx')
+const loadStudyAbroadMaterialsPage = () => import('@/pages/student/studyabroad/StudyAbroadMaterialsPage.jsx')
+const loadStudyAbroadExperiencesPage = () => import('@/pages/student/studyabroad/StudyAbroadExperiencesPage.jsx')
 const loadAdminMainPage = () => import('@/pages/admin/AdminMainPage.jsx')
 const loadAdminEmploymentPage = () => import('@/pages/admin/AdminEmploymentPage.jsx')
+const loadAdminStudyAbroadOverviewPage = () => import('@/pages/admin/AdminStudyAbroadOverviewPage.jsx')
+const loadAdminStudyAbroadProgramsPage = () => import('@/pages/admin/AdminStudyAbroadProgramsPage.jsx')
+const loadAdminStudyAbroadCasesPage = () => import('@/pages/admin/AdminStudyAbroadCasesPage.jsx')
+const loadAdminStudyAbroadExperiencesPage = () => import('@/pages/admin/AdminStudyAbroadExperiencesPage.jsx')
 const loadAdminQuestionBanksPage = () => import('@/pages/admin/AdminQuestionBanksPage.jsx')
 const loadAdminQuestionBankWorkspacePage = () => import('@/pages/admin/AdminQuestionBankWorkspacePage.jsx')
 const loadAdminCommunityPages = () => import('@/pages/admin/AdminCommunityPages.jsx')
@@ -52,6 +63,7 @@ const AdminShell = lazyDefault(loadAdminShell)
 const SettingsShell = lazyDefault(loadSettingsShell)
 
 const AuthLandingPage = lazyDefault(loadAuthLandingPage)
+const RoleAuthRoutePage = lazyDefault(loadRoleAuthRoutePage)
 const CommunityComposerPage = lazyDefault(loadCommunityComposerPage)
 const CommunityHubPage = lazyDefault(loadCommunityHubPage)
 const CommunityNotificationsPage = lazyDefault(loadCommunityNotificationsPage)
@@ -92,15 +104,20 @@ const KaoyanMessagesPage = lazyDefault(() => import('@/pages/student/kaoyan/Kaoy
 const KaoyanStudyRoomsPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanStudyRoomsPage.jsx'))
 const KaoyanStudyRoomPage = lazyDefault(() => import('@/pages/student/kaoyan/KaoyanStudyRoomPage.jsx'))
 
-const StudyAbroadStationPage = lazyDefault(loadStudyAbroadStationPage)
-const StudyAbroadApplicationsPage = lazyNamed(loadStudyAbroadStationPage, 'StudyAbroadApplicationsPage')
-const StudyAbroadCasesPage = lazyNamed(loadStudyAbroadStationPage, 'StudyAbroadCasesPage')
-const StudyAbroadMaterialsPage = lazyNamed(loadStudyAbroadStationPage, 'StudyAbroadMaterialsPage')
-const StudyAbroadProgramsPage = lazyNamed(loadStudyAbroadStationPage, 'StudyAbroadProgramsPage')
-const StudyAbroadTimelinePage = lazyNamed(loadStudyAbroadStationPage, 'StudyAbroadTimelinePage')
+const StudyAbroadOverviewPage = lazyDefault(loadStudyAbroadOverviewPage)
+const StudyAbroadApplicationsPage = lazyDefault(loadStudyAbroadApplicationsPage)
+const StudyAbroadCasesPage = lazyDefault(loadStudyAbroadCasesPage)
+const StudyAbroadMaterialsPage = lazyDefault(loadStudyAbroadMaterialsPage)
+const StudyAbroadProgramsPage = lazyDefault(loadStudyAbroadProgramsPage)
+const StudyAbroadTimelinePage = lazyDefault(loadStudyAbroadTimelinePage)
+const StudyAbroadExperiencesPage = lazyDefault(loadStudyAbroadExperiencesPage)
 
 const AdminMainPage = lazyDefault(loadAdminMainPage)
 const AdminEmploymentPage = lazyDefault(loadAdminEmploymentPage)
+const AdminStudyAbroadOverviewPage = lazyDefault(loadAdminStudyAbroadOverviewPage)
+const AdminStudyAbroadProgramsPage = lazyDefault(loadAdminStudyAbroadProgramsPage)
+const AdminStudyAbroadCasesPage = lazyDefault(loadAdminStudyAbroadCasesPage)
+const AdminStudyAbroadExperiencesPage = lazyDefault(loadAdminStudyAbroadExperiencesPage)
 const AdminKaogongPage = lazyDefault(() => import('@/pages/admin/AdminKaogongPage.jsx'))
 const AdminQuestionBanksPage = lazyDefault(loadAdminQuestionBanksPage)
 const AdminQuestionBankWorkspacePage = lazyDefault(loadAdminQuestionBankWorkspacePage)
@@ -184,6 +201,7 @@ export default function App() {
         <Route element={<PublicShell />}>
           <Route path="/" element={<AuthLandingPage />} />
           <Route path="/login" element={<AuthLandingPage />} />
+          <Route path="/role-auth" element={<RoleAuthRoutePage />} />
         </Route>
 
         <Route path="/app" element={<RoleLandingRoute />} />
@@ -234,12 +252,13 @@ export default function App() {
           <Route path="/station/kaogong/calendar" element={<KaogongCalendarPage />} />
           <Route path="/station/kaogong/interviews" element={<KaogongInterviewsPage />} />
           <Route path="/station/kaogong/interviews/rooms/:roomId" element={<KaogongInterviewRoomPage />} />
-          <Route path="/station/studyabroad" element={<StudyAbroadStationPage />} />
+          <Route path="/station/studyabroad" element={<StudyAbroadOverviewPage />} />
           <Route path="/station/studyabroad/programs" element={<StudyAbroadProgramsPage />} />
           <Route path="/station/studyabroad/cases" element={<StudyAbroadCasesPage />} />
           <Route path="/station/studyabroad/applications" element={<StudyAbroadApplicationsPage />} />
           <Route path="/station/studyabroad/timeline" element={<StudyAbroadTimelinePage />} />
           <Route path="/station/studyabroad/materials" element={<StudyAbroadMaterialsPage />} />
+          <Route path="/station/studyabroad/experiences" element={<StudyAbroadExperiencesPage />} />
         </Route>
 
         <Route
@@ -264,6 +283,10 @@ export default function App() {
           <Route path="/admin/kaoyan/score-lines" element={<AdminKaoyanScoreLinesPage />} />
           <Route path="/admin/kaogong" element={<AdminKaogongPage />} />
           <Route path="/admin/employment" element={<AdminEmploymentPage />} />
+          <Route path="/admin/studyabroad" element={<AdminStudyAbroadOverviewPage />} />
+          <Route path="/admin/studyabroad/programs" element={<AdminStudyAbroadProgramsPage />} />
+          <Route path="/admin/studyabroad/cases" element={<AdminStudyAbroadCasesPage />} />
+          <Route path="/admin/studyabroad/experiences" element={<AdminStudyAbroadExperiencesPage />} />
         </Route>
 
         <Route

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import AppBootScreen from '@/components/AppBootScreen.jsx'
 import AuthHeroShell from '@/components/AuthHeroShell.jsx'
@@ -88,6 +88,12 @@ export default function AuthLandingPage() {
           {mode === 'reset' ? (
             <ForgotPasswordForm onSwitchLogin={() => setMode('login')} />
           ) : null}
+        </div>
+
+        <div className="v2-auth-actions-row">
+          <Link className="v2-secondary-link" to="/role-auth">
+            直接预览不同身份
+          </Link>
         </div>
       </section>
     </AuthHeroShell>

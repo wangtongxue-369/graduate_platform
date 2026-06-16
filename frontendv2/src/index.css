@@ -4890,6 +4890,88 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   gap: 16px;
 }
 
+.v2-studyabroad-deck {
+  display: grid;
+  gap: 18px;
+}
+
+.v2-studyabroad-lane-board,
+.v2-studyabroad-board {
+  display: grid;
+  gap: 16px;
+}
+
+.v2-studyabroad-lane-board {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.v2-studyabroad-board {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: start;
+}
+
+.v2-studyabroad-lane,
+.v2-studyabroad-editor-drawer,
+.v2-studyabroad-detail-drawer,
+.v2-studyabroad-compare-rail {
+  display: grid;
+  gap: 14px;
+}
+
+.v2-studyabroad-lane {
+  min-height: 220px;
+}
+
+.v2-studyabroad-detail-drawer .v2-check-row,
+.v2-studyabroad-lane .v2-check-row,
+.v2-studyabroad-attachment-panel .v2-check-row {
+  align-items: start;
+}
+
+.v2-studyabroad-attachment-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--v2-line);
+}
+
+.v2-studyabroad-compare-rail .v2-compare-table td,
+.v2-studyabroad-compare-rail .v2-compare-table th {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--v2-line);
+  text-align: left;
+}
+
+.v2-studyabroad-compare-rail .v2-compare-table th {
+  color: var(--v2-soft-strong);
+  font-weight: 600;
+}
+
+.v2-studyabroad-compare-rail .v2-compare-table tr:last-child td {
+  border-bottom: none;
+}
+
+.v2-studyabroad-board .v2-side-card,
+.v2-studyabroad-lane-board .v2-side-card {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--v2-paper-strong) 82%, white) 0%,
+      color-mix(in srgb, var(--v2-paper-soft) 92%, white) 100%
+    );
+}
+
+.v2-studyabroad-board .v2-check-row,
+.v2-studyabroad-lane-board .v2-check-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.v2-studyabroad-board .v2-check-row .v2-inline-actions,
+.v2-studyabroad-lane-board .v2-check-row .v2-inline-actions {
+  margin-top: 6px;
+}
+
 .v2-employment-workspace-card {
   display: grid;
   gap: 12px;
@@ -4954,6 +5036,8 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   .v2-overview-grid,
   .v2-process-strip,
   .v2-split-board,
+  .v2-studyabroad-board,
+  .v2-studyabroad-lane-board,
   .v2-role-auth-grid {
     grid-template-columns: 1fr;
   }

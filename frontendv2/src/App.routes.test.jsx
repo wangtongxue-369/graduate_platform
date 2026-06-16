@@ -62,6 +62,54 @@ vi.mock('@/pages/settings/SettingsPostEditPage.jsx', () => ({
   },
 }))
 
+vi.mock('@/pages/student/studyabroad/StudyAbroadOverviewPage.jsx', () => ({
+  default: function StudyAbroadOverviewPageMock() {
+    return <h1>留学总览</h1>
+  },
+}))
+
+vi.mock('@/pages/student/studyabroad/StudyAbroadProgramsPage.jsx', () => ({
+  default: function StudyAbroadProgramsPageMock() {
+    return <h1>项目目录</h1>
+  },
+}))
+
+vi.mock('@/pages/student/studyabroad/StudyAbroadCasesPage.jsx', () => ({
+  default: function StudyAbroadCasesPageMock() {
+    return <h1>案例档案</h1>
+  },
+}))
+
+vi.mock('@/pages/student/studyabroad/StudyAbroadApplicationsPage.jsx', () => ({
+  default: function StudyAbroadApplicationsPageMock() {
+    return <h1>申请跟踪</h1>
+  },
+}))
+
+vi.mock('@/pages/student/studyabroad/StudyAbroadTimelinePage.jsx', () => ({
+  default: function StudyAbroadTimelinePageMock() {
+    return <h1>时间线</h1>
+  },
+}))
+
+vi.mock('@/pages/student/studyabroad/StudyAbroadMaterialsPage.jsx', () => ({
+  default: function StudyAbroadMaterialsPageMock() {
+    return <h1>材料清单</h1>
+  },
+}))
+
+vi.mock('@/pages/student/studyabroad/StudyAbroadExperiencesPage.jsx', () => ({
+  default: function StudyAbroadExperiencesPageMock() {
+    return <h1>留学经验</h1>
+  },
+}))
+
+vi.mock('@/pages/admin/AdminStudyAbroadOverviewPage.jsx', () => ({
+  default: function AdminStudyAbroadOverviewPageMock() {
+    return <h1>留学运营总览</h1>
+  },
+}))
+
 function renderApp(initialEntries) {
   return render(
     <MemoryRouter initialEntries={initialEntries}>
@@ -107,5 +155,23 @@ describe('frontendv2 route gating', () => {
     renderApp(['/app'])
 
     expect(screen.getByRole('status', { name: 'app-loading' })).toBeInTheDocument()
+  })
+
+  it('routes students into the split study abroad experiences page', async () => {
+    authState.isAuthed = true
+    authState.user = { id: 7, name: 'Test User', role: 'user', target: 'liuxue' }
+
+    renderApp(['/station/studyabroad/experiences'])
+
+    expect(await screen.findByRole('heading', { name: '留学经验' })).toBeInTheDocument()
+  })
+
+  it('routes admins into the study abroad overview console', async () => {
+    authState.isAuthed = true
+    authState.user = { id: 1, name: 'Admin', role: 'admin', target: 'job' }
+
+    renderApp(['/admin/studyabroad'])
+
+    expect(await screen.findByRole('heading', { name: '留学运营总览' })).toBeInTheDocument()
   })
 })

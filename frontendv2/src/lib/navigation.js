@@ -18,7 +18,7 @@ const directionNavMap = {
     { label: '择校账本', to: '/station/kaoyan/schools' },
     { label: '计划轨道', to: '/station/kaoyan/plans' },
     { label: '资料中枢', to: '/station/kaoyan/materials' },
-    { label: '1v1咨询', to: '/station/kaoyan/support/mentors' },
+    { label: '1v1 咨询', to: '/station/kaoyan/support/mentors' },
     { label: '同频自习室', to: '/station/kaoyan/support/rooms' },
   ],
   kaogong: [
@@ -42,6 +42,7 @@ const directionNavMap = {
     { label: '申请跟踪', to: '/station/studyabroad/applications' },
     { label: '时间线', to: '/station/studyabroad/timeline' },
     { label: '材料清单', to: '/station/studyabroad/materials' },
+    { label: '留学经验', to: '/station/studyabroad/experiences' },
   ],
 }
 
@@ -51,6 +52,7 @@ const adminNav = [
   { label: '考研治理', to: '/admin/kaoyan' },
   { label: '考公治理', to: '/admin/kaogong' },
   { label: '就业运营', to: '/admin/employment' },
+  { label: '留学管理', to: '/admin/studyabroad' },
 ]
 
 const settingsNav = [
