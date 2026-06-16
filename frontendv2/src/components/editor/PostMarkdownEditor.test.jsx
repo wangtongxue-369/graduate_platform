@@ -7,6 +7,7 @@ const editorState = vi.hoisted(() => ({
   setMarkdown: vi.fn(),
   codeBlockPlugin: vi.fn(() => ({ type: 'codeblock' })),
   codeMirrorPlugin: vi.fn(() => ({ type: 'codemirror' })),
+  imagePlugin: vi.fn(() => ({ type: 'image' })),
 }))
 
 vi.mock('@mdxeditor/editor', async () => {
@@ -42,6 +43,7 @@ vi.mock('@mdxeditor/editor', async () => {
     toolbarPlugin: vi.fn(() => ({ type: 'toolbar' })),
     codeBlockPlugin: editorState.codeBlockPlugin,
     codeMirrorPlugin: editorState.codeMirrorPlugin,
+    imagePlugin: editorState.imagePlugin,
     BlockTypeSelect: () => <span>BlockTypeSelect</span>,
     BoldItalicUnderlineToggles: () => <span>BoldItalicUnderlineToggles</span>,
     ChangeCodeMirrorLanguage: () => <span>ChangeCodeMirrorLanguage</span>,
@@ -53,6 +55,7 @@ vi.mock('@mdxeditor/editor', async () => {
     CreateLink: () => <span>CreateLink</span>,
     DiffSourceToggleWrapper: ({ children }) => <div>{children}</div>,
     InsertCodeBlock: () => <span>InsertCodeBlock</span>,
+    InsertImage: () => <span>InsertImage</span>,
     ListsToggle: () => <span>ListsToggle</span>,
     UndoRedo: () => <span>UndoRedo</span>,
   }
@@ -64,6 +67,7 @@ describe('PostMarkdownEditor', () => {
     editorState.setMarkdown.mockReset()
     editorState.codeBlockPlugin.mockClear()
     editorState.codeMirrorPlugin.mockClear()
+    editorState.imagePlugin.mockClear()
   })
 
   it('forwards markdown changes from the editor surface', () => {
@@ -115,5 +119,17 @@ describe('PostMarkdownEditor', () => {
 
     expect(editorState.codeBlockPlugin).toHaveBeenCalled()
     expect(editorState.codeMirrorPlugin).toHaveBeenCalled()
+  })
+
+  it('enables image parsing for markdown posts with images', () => {
+    render(
+      <PostMarkdownEditor
+        label="Markdown 鏂囨。缂栬緫鍣?"
+        value={'![diagram](https://example.com/diagram.png)'}
+        onChange={() => {}}
+      />,
+    )
+
+    expect(editorState.imagePlugin).toHaveBeenCalled()
   })
 })

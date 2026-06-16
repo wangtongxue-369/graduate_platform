@@ -83,6 +83,7 @@ export default function SettingsPostEditPage() {
   const [form, setForm] = useState(() => createPostForm(createPreviewPost(postId)))
   const [feedback, setFeedback] = useState('')
   const [feedbackTone, setFeedbackTone] = useState('note')
+  const [toastMessage, setToastMessage] = useState('')
 
   useEffect(() => {
     let active = true
@@ -124,6 +125,20 @@ export default function SettingsPostEditPage() {
       active = false
     }
   }, [isPreview, postId, token])
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return undefined
+    }
+
+    const timerId = window.setTimeout(() => {
+      setToastMessage('')
+    }, 2800)
+
+    return () => {
+      window.clearTimeout(timerId)
+    }
+  }, [toastMessage])
 
   function updateField(key, value) {
     setForm((current) => ({
@@ -171,7 +186,8 @@ export default function SettingsPostEditPage() {
       setForm(createPostForm(nextPost))
       setSaving(false)
       setFeedbackTone('note')
-      setFeedback('帖子编辑：本地预览已更新')
+      setFeedback(previewDataNotice('帖子编辑'))
+      setToastMessage('帖子编辑：本地预览已更新')
       return
     }
 
@@ -185,9 +201,10 @@ export default function SettingsPostEditPage() {
       }
       setPost(nextPost)
       setForm(createPostForm(nextPost))
-      setFeedbackTone('note')
-      setFeedback('帖子内容已保存。')
+      setFeedback('')
+      setToastMessage('帖子内容已保存。')
     } catch (error) {
+      setToastMessage('')
       setFeedbackTone('error')
       setFeedback(error.message || '帖子保存失败，请稍后重试。')
     } finally {
@@ -203,6 +220,14 @@ export default function SettingsPostEditPage() {
 
   return (
     <div className="v2-main-column">
+      {toastMessage ? (
+        <div className="v2-floating-toast-wrap" aria-live="polite" aria-atomic="true">
+          <div className="v2-floating-toast v2-floating-toast--success" role="status">
+            {toastMessage}
+          </div>
+        </div>
+      ) : null}
+
       <PageIntro
         kicker="post editor"
         pathItems={[

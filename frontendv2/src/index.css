@@ -35,6 +35,15 @@
   --v2-danger-soft: rgba(161, 77, 72, 0.12);
   --v2-success: #2f6f63;
   --v2-success-soft: rgba(47, 111, 99, 0.12);
+  --v2-toast-success-bg:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--v2-success) 18%, white) 0%,
+      color-mix(in srgb, var(--v2-paper-strong) 88%, white) 100%
+    );
+  --v2-toast-success-border: color-mix(in srgb, var(--v2-success) 42%, white);
+  --v2-toast-success-ink: color-mix(in srgb, var(--v2-success) 76%, var(--v2-ink));
+  --v2-toast-success-shadow: 0 22px 48px rgba(47, 111, 99, 0.16);
   --v2-overlay: rgba(18, 28, 42, 0.38);
   --v2-shadow: 0 26px 68px rgba(28, 44, 67, 0.1);
   --v2-radius-lg: 26px;
@@ -77,6 +86,15 @@ html[data-theme="dark"] {
   --v2-danger-soft: rgba(217, 130, 122, 0.12);
   --v2-success: #65b0a0;
   --v2-success-soft: rgba(101, 176, 160, 0.12);
+  --v2-toast-success-bg:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--v2-success) 18%, rgba(14, 24, 36, 0.92)) 0%,
+      color-mix(in srgb, var(--v2-paper-strong) 92%, rgba(6, 10, 16, 0.82)) 100%
+    );
+  --v2-toast-success-border: color-mix(in srgb, var(--v2-success) 52%, rgba(220, 232, 247, 0.34));
+  --v2-toast-success-ink: color-mix(in srgb, white 72%, var(--v2-success));
+  --v2-toast-success-shadow: 0 24px 56px rgba(2, 8, 18, 0.34);
   --v2-overlay: rgba(6, 10, 16, 0.62);
   --v2-shadow: 0 26px 72px rgba(2, 8, 18, 0.36);
 }
@@ -1861,7 +1879,8 @@ html[data-theme="dark"] .v2-glass-card {
 }
 
 .v2-post-edit-layout {
-  grid-template-columns: minmax(0, 1.75fr) minmax(240px, 0.78fr);
+  grid-template-columns: minmax(0, 1.92fr) minmax(220px, 0.64fr);
+  gap: 14px;
   align-items: start;
 }
 
@@ -1937,24 +1956,26 @@ html[data-theme="dark"] .v2-glass-card {
 .v2-post-edit-summary {
   gap: 0;
   align-self: start;
+  padding: 14px 16px 6px;
 }
 
 .v2-post-edit-summary-head {
-  margin-bottom: 6px;
+  gap: 4px;
+  margin-bottom: 2px;
 }
 
 .v2-post-edit-summary-row {
-  padding: 10px 0;
-  gap: 3px;
+  padding: 8px 0;
+  gap: 2px;
 }
 
 .v2-post-edit-summary-row strong {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 
 .v2-post-edit-summary-row small {
-  font-size: 0.9rem;
-  line-height: 1.45;
+  font-size: 0.84rem;
+  line-height: 1.35;
 }
 
 .v2-post-edit-stack {
@@ -2233,6 +2254,44 @@ html[data-theme="dark"] [class*="_selectItem_"][data-state='checked'] {
 
 .v2-inline-link {
   color: var(--v2-link);
+}
+
+.v2-floating-toast-wrap {
+  position: sticky;
+  top: 18px;
+  z-index: 24;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+  pointer-events: none;
+}
+
+.v2-floating-toast {
+  width: min(360px, calc(100% - 8px));
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--v2-toast-success-border);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--v2-toast-success-shadow);
+  color: var(--v2-toast-success-ink);
+  font-weight: 600;
+  animation: v2-floating-toast-in 220ms ease;
+}
+
+.v2-floating-toast--success {
+  background: var(--v2-toast-success-bg);
+}
+
+@keyframes v2-floating-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .v2-status-note,
@@ -4847,6 +4906,63 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
   padding: 24px;
   background: var(--v2-overlay);
   backdrop-filter: blur(12px);
+}
+
+.v2-feedback-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: color-mix(in srgb, #0f172a 26%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.v2-feedback-dialog {
+  width: min(460px, 100%);
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border: 1px solid color-mix(in srgb, var(--v2-line-strong) 68%, white);
+  border-radius: 24px;
+  background: var(--v2-paper-strong);
+  box-shadow: 0 24px 64px color-mix(in srgb, var(--v2-shadow) 20%, transparent);
+}
+
+.v2-feedback-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.v2-feedback-dialog__head h2 {
+  margin: 4px 0 0;
+  font-size: 1.18rem;
+}
+
+.v2-feedback-dialog__close {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--v2-line);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--v2-ink);
+  cursor: pointer;
+}
+
+.v2-feedback-dialog__message {
+  margin: 0;
+  color: var(--v2-text);
+  font-size: 1.02rem;
+  font-weight: 500;
+  line-height: 1.7;
+}
+
+.v2-feedback-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .v2-role-auth-screen {

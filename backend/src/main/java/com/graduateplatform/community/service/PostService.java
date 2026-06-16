@@ -458,8 +458,11 @@ public class PostService {
     }
 
     private String extractMarkdownContent(MultipartFile markdownFile) {
-        if (markdownFile == null || markdownFile.isEmpty()) {
+        if (markdownFile == null) {
             throw new BusinessException("请上传 markdown 文件");
+        }
+        if (markdownFile.isEmpty()) {
+            throw new BusinessException("你选择的 Markdown 文件是空文件，请确认内容后重新上传。");
         }
 
         String sourceFileName = normalizeSourceFileName(markdownFile.getOriginalFilename());

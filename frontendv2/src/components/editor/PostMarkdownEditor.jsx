@@ -8,6 +8,7 @@ import {
   CreateLink,
   DiffSourceToggleWrapper,
   InsertCodeBlock,
+  InsertImage,
   ListsToggle,
   MDXEditor,
   UndoRedo,
@@ -15,6 +16,7 @@ import {
   codeMirrorPlugin,
   diffSourcePlugin,
   headingsPlugin,
+  imagePlugin,
   linkPlugin,
   listsPlugin,
   markdownShortcutPlugin,
@@ -46,6 +48,7 @@ export default function PostMarkdownEditor({
     quotePlugin(),
     thematicBreakPlugin(),
     markdownShortcutPlugin(),
+    imagePlugin(),
     codeBlockPlugin({ defaultCodeBlockLanguage: 'txt' }),
     codeMirrorPlugin({
       codeBlockLanguages: {
@@ -83,6 +86,7 @@ export default function PostMarkdownEditor({
                   <DiffSourceToggleWrapper>
                     <CodeToggle />
                     <CreateLink />
+                    <InsertImage />
                   </DiffSourceToggleWrapper>
                 </>
               ),

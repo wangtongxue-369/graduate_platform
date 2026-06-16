@@ -17,7 +17,7 @@ public class GraduatePlatformApplication {
     }
 
     @Bean
-    public CacheManager cacheManager() {
+    public static CacheManager cacheManager() {
         return new ConcurrentMapCacheManager("questionBank:options");
     }
 }
