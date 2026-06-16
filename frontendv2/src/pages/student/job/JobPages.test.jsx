@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import JobApplicationsPage from './JobApplicationsPage.jsx'
 import JobRecommendationsPage from './JobRecommendationsPage.jsx'
 import JobStationOverviewPage from './JobStationOverviewPage.jsx'
 import JobResumePage from './JobResumePage.jsx'
@@ -226,6 +227,77 @@ describe('student employment pages', () => {
       expect(locationText).toContain('/station/job/applications?')
       expect(locationText).toContain('jobPostingId=21')
       expect(locationText).toContain('openDrawer=create')
+    })
+  })
+
+  it('renders the applications board with query-prefilled drawer, save action, and delete confirmation', async () => {
+    apiMocks.employmentApi.applications.mockResolvedValue([
+      {
+        id: 71,
+        jobPostingId: 21,
+        companyName: '星河科技',
+        jobTitle: '后端开发工程师',
+        city: '上海',
+        industry: '教育科技',
+        companyType: '民企',
+        roleType: '后端',
+        salaryRange: '18k-24k',
+        educationRequirement: '本科',
+        skillTags: 'Java, Spring Boot',
+        status: 'FIRST_INTERVIEW',
+        appliedAt: '2026-06-10T09:00:00',
+        nextStepAt: '2026-06-18T14:00:00',
+        notes: '准备一面项目复盘',
+      },
+    ])
+    apiMocks.employmentApi.resume.mockResolvedValue({
+      targetRole: '平台后端工程师',
+      resumeFile: {
+        hasFile: true,
+        fileName: 'resume-final.pdf',
+      },
+    })
+    apiMocks.employmentApi.createApplication.mockResolvedValue({
+      id: 88,
+    })
+    apiMocks.employmentApi.deleteApplication.mockResolvedValue({})
+
+    renderRoute(
+      '/station/job/applications?jobPostingId=21&companyName=%E6%98%9F%E6%B2%B3%E7%A7%91%E6%8A%80&jobTitle=%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91%E5%B7%A5%E7%A8%8B%E5%B8%88&city=%E4%B8%8A%E6%B5%B7&industry=%E6%95%99%E8%82%B2%E7%A7%91%E6%8A%80&openDrawer=create',
+      <JobApplicationsPage />,
+    )
+
+    expect(await screen.findByTestId('job-applications-page')).toBeInTheDocument()
+    expect(screen.getAllByText('推进泳道').length).toBeGreaterThan(0)
+    expect(await screen.findByTestId('job-application-editor-drawer')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('星河科技')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('后端开发工程师')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('备注'), {
+      target: { value: '来自推荐工作台的新建记录' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '保存跟踪条目' }))
+
+    await waitFor(() => {
+      expect(apiMocks.employmentApi.createApplication).toHaveBeenCalledWith(
+        expect.objectContaining({
+          jobPostingId: 21,
+          companyName: '星河科技',
+          jobTitle: '后端开发工程师',
+          city: '上海',
+          industry: '教育科技',
+          notes: '来自推荐工作台的新建记录',
+        }),
+        'remote-token',
+      )
+    })
+
+    fireEvent.click(screen.getAllByRole('button', { name: '删除' })[1])
+    expect(screen.getByText('删除后会从当前推进看板移除这条记录。')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '删除记录' }))
+
+    await waitFor(() => {
+      expect(apiMocks.employmentApi.deleteApplication).toHaveBeenCalledWith(71, 'remote-token')
     })
   })
 })
