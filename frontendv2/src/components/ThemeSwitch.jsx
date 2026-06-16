@@ -25,6 +25,11 @@ function getResolvedTheme(theme) {
   return resolveThemePreference(theme, prefersDark)
 }
 
+function applyResolvedTheme(theme) {
+  if (typeof document === 'undefined') return
+  document.documentElement.dataset.theme = getResolvedTheme(theme)
+}
+
 function persistTheme(theme) {
   try {
     const raw = window.localStorage.getItem(PREFERENCES_STORAGE_KEY)
@@ -35,11 +40,59 @@ function persistTheme(theme) {
   }
 }
 
+export function ThemePreferenceSync() {
+  useEffect(() => {
+    const mediaQuery = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-color-scheme: dark)')
+      : null
+
+    function syncStoredTheme() {
+      applyResolvedTheme(readStoredTheme())
+    }
+
+    function handleStorage(event) {
+      if (event.key && event.key !== PREFERENCES_STORAGE_KEY) return
+      syncStoredTheme()
+    }
+
+    function handleSystemThemeChange() {
+      if (readStoredTheme() === 'system') {
+        syncStoredTheme()
+      }
+    }
+
+    syncStoredTheme()
+    window.addEventListener('storage', handleStorage)
+
+    if (mediaQuery) {
+      if (typeof mediaQuery.addEventListener === 'function') {
+        mediaQuery.addEventListener('change', handleSystemThemeChange)
+      } else if (typeof mediaQuery.addListener === 'function') {
+        mediaQuery.addListener(handleSystemThemeChange)
+      }
+    }
+
+    return () => {
+      window.removeEventListener('storage', handleStorage)
+
+      if (mediaQuery) {
+        if (typeof mediaQuery.removeEventListener === 'function') {
+          mediaQuery.removeEventListener('change', handleSystemThemeChange)
+        } else if (typeof mediaQuery.removeListener === 'function') {
+          mediaQuery.removeListener(handleSystemThemeChange)
+        }
+      }
+    }
+  }, [])
+
+  return null
+}
+
 export default function ThemeSwitch() {
   const [theme, setTheme] = useState(readStoredTheme)
 
   useEffect(() => {
-    document.documentElement.dataset.theme = getResolvedTheme(theme)
+    applyResolvedTheme(theme)
     persistTheme(theme)
   }, [theme])
 

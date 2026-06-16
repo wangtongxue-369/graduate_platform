@@ -243,10 +243,10 @@ export default function CommunityHubPage() {
       <div className="v2-main-column">
         <PageIntro
           kicker="社区"
-          title="先筛目录，再进入单篇帖子处理内容。"
+          title="社区交流与资料分享"
           lead={isAuthed
-            ? '登录后可直接从目录进入发帖、通知与评论互动。'
-            : '游客只浏览公开社区内容，登录后再进入发帖与互动流程。'}
+            ? '先按分类、排序或关键词缩小范围，再进入帖子查看全文、附件和评论。'
+            : '这里汇集公开讨论、经验分享和资料互助，登录后可以发帖、评论并接收互动通知。'}
           actions={(
             <Link className="v2-primary-link" to="/community/new">发布帖子</Link>
           )}

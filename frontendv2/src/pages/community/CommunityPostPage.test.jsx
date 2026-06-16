@@ -12,6 +12,7 @@ const authState = {
 const postDetailMock = vi.fn()
 const commentsMock = vi.fn()
 const notificationsMock = vi.fn()
+const scrollIntoViewMock = vi.fn()
 
 vi.mock('@legacy/context/AuthContext.jsx', () => ({
   useAuth: () => authState,
@@ -101,6 +102,12 @@ describe('CommunityPostPage', () => {
       number: 0,
       size: 1,
     })
+
+    scrollIntoViewMock.mockReset()
+    Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: scrollIntoViewMock,
+    })
   })
 
   it('renders a return link back to the filtered hub path', async () => {
@@ -181,5 +188,23 @@ describe('CommunityPostPage', () => {
     expect(screen.getByRole('button', { name: '发布评论' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: '写评论' })).not.toBeInTheDocument()
     expect(screen.queryByText('评论编辑器')).not.toBeInTheDocument()
+  })
+
+  it('offers floating shortcuts to jump to the top and bottom of the post detail area', async () => {
+    render(
+      <MemoryRouter initialEntries={['/community/9']}>
+        <Routes>
+          <Route path="/community/:postId" element={<CommunityPostPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    await screen.findByText('Detail Post')
+
+    fireEvent.click(screen.getByRole('button', { name: '帖子详情回到顶部' }))
+    expect(scrollIntoViewMock).toHaveBeenNthCalledWith(1, { behavior: 'smooth', block: 'start' })
+
+    fireEvent.click(screen.getByRole('button', { name: '帖子详情滚到底部' }))
+    expect(scrollIntoViewMock).toHaveBeenNthCalledWith(2, { behavior: 'smooth', block: 'end' })
   })
 })

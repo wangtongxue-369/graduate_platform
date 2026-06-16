@@ -41,4 +41,14 @@ describe('community post theme styles', () => {
     expect(detailSection).toContain('var(--v2-paper)')
     expect(detailSection).toContain('var(--v2-line-strong)')
   })
+
+  it('styles the empty comment state with comment-area theme tokens instead of the generic empty card fill', () => {
+    const commentSection = getSection('.v2-comment-thread {', '.v2-comment-editor {')
+
+    expect(commentSection).toContain('.v2-comment-thread__empty')
+    expect(commentSection).toContain('var(--v2-paper-soft)')
+    expect(commentSection).toContain('var(--v2-line)')
+    expect(commentSection).toContain('var(--v2-soft)')
+    expect(commentSection).toContain('var(--v2-highlight-soft)')
+  })
 })
