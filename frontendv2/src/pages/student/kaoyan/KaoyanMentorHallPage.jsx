@@ -231,7 +231,7 @@ export default function KaoyanMentorHallPage() {
             { label: '1v1咨询' },
           ]}
           title="1v1 咨询"
-          lead="这里保留旧版 1v1咨询的筛选、档案、入驻和消息入口，把功能集中在学长学姐匹配与一对一问答上。"
+          lead="站在巨人的肩膀上看得更远。"
           actions={(
             <>
               <Link className="v2-secondary-link" to="/station/kaoyan/support/messages">咨询消息</Link>

@@ -93,9 +93,22 @@ export default function KaoyanStudyRoomPage() {
     }
   }
 
+  const canLeave = Boolean(currentRoom?.id || currentRoom?.roomId)
+  const canJoin = !canLeave && !room.closed
+  const canClose = Boolean(room.isOwner)
+
   useEffect(() => {
     loadRoomWorkspace(activePeriod)
   }, [activePeriod, canUseRemote, roomId, token])
+
+  // Auto-join when the page is opened by the room's creator so they don't
+  // need to click "加入房间" manually every time.
+  useEffect(() => {
+    if (!loading && room.isOwner && canJoin) {
+      handleJoinRoom()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, room.isOwner, canJoin])
 
   useEffect(() => {
     if (!canUseRemote || !roomId) return undefined
@@ -167,10 +180,6 @@ export default function KaoyanStudyRoomPage() {
     }
   }
 
-  const canLeave = Boolean(currentRoom?.id || currentRoom?.roomId)
-  const canJoin = !canLeave && !room.closed
-  const canClose = Boolean(room.isOwner)
-
   return (
     <>
       <div className="v2-main-column">
@@ -182,7 +191,7 @@ export default function KaoyanStudyRoomPage() {
             { label: room.name || '自习室' },
           ]}
           title={room.name || '同频自习室'}
-          lead="房间页只处理实时讨论、房间加入与排行协作，筛选和建房仍留在同频自习室大厅。"
+          lead="专注每一分钟，剩下的交给时间。"
           actions={<Link className="v2-secondary-link" to="/station/kaoyan/support/rooms">返回同频自习室</Link>}
         />
 

@@ -90,7 +90,7 @@ export default function KaoyanPlansPage() {
             { label: '计划轨道' },
           ]}
           title="计划轨道"
-          lead="把创建动作收进右栏，让主区保持时间轨道视图。"
+          lead="好的计划是成功的一半。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}

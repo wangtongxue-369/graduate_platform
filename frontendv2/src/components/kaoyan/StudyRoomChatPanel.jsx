@@ -22,13 +22,7 @@ export default function StudyRoomChatPanel({
   return (
     <section className="v2-article-card v2-counseling-message-card">
       <div className="v2-counseling-message-card__head">
-        <div>
-          <p className="v2-kicker">房间讨论</p>
-          <h3>{`共 ${messages.length} 条消息`}</h3>
-          <p className="v2-counseling-message-card__summary">
-            把打卡、提问和当天任务都放在同一条讨论流里，自己发的消息会靠右显示。
-          </p>
-        </div>
+        <p className="v2-kicker">房间讨论</p>
         <button className="v2-segment-button" type="button" onClick={onRefresh}>
           手动刷新
         </button>

@@ -98,7 +98,7 @@ export default function KaoyanSupportOverviewPage() {
             { label: '协作入口' },
           ]}
           title="考研陪伴"
-          lead="这个页面只作为兼容旧入口保留的分流页，真正的功能分别在 1v1咨询 与 同频自习室中完成。"
+          lead="有人陪伴的路，走得更远。"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}

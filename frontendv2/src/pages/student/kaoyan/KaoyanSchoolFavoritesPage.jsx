@@ -75,7 +75,7 @@ export default function KaoyanSchoolFavoritesPage() {
           { label: '收藏账本' },
         ]}
         title="院校收藏"
-        lead="这里不再混入全量筛选，只看真正留下来的目标记录。"
+        lead="盯紧目标，心无旁骛。"
       />
 
       {notice ? <div className="v2-status-note">{notice}</div> : null}

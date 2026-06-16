@@ -286,7 +286,7 @@ export default function KaoyanSchoolsPage() {
             { label: '择校账本' },
           ]}
           title="择校账本"
-          lead="主区只显示比较结果，筛选收进右栏，收藏单独回看。"
+          lead="选对方向，比埋头赶路更重要。"
           actions={<Link className="v2-secondary-link" to="/station/kaoyan/schools/favorites">查看收藏账本</Link>}
         />
 

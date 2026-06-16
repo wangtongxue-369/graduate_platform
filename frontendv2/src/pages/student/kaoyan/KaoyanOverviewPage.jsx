@@ -1,17 +1,114 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '@legacy/context/AuthContext.jsx'
+import {
+  kaoyanApi,
+  materialApi,
+  mentorApi,
+  studyPlanApi,
+  studyRoomApi,
+} from '@legacy/lib/api.js'
 import PageIntro from '@/components/PageIntro.jsx'
-import { createKaoyanPreviewOverview } from '@/pages/student/kaoyan/kaoyanPageData.js'
+import {
+  buildSchoolRows,
+  createKaoyanPreviewOverview,
+  normalizeMaterialRows,
+  normalizePlanRows,
+  normalizeSupportRows,
+} from '@/pages/student/kaoyan/kaoyanPageData.js'
+import {
+  canUseRemoteToken,
+  fallbackDataNotice,
+  formatCountText,
+  previewDataNotice,
+  remoteDataNotice,
+} from '@/lib/stationData.js'
+import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
 export default function KaoyanOverviewPage() {
-  const overview = createKaoyanPreviewOverview()
+  const { token } = useAuth()
+  const canUseRemote = canUseRemoteToken(token)
+  const [overview, setOverview] = useState(createKaoyanPreviewOverview())
+  const [notice, setNotice] = useState(previewDataNotice('考研主站'))
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    let active = true
+
+    async function loadOverview() {
+      if (!canUseRemote) {
+        setOverview(createKaoyanPreviewOverview())
+        setNotice(previewDataNotice('考研主站'))
+        return
+      }
+
+      setLoading(true)
+      try {
+        const [
+          schoolsData,
+          scoreLinesData,
+          plansData,
+          materialsData,
+          mentorsData,
+          roomsData,
+        ] = await withRequestTimeout(
+          Promise.all([
+            kaoyanApi.schoolsPage({ size: 6 }),
+            kaoyanApi.scoreLinesPage({ size: 6 }),
+            studyPlanApi.myPlans(token),
+            materialApi.listPage({ size: 6 }),
+            mentorApi.mentorsPage({ size: 4 }),
+            studyRoomApi.roomList({ page: 0, size: 4 }),
+          ]),
+          8000,
+          '考研主站数据读取超时，请检查后端服务。',
+        )
+
+        if (!active) return
+
+        const schoolRows = buildSchoolRows(schoolsData, scoreLinesData).rows
+        const planRows = normalizePlanRows(plansData)
+        const materialRows = normalizeMaterialRows(materialsData)
+        const supportRows = normalizeSupportRows(mentorsData, roomsData)
+
+        setOverview({
+          metrics: [
+            { label: '院校样本', value: formatCountText(schoolRows.length, '条') },
+            { label: '计划节点', value: formatCountText(planRows.length, '项') },
+            { label: '资料条目', value: formatCountText(materialRows.length, '条') },
+          ],
+          schools: schoolRows.slice(0, 3),
+          plans: planRows.slice(0, 4),
+          materials: materialRows.slice(0, 3),
+          seniors: supportRows.mentors.slice(0, 2),
+          rooms: supportRows.rooms.slice(0, 2),
+        })
+        setNotice(remoteDataNotice('考研主站'))
+      } catch (error) {
+        if (!active) return
+        setOverview(createKaoyanPreviewOverview())
+        setNotice(fallbackDataNotice('考研主站', error))
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    loadOverview()
+    return () => {
+      active = false
+    }
+  }, [canUseRemote, token])
 
   return (
     <div className="v2-main-column">
       <PageIntro
         kicker="考研主站"
         title="考研总览"
-        lead="主站只做任务判断和入口分发，复杂动作进入各自深层页完成。"
+        lead="研路漫漫，每一步都算数。"
       />
+
+      {notice ? <div className="v2-status-note">{notice}</div> : null}
+      {loading ? <div className="v2-status-note">正在同步考研主站数据…</div> : null}
 
       <section className="v2-summary-strip" aria-label="考研主站摘要">
         {overview.metrics.map((item) => (

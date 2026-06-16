@@ -153,7 +153,7 @@ export default function KaoyanMaterialsPage() {
             { label: '资料中枢' },
           ]}
           title="资料中枢"
-          lead="主区回到旧版最核心的查询列表体验，右栏负责筛选和快捷动作，不把所有控件堆在一个平面里。"
+          lead="前人栽树，后人乘凉。"
           actions={(
             <>
               <Link className="v2-secondary-link" to="/station/kaoyan/materials/upload">上传资料</Link>

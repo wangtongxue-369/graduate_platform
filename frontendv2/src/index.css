@@ -2497,11 +2497,11 @@ html[data-theme="dark"] [class*="_selectItem_"][data-state='checked'] {
 .v2-ledger-table thead th {
   font-size: 0.86rem;
   color: var(--v2-soft-strong);
-  background: rgba(247, 250, 253, 0.92);
+  background: var(--v2-paper-soft);
 }
 
 .v2-ledger-table tbody tr.is-selected td {
-  background: rgba(126, 161, 199, 0.08);
+  background: var(--v2-highlight-soft);
 }
 
 .v2-ledger-subtext {
@@ -2526,7 +2526,7 @@ html[data-theme="dark"] [class*="_selectItem_"][data-state='checked'] {
 }
 
 .v2-ledger-expand-row td {
-  background: rgba(247, 250, 253, 0.88);
+  background: var(--v2-paper-soft);
 }
 
 .v2-ledger-detail-grid {
