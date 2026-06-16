@@ -22,10 +22,7 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
   formatDateLabel,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -41,7 +38,7 @@ export default function StudyAbroadMaterialsPage() {
     keyword: '',
   })
   const deferredKeyword = useDeferredValue(filters.keyword)
-  const [notice, setNotice] = useState(previewDataNotice('材料清单'))
+  const [notice, setNotice] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(createEmptyStudyAbroadMaterialForm(applications))
@@ -55,7 +52,7 @@ export default function StudyAbroadMaterialsPage() {
       if (!canUseRemote) {
         setApplications(createFallbackApplications())
         setRows(createFallbackMaterials())
-        setNotice(previewDataNotice('材料清单'))
+        setNotice('')
         return
       }
 
@@ -71,12 +68,12 @@ export default function StudyAbroadMaterialsPage() {
         if (!active) return
         setApplications(normalizeApplications(applicationData))
         setRows(normalizeMaterialItems(materialData))
-        setNotice(remoteDataNotice('材料清单'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setApplications(createFallbackApplications())
         setRows(createFallbackMaterials())
-        setNotice(fallbackDataNotice('材料清单', error))
+        setNotice('材料清单暂时不可用，请稍后再试。')
       }
     }
 
@@ -211,7 +208,7 @@ export default function StudyAbroadMaterialsPage() {
           <article className="v2-summary-card">
             <span>材料总数</span>
             <strong>{rows.length}</strong>
-            <p>当前账号下的全部材料条目数。</p>
+            <p>本人的全部材料条目数。</p>
           </article>
           <article className="v2-summary-card">
             <span>已完成</span>

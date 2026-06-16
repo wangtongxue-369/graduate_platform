@@ -13,9 +13,6 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -27,7 +24,7 @@ export default function AdminStudyAbroadExperiencesPage() {
   const [page, setPage] = useState(0)
   const [rows, setRows] = useState(createFallbackExperiences())
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: createFallbackExperiences().length })
-  const [notice, setNotice] = useState(previewDataNotice('经验内容管理'))
+  const [notice, setNotice] = useState('')
   const [activeItem, setActiveItem] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
 
@@ -38,7 +35,7 @@ export default function AdminStudyAbroadExperiencesPage() {
       if (!canUseRemote) {
         setRows(createFallbackExperiences())
         setPageInfo({ totalPages: 1, totalElements: createFallbackExperiences().length })
-        setNotice(previewDataNotice('经验内容管理'))
+        setNotice('')
         return
       }
 
@@ -58,12 +55,12 @@ export default function AdminStudyAbroadExperiencesPage() {
         const normalized = normalizeExperiencesPage(data)
         setRows(normalized.content)
         setPageInfo({ totalPages: normalized.totalPages, totalElements: normalized.totalElements })
-        setNotice(remoteDataNotice('经验内容管理'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createFallbackExperiences())
         setPageInfo({ totalPages: 1, totalElements: createFallbackExperiences().length })
-        setNotice(fallbackDataNotice('经验内容管理', error))
+        setNotice('经验内容管理暂时不可用，请稍后再试。')
       }
     }
 

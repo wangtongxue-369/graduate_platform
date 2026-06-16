@@ -22,10 +22,7 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
   formatDateLabel,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -36,7 +33,7 @@ export default function StudyAbroadTimelinePage() {
   const [rows, setRows] = useState(createFallbackTimeline())
   const [filters, setFilters] = useState({ phase: 'all', status: 'all', keyword: '' })
   const deferredKeyword = useDeferredValue(filters.keyword)
-  const [notice, setNotice] = useState(previewDataNotice('申请时间线'))
+  const [notice, setNotice] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(createEmptyStudyAbroadTimelineForm(applications))
@@ -49,7 +46,7 @@ export default function StudyAbroadTimelinePage() {
       if (!canUseRemote) {
         setApplications(createFallbackApplications())
         setRows(createFallbackTimeline())
-        setNotice(previewDataNotice('申请时间线'))
+        setNotice('')
         return
       }
 
@@ -65,12 +62,12 @@ export default function StudyAbroadTimelinePage() {
         if (!active) return
         setApplications(normalizeApplications(applicationData))
         setRows(normalizeTimelineItems(timelineData))
-        setNotice(remoteDataNotice('申请时间线'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setApplications(createFallbackApplications())
         setRows(createFallbackTimeline())
-        setNotice(fallbackDataNotice('申请时间线', error))
+        setNotice('申请时间线暂时不可用，请稍后再试。')
       }
     }
 

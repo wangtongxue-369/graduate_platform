@@ -116,6 +116,7 @@ describe('study abroad student pages', () => {
     renderPage(<StudyAbroadExperiencesPage />)
 
     expect(await screen.findByRole('heading', { name: '留学经验库' })).toBeInTheDocument()
+    expect(screen.getByText('本校同学发布的申请经验，欢迎同学们交流！')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '发布经验' })).toBeInTheDocument()
     expect(screen.getByText('2026/06/12')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '查看全文' })).toBeInTheDocument()
@@ -188,6 +189,9 @@ describe('study abroad student pages', () => {
     fireEvent.click(screen.getByLabelText('选择 NUS 对比'))
 
     expect(screen.getByText('项目对比')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '放大查看' }))
+    expect(screen.getByTestId('studyabroad-program-compare-modal')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '已选院校项目对比' })).toBeInTheDocument()
   })
 
   it('creates study abroad applications through the drawer', async () => {

@@ -20,9 +20,6 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -39,7 +36,7 @@ export default function StudyAbroadCasesPage() {
   const [page, setPage] = useState(0)
   const [rows, setRows] = useState(createFallbackCases())
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: createFallbackCases().length })
-  const [notice, setNotice] = useState(previewDataNotice('录取案例库'))
+  const [notice, setNotice] = useState('')
   const [selectedCase, setSelectedCase] = useState(createFallbackCases()[0] || null)
   const [readingCase, setReadingCase] = useState(null)
   const [caseModalOpen, setCaseModalOpen] = useState(false)
@@ -53,7 +50,7 @@ export default function StudyAbroadCasesPage() {
       if (!canUseRemote) {
         setRows(createFallbackCases())
         setPageInfo({ totalPages: 1, totalElements: createFallbackCases().length })
-        setNotice(previewDataNotice('录取案例库'))
+        setNotice('')
         return
       }
 
@@ -76,14 +73,14 @@ export default function StudyAbroadCasesPage() {
         setPageInfo({ totalPages: normalized.totalPages, totalElements: normalized.totalElements })
         setSelectedCase(normalized.content[0] || null)
         setReadingCase(null)
-        setNotice(remoteDataNotice('录取案例库'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createFallbackCases())
         setPageInfo({ totalPages: 1, totalElements: createFallbackCases().length })
         setSelectedCase(createFallbackCases()[0] || null)
         setReadingCase(null)
-        setNotice(fallbackDataNotice('录取案例库', error))
+        setNotice('录取案例库暂时不可用，请稍后再试。')
       }
     }
 

@@ -38,9 +38,6 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -53,7 +50,7 @@ export default function StudyAbroadOverviewPage() {
   const [timeline, setTimeline] = useState(createFallbackTimeline())
   const [materials, setMaterials] = useState(createFallbackMaterials())
   const [experiences, setExperiences] = useState(createFallbackExperiences())
-  const [notice, setNotice] = useState(previewDataNotice('留学总览'))
+  const [notice, setNotice] = useState('')
   const [applicationDrawerOpen, setApplicationDrawerOpen] = useState(false)
   const [timelineModalOpen, setTimelineModalOpen] = useState(false)
   const [materialDrawerOpen, setMaterialDrawerOpen] = useState(false)
@@ -70,7 +67,7 @@ export default function StudyAbroadOverviewPage() {
 
     async function loadOverview() {
       if (!canUseRemote) {
-        setNotice(previewDataNotice('留学总览'))
+        setNotice('')
         return
       }
 
@@ -103,10 +100,10 @@ export default function StudyAbroadOverviewPage() {
         setTimeline(nextTimeline)
         setMaterials(nextMaterials)
         setExperiences(nextExperiences)
-        setNotice(remoteDataNotice('留学总览'))
+        setNotice('')
       } catch (error) {
         if (!active) return
-        setNotice(fallbackDataNotice('留学总览', error))
+        setNotice('留学总览暂时不可用，请稍后再试。')
       }
     }
 

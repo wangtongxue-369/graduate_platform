@@ -19,9 +19,6 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -33,7 +30,7 @@ export default function StudyAbroadExperiencesPage() {
   const [page, setPage] = useState(0)
   const [rows, setRows] = useState(createFallbackExperiences())
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: createFallbackExperiences().length })
-  const [notice, setNotice] = useState(previewDataNotice('留学经验库'))
+  const [notice, setNotice] = useState('')
   const [composerOpen, setComposerOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(createEmptyStudyAbroadExperienceForm())
@@ -47,7 +44,7 @@ export default function StudyAbroadExperiencesPage() {
       if (!canUseRemote) {
         setRows(createFallbackExperiences())
         setPageInfo({ totalPages: 1, totalElements: createFallbackExperiences().length })
-        setNotice(previewDataNotice('留学经验库'))
+        setNotice('')
         return
       }
 
@@ -67,12 +64,12 @@ export default function StudyAbroadExperiencesPage() {
         const normalized = normalizeExperiencesPage(data)
         setRows(normalized.content)
         setPageInfo({ totalPages: normalized.totalPages, totalElements: normalized.totalElements })
-        setNotice(remoteDataNotice('留学经验库'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createFallbackExperiences())
         setPageInfo({ totalPages: 1, totalElements: createFallbackExperiences().length })
-        setNotice(fallbackDataNotice('留学经验库', error))
+        setNotice('留学经验库暂时不可用，请稍后再试。')
       }
     }
 
@@ -142,7 +139,7 @@ export default function StudyAbroadExperiencesPage() {
             { label: '留学经验库' },
           ]}
           title="留学经验库"
-          lead="浏览同学发布的申请经验，点击查看全文；登录后可以发布、编辑和删除自己的经验帖。"
+          lead="本校同学发布的申请经验，欢迎同学们交流！"
           compact
         />
         {notice ? <div className="v2-status-note">{notice}</div> : null}

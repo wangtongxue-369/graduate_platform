@@ -16,9 +16,6 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -35,7 +32,7 @@ export default function AdminStudyAbroadProgramsPage() {
   const [page, setPage] = useState(0)
   const [rows, setRows] = useState(createFallbackPrograms())
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: createFallbackPrograms().length })
-  const [notice, setNotice] = useState(previewDataNotice('院校项目管理'))
+  const [notice, setNotice] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(createEmptyStudyAbroadSchoolForm())
@@ -48,7 +45,7 @@ export default function AdminStudyAbroadProgramsPage() {
       if (!canUseRemote) {
         setRows(createFallbackPrograms())
         setPageInfo({ totalPages: 1, totalElements: createFallbackPrograms().length })
-        setNotice(previewDataNotice('院校项目管理'))
+        setNotice('')
         return
       }
 
@@ -69,12 +66,12 @@ export default function AdminStudyAbroadProgramsPage() {
         const normalized = normalizeProgramsPage(data)
         setRows(normalized.content)
         setPageInfo({ totalPages: normalized.totalPages, totalElements: normalized.totalElements })
-        setNotice(remoteDataNotice('院校项目管理'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createFallbackPrograms())
         setPageInfo({ totalPages: 1, totalElements: createFallbackPrograms().length })
-        setNotice(fallbackDataNotice('院校项目管理', error))
+        setNotice('院校项目管理暂时不可用，请稍后再试。')
       }
     }
 
