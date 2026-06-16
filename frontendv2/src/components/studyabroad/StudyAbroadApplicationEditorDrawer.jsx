@@ -3,6 +3,7 @@ import {
   studyAbroadApplicationStatusOptions,
   studyAbroadCountryOptions,
 } from '@/lib/studyabroad/studyAbroadLabels.js'
+import StudyAbroadPageModal from '@/components/studyabroad/StudyAbroadPageModal.jsx'
 
 export default function StudyAbroadApplicationEditorDrawer({
   open,
@@ -24,15 +25,16 @@ export default function StudyAbroadApplicationEditorDrawer({
   }
 
   return (
-    <section className="v2-side-card v2-practice-drawer v2-studyabroad-editor-drawer" data-testid="studyabroad-application-editor-drawer">
-      <div className="v2-section-head">
-        <div>
-          <p className="v2-kicker">申请抽屉</p>
-          <h3>{editingItem ? '编辑申请' : '新建申请'}</h3>
-        </div>
-        <button className="v2-secondary-link" type="button" onClick={onClose}>关闭</button>
-      </div>
-      <form className="v2-filter-form" onSubmit={handleSubmit}>
+    <StudyAbroadPageModal
+      open={open}
+      kicker="申请项目管理"
+      title={editingItem ? '编辑申请项目' : '新建申请项目'}
+      lead="填写学校、专业、申请状态、截止日期和备注。保存后会回到申请项目管理列表。"
+      onClose={onClose}
+      className="v2-studyabroad-editor-drawer"
+      testId="studyabroad-application-editor-drawer"
+    >
+      <form className="v2-form-grid" onSubmit={handleSubmit}>
         <label className="v2-field">
           <span>国家 / 地区</span>
           <select value={form.country} onChange={(event) => updateField('country', event.target.value)}>
@@ -89,6 +91,6 @@ export default function StudyAbroadApplicationEditorDrawer({
           <button className="v2-primary-link" type="submit">保存申请</button>
         </div>
       </form>
-    </section>
+    </StudyAbroadPageModal>
   )
 }

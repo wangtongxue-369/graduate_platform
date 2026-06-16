@@ -1,4 +1,5 @@
 import { studyAbroadMaterialStageOptions } from '@/lib/studyabroad/studyAbroadLabels.js'
+import StudyAbroadPageModal from '@/components/studyabroad/StudyAbroadPageModal.jsx'
 
 export default function StudyAbroadMaterialEditorDrawer({
   open,
@@ -20,15 +21,16 @@ export default function StudyAbroadMaterialEditorDrawer({
   }
 
   return (
-    <section className="v2-side-card v2-practice-drawer v2-studyabroad-editor-drawer" data-testid="studyabroad-material-editor-drawer">
-      <div className="v2-section-head">
-        <div>
-          <p className="v2-kicker">材料抽屉</p>
-          <h3>新增 / 编辑材料</h3>
-        </div>
-        <button className="v2-secondary-link" type="button" onClick={onClose}>关闭</button>
-      </div>
-      <form className="v2-filter-form" onSubmit={handleSubmit}>
+    <StudyAbroadPageModal
+      open={open}
+      kicker="材料清单"
+      title="新增 / 编辑材料"
+      lead="记录文书、成绩单、推荐信等材料的状态和截止日期。附件上传仍在材料卡片中完成。"
+      onClose={onClose}
+      className="v2-studyabroad-editor-drawer"
+      testId="studyabroad-material-editor-drawer"
+    >
+      <form className="v2-form-grid" onSubmit={handleSubmit}>
         <label className="v2-field">
           <span>关联申请</span>
           <select value={form.applicationId} onChange={(event) => updateField('applicationId', event.target.value)}>
@@ -77,6 +79,6 @@ export default function StudyAbroadMaterialEditorDrawer({
           <button className="v2-primary-link" type="submit">保存材料</button>
         </div>
       </form>
-    </section>
+    </StudyAbroadPageModal>
   )
 }

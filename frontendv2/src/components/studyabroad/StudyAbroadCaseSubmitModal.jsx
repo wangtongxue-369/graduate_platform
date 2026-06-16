@@ -1,4 +1,5 @@
 import { studyAbroadCountryOptions, studyAbroadResultOptions } from '@/lib/studyabroad/studyAbroadLabels.js'
+import StudyAbroadPageModal from '@/components/studyabroad/StudyAbroadPageModal.jsx'
 
 export default function StudyAbroadCaseSubmitModal({
   open,
@@ -19,15 +20,13 @@ export default function StudyAbroadCaseSubmitModal({
   }
 
   return (
-    <div className="v2-modal-overlay" onClick={onClose}>
-      <div className="v2-modal-card" onClick={(event) => event.stopPropagation()}>
-        <div className="v2-modal-head">
-          <div>
-            <p className="v2-kicker">匿名提交</p>
-            <h3>提交案例</h3>
-          </div>
-          <button className="v2-secondary-link" type="button" onClick={onClose}>关闭</button>
-        </div>
+    <StudyAbroadPageModal
+      open={open}
+      kicker="录取案例库"
+      title="提交录取案例"
+      lead="匿名记录你的申请背景、申请结果和经验总结，帮助后续同学做选校参考。"
+      onClose={onClose}
+    >
         <form className="v2-form-grid" onSubmit={handleSubmit}>
           <label className="v2-field">
             <span>申请年份</span>
@@ -93,7 +92,6 @@ export default function StudyAbroadCaseSubmitModal({
             <button className="v2-primary-link" type="submit">提交案例</button>
           </div>
         </form>
-      </div>
-    </div>
+    </StudyAbroadPageModal>
   )
 }

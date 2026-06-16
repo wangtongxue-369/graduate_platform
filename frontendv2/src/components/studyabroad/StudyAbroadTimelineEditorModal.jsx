@@ -2,6 +2,7 @@ import {
   studyAbroadTimelinePhaseOptions,
   studyAbroadTimelineStatusOptions,
 } from '@/lib/studyabroad/studyAbroadLabels.js'
+import StudyAbroadPageModal from '@/components/studyabroad/StudyAbroadPageModal.jsx'
 
 export default function StudyAbroadTimelineEditorModal({
   open,
@@ -23,15 +24,13 @@ export default function StudyAbroadTimelineEditorModal({
   }
 
   return (
-    <div className="v2-modal-overlay" onClick={onClose}>
-      <div className="v2-modal-card" onClick={(event) => event.stopPropagation()}>
-        <div className="v2-modal-head">
-          <div>
-            <p className="v2-kicker">时间线节点</p>
-            <h3>新增 / 编辑节点</h3>
-          </div>
-          <button className="v2-secondary-link" type="button" onClick={onClose}>关闭</button>
-        </div>
+    <StudyAbroadPageModal
+      open={open}
+      kicker="申请时间线"
+      title="新增 / 编辑时间线节点"
+      lead="记录语言考试、文书、网申、面试和录取结果等关键时间点。"
+      onClose={onClose}
+    >
         <form className="v2-form-grid" onSubmit={handleSubmit}>
           <label className="v2-field">
             <span>关联申请</span>
@@ -82,7 +81,6 @@ export default function StudyAbroadTimelineEditorModal({
             <button className="v2-primary-link" type="submit">保存节点</button>
           </div>
         </form>
-      </div>
-    </div>
+    </StudyAbroadPageModal>
   )
 }
