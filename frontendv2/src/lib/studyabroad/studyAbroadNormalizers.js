@@ -56,6 +56,7 @@ export function createFallbackCases() {
     applicationMode: 'DIY',
     tags: ['案例预览'],
     summary: item.summary,
+    contact: index === 0 ? '可在答辩演示时填写邮箱或微信' : '',
     applicationYear: '2026',
     authorId: 9,
   }))
@@ -186,6 +187,7 @@ export function normalizeCase(item) {
     applicationMode: withDefault(item.applicationMode, ''),
     tags: normalizeTagList(item.tags),
     summary: withDefault(item.summary, '暂无案例摘要'),
+    contact: withDefault(item.contact, ''),
     applicationYear: withDefault(item.applicationYear, '2026'),
     authorId: item.authorId,
     createdAt: withDefault(item.createdAt, ''),
@@ -248,7 +250,6 @@ export function normalizeExperience(item) {
     country: withDefault(item.country, 'UK'),
     topic: withDefault(item.topic, 'Application'),
     authorName: withDefault(item.authorName, '匿名作者'),
-    readTime: withDefault(item.readTime, '5 min'),
     summary: withDefault(item.summary, '暂无摘要'),
     content: withDefault(item.content, ''),
     tags: normalizeTagList(item.tags),

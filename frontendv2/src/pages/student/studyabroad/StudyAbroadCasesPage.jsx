@@ -224,6 +224,7 @@ export default function StudyAbroadCasesPage() {
               <div className="v2-check-row"><strong>背景</strong><span>{selectedCase.studentMajor} / GPA {selectedCase.gpa}</span></div>
               <div className="v2-check-row"><strong>语言</strong><span>{selectedCase.languageType} {selectedCase.languageScore}</span></div>
               <div className="v2-check-row"><strong>软背景</strong><span>{selectedCase.softBackground || '未补充'}</span></div>
+              <div className="v2-check-row"><strong>联系方式</strong><span>{selectedCase.contact || '未公开'}</span></div>
               <div className="v2-check-row"><strong>总结</strong><span>{selectedCase.summary}</span></div>
             </div>
           </section>

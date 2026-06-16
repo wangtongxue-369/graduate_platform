@@ -54,10 +54,6 @@ export default function StudyAbroadExperienceComposerDrawer({
           <input value={form.authorName} onChange={(event) => updateField('authorName', event.target.value)} />
         </label>
         <label className="v2-field">
-          <span>阅读时长</span>
-          <input value={form.readTime} onChange={(event) => updateField('readTime', event.target.value)} />
-        </label>
-        <label className="v2-field">
           <span>标签</span>
           <input value={form.tags} onChange={(event) => updateField('tags', event.target.value)} placeholder="用逗号分隔" />
         </label>
