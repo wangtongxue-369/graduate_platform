@@ -162,8 +162,10 @@ public class EmploymentService {
         resume.setExpectedCities(trim(req.getExpectedCities()));
         resume.setExpectedIndustries(trim(req.getExpectedIndustries()));
         resume.setExpectedSalary(trim(req.getExpectedSalary()));
-        resume.setEducationLevel(trim(req.getEducationLevel()));
+        resume.setEducationLevel(trim(firstNonBlank(req.getEducationLevel(), req.getHighestEducation())));
         resume.setMajor(trim(req.getMajor()));
+        resume.setPhone(trim(req.getPhone()));
+        resume.setEmail(trim(req.getEmail()));
         resume.setSkillTags(trim(req.getSkillTags()));
         resume.setProjectKeywords(trim(req.getProjectKeywords()));
         resume.setInternshipKeywords(trim(req.getInternshipKeywords()));
@@ -238,6 +240,15 @@ public class EmploymentService {
 
     @Transactional(readOnly = true)
     public List<Map<String, Object>> recommendations(Long userId, Map<String, String> filters) {
+        return recommendationResults(userId, filters);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> recommendationsPage(Long userId, Map<String, String> filters, Integer page, Integer size) {
+        return pageResult(recommendationResults(userId, filters), page, size, item -> item);
+    }
+
+    private List<Map<String, Object>> recommendationResults(Long userId, Map<String, String> filters) {
         User user = ensureUser(userId);
         JobSubscriptionPreference pref = preferenceRepository.findByUserId(userId).orElse(null);
         ResumeProfile resume = resumeRepository.findByUserId(userId).orElse(null);
@@ -1168,7 +1179,10 @@ public class EmploymentService {
         map.put("expectedIndustries", resume.getExpectedIndustries());
         map.put("expectedSalary", resume.getExpectedSalary());
         map.put("educationLevel", resume.getEducationLevel());
+        map.put("highestEducation", resume.getEducationLevel());
         map.put("major", resume.getMajor());
+        map.put("phone", resume.getPhone());
+        map.put("email", resume.getEmail());
         map.put("skillTags", resume.getSkillTags());
         map.put("projectKeywords", resume.getProjectKeywords());
         map.put("internshipKeywords", resume.getInternshipKeywords());

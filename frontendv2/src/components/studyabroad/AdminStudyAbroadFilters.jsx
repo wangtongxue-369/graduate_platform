@@ -20,8 +20,8 @@ export default function AdminStudyAbroadFilters({
     <section className="v2-side-card">
       <div className="v2-side-card__head">
         <div>
-          <p className="v2-kicker">筛选控制器</p>
-          <h3>先筛选，再进入具体治理对象</h3>
+          <p className="v2-kicker">筛选条件</p>
+          <h3>先筛选，再查看或管理</h3>
         </div>
       </div>
       <form className="v2-filter-form" onSubmit={(event) => {

@@ -178,7 +178,7 @@ export default function AdminEmploymentPage() {
   const summaryItems = [
     { label: '招聘会总数', value: String(fairs.length), note: '当前在运营中的招聘会源。' },
     { label: '岗位台账', value: String(jobs.length), note: '当前在运营中的岗位记录。' },
-    { label: '已上传简历', value: String(resumes.filter((item) => item.resumeFile.hasFile).length), note: '只读展示学生简历附件状态。' },
+    { label: '已上传简历', value: String(resumes.filter((item) => item.resumeFile.hasFile).length), note: '展示简历附件状态' },
     { label: '提醒源', value: String(buildTriggerSources(fairs, jobs).length), note: '可触发一轮提醒的上下文来源。' },
   ]
 
@@ -231,6 +231,9 @@ export default function AdminEmploymentPage() {
   }
 
   const triggerSources = buildTriggerSources(fairs, jobs)
+  const selectedResumeKey = selectedResume
+    ? selectedResume.id ?? selectedResume.studentId ?? selectedResume.name
+    : null
 
   return (
     <>
@@ -241,11 +244,8 @@ export default function AdminEmploymentPage() {
             { label: '管理员主站', to: '/admin' },
             { label: '就业运营' },
           ]}
-          title="先切换治理对象，再处理招聘会、岗位、提醒触达与简历状态。"
-          lead="顶部始终保留指标总览，下方再切换当前治理对象。"
+          title="就业运营总台"
         />
-
-        {notice ? <div className="v2-status-note">{notice}</div> : null}
 
         <JobSummaryStrip items={summaryItems} />
 
@@ -254,43 +254,85 @@ export default function AdminEmploymentPage() {
           activeTab={activeTab}
           onChange={setActiveTab}
         />
+
+        {activeTab === 'fairs' ? (
+          <AdminEmploymentSourceList
+            title="招聘会源列表"
+            items={fairs}
+            selectedId={selectedFair?.id}
+            onSelect={handleSelectFair}
+            variant="main"
+          />
+        ) : null}
+
+        {activeTab === 'jobs' ? (
+          <AdminEmploymentSourceList
+            title="岗位源列表"
+            items={jobs}
+            selectedId={selectedJob?.id}
+            onSelect={handleSelectJob}
+            variant="main"
+          />
+        ) : null}
+
+        {activeTab === 'trigger' ? (
+          <section className="v2-feed-list v2-admin-employment-source-list" aria-label="提醒来源列表">
+            {triggerSources.map((item) => {
+              const selected = selectedTriggerSource?.id === item.id
+                && selectedTriggerSource?.relatedType === item.relatedType
+              return (
+                <article className="v2-feed-item" key={`${item.relatedType}-${item.id}`}>
+                  <div className="v2-feed-index">{item.relatedType === 'FAIR' ? '会' : '岗'}</div>
+                  <div className="v2-feed-body">
+                    <strong>{item.title}</strong>
+                    <p>{item.relatedType === 'FAIR' ? '招聘会提醒来源' : '岗位提醒来源'}</p>
+                  </div>
+                  <div className="v2-feed-side">
+                    <button
+                      className={`v2-secondary-link ${selected ? 'is-active' : ''}`}
+                      type="button"
+                      onClick={() => setSelectedTriggerSource(item)}
+                    >
+                      {selected ? '已选中' : '选择'}
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
+            {!triggerSources.length ? <p className="v2-admin-employment-empty">当前没有可触发提醒的上下文。</p> : null}
+          </section>
+        ) : null}
+
+        {activeTab === 'resumes' ? (
+          <AdminEmploymentSourceList
+            title="简历状态列表"
+            items={resumes}
+            selectedId={selectedResumeKey}
+            onSelect={setSelectedResume}
+            variant="main"
+          />
+        ) : null}
       </div>
 
       <aside className="v2-side-column">
         {activeTab === 'fairs' ? (
-          <>
-            <AdminEmploymentSourceList
-              title="招聘会源列表"
-              items={fairs}
-              selectedId={selectedFair?.id}
-              onSelect={handleSelectFair}
-            />
-            <AdminEmploymentEditorPanel
-              mode="fairs"
-              draft={fairDraft}
-              onChange={setFairDraft}
-              onSave={handleSaveFair}
-              onReset={() => setFairDraft(createFairDraft(selectedFair))}
-            />
-          </>
+          <AdminEmploymentEditorPanel
+            mode="fairs"
+            draft={fairDraft}
+            onChange={setFairDraft}
+            onSave={handleSaveFair}
+            onReset={() => setFairDraft(createFairDraft(selectedFair))}
+          />
         ) : null}
 
         {activeTab === 'jobs' ? (
-          <>
-            <AdminEmploymentSourceList
-              title="岗位源列表"
-              items={jobs}
-              selectedId={selectedJob?.id}
-              onSelect={handleSelectJob}
-            />
-            <AdminEmploymentEditorPanel
-              mode="jobs"
-              draft={jobDraft}
-              onChange={setJobDraft}
-              onSave={handleSaveJob}
-              onReset={() => setJobDraft(createJobDraft(selectedJob))}
-            />
-          </>
+          <AdminEmploymentEditorPanel
+            mode="jobs"
+            draft={jobDraft}
+            onChange={setJobDraft}
+            onSave={handleSaveJob}
+            onReset={() => setJobDraft(createJobDraft(selectedJob))}
+          />
         ) : null}
 
         {activeTab === 'trigger' ? (
@@ -299,19 +341,12 @@ export default function AdminEmploymentPage() {
             selectedSource={selectedTriggerSource}
             onSelectSource={setSelectedTriggerSource}
             onTrigger={() => setConfirmTriggerOpen(true)}
+            showSources={false}
           />
         ) : null}
 
         {activeTab === 'resumes' ? (
-          <>
-            <AdminEmploymentSourceList
-              title="简历状态列表"
-              items={resumes}
-              selectedId={selectedResume?.id}
-              onSelect={setSelectedResume}
-            />
-            <AdminResumeStatusDrawer resume={selectedResume} onClose={() => setSelectedResume(null)} />
-          </>
+          <AdminResumeStatusDrawer resume={selectedResume} onClose={() => setSelectedResume(null)} />
         ) : null}
       </aside>
 

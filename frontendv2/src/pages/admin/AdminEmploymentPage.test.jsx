@@ -89,7 +89,6 @@ describe('admin employment page', () => {
     ])
     apiMocks.adminEmploymentApi.resumes.mockResolvedValue([
       {
-        id: 31,
         name: '张三',
         studentId: '2026001',
         school: '华东师范大学',
@@ -100,14 +99,26 @@ describe('admin employment page', () => {
           fileName: 'resume-final.pdf',
         },
       },
+      {
+        name: '李四',
+        studentId: '2026002',
+        school: '上海理工大学',
+        major: '计算机科学与技术',
+        targetRole: '前端开发工程师',
+        resumeFile: {
+          hasFile: false,
+        },
+      },
     ])
     apiMocks.adminEmploymentApi.updateFair.mockResolvedValue({ id: 11 })
     apiMocks.adminEmploymentApi.triggerNotification.mockResolvedValue({ successCount: 1 })
 
-    renderPage()
+    const { container } = renderPage()
 
     expect(await screen.findByTestId('admin-employment-page')).toBeInTheDocument()
     expect(screen.getByText('已上传简历')).toBeInTheDocument()
+    expect(container.querySelector('.v2-main-column .v2-admin-employment-source-list')).not.toBeNull()
+    expect(container.querySelector('.v2-side-column .v2-admin-employment-source-list')).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: '上海春招双选会' }))
     expect(await screen.findByTestId('admin-employment-editor-panel')).toBeInTheDocument()
@@ -143,8 +154,10 @@ describe('admin employment page', () => {
     })
 
     fireEvent.click(screen.getByRole('button', { name: '简历状态' }))
+    expect(screen.getAllByRole('button', { name: '选择' })).toHaveLength(2)
     fireEvent.click(screen.getByRole('button', { name: '张三' }))
     expect(await screen.findByTestId('admin-resume-status-drawer')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: '已选中' })).toHaveLength(1)
     expect(screen.getByText('resume-final.pdf')).toBeInTheDocument()
   })
 })

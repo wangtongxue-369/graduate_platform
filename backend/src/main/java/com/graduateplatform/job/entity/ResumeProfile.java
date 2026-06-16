@@ -42,6 +42,12 @@ public class ResumeProfile {
     @Column(length = 120)
     private String major;
 
+    @Column(length = 40)
+    private String phone;
+
+    @Column(length = 120)
+    private String email;
+
     @Column(length = 500)
     private String skillTags;
 

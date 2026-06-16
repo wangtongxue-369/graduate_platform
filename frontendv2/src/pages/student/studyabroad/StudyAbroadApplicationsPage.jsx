@@ -20,10 +20,7 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
   formatDateLabel,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -33,7 +30,7 @@ export default function StudyAbroadApplicationsPage() {
   const [filters, setFilters] = useState({ lane: 'all', keyword: '', view: 'board' })
   const deferredKeyword = useDeferredValue(filters.keyword)
   const [rows, setRows] = useState(createFallbackApplications())
-  const [notice, setNotice] = useState(previewDataNotice('申请跟踪'))
+  const [notice, setNotice] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(createEmptyStudyAbroadApplicationForm())
@@ -45,7 +42,7 @@ export default function StudyAbroadApplicationsPage() {
     async function loadApplications() {
       if (!canUseRemote) {
         setRows(createFallbackApplications())
-        setNotice(previewDataNotice('申请跟踪'))
+        setNotice('')
         return
       }
 
@@ -53,15 +50,15 @@ export default function StudyAbroadApplicationsPage() {
         const data = await withRequestTimeout(
           studyAbroadApi.applications(token),
           8000,
-          '申请跟踪读取超时，请检查后端服务。',
+          '申请项目管理读取超时，请检查后端服务。',
         )
         if (!active) return
         setRows(normalizeApplications(data))
-        setNotice(remoteDataNotice('申请跟踪'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createFallbackApplications())
-        setNotice(fallbackDataNotice('申请跟踪', error))
+        setNotice('申请项目暂时不可用，请稍后再试。')
       }
     }
 
@@ -136,20 +133,21 @@ export default function StudyAbroadApplicationsPage() {
     <>
       <div className="v2-main-column">
         <PageIntro
-          kicker="申请跟踪"
+          kicker="申请项目管理"
           pathItems={[
             { label: '留学总览', to: '/station/studyabroad' },
-            { label: '申请跟踪' },
+            { label: '申请项目管理' },
           ]}
-          title="每个申请项目都挂在一条清晰的推进线上。"
-          lead="主区负责推进状态，创建和编辑收进右侧抽屉。"
+          title="申请项目管理"
+          lead="记录你准备申请或正在申请的学校和专业，维护申请状态、优先级、截止日期和备注。"
+          compact
         />
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         <section className="v2-summary-strip">
           <article className="v2-summary-card">
             <span>全部项目</span>
             <strong>{rows.length}</strong>
-            <p>当前账号下的全部申请项目。</p>
+            <p>本人的全部申请项目。</p>
           </article>
           <article className="v2-summary-card">
             <span>筛选后</span>
@@ -185,7 +183,7 @@ export default function StudyAbroadApplicationsPage() {
                   )) : (
                     <div className="v2-check-row">
                       <strong>当前没有项目</strong>
-                      <span>可以直接从右侧抽屉新建申请。</span>
+                      <span>可以点击“新建申请”，在弹出的页面中填写申请项目。</span>
                     </div>
                   )}
                 </div>
@@ -217,8 +215,8 @@ export default function StudyAbroadApplicationsPage() {
         <section className="v2-side-card">
           <div className="v2-side-card__head">
             <div>
-              <p className="v2-kicker">看板控制台</p>
-              <h3>筛选后再决定是否打开抽屉</h3>
+              <p className="v2-kicker">筛选条件</p>
+              <h3>筛选申请项目</h3>
             </div>
             <button className="v2-primary-link" type="button" onClick={openCreateDrawer}>新建申请</button>
           </div>

@@ -14,9 +14,6 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -33,7 +30,7 @@ export default function StudyAbroadProgramsPage() {
   const [page, setPage] = useState(0)
   const [rows, setRows] = useState(createFallbackPrograms())
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: createFallbackPrograms().length })
-  const [notice, setNotice] = useState(previewDataNotice('项目目录'))
+  const [notice, setNotice] = useState('')
   const [selectedIds, setSelectedIds] = useState([])
   const [activeProgram, setActiveProgram] = useState(null)
 
@@ -44,7 +41,7 @@ export default function StudyAbroadProgramsPage() {
       if (!canUseRemote) {
         setRows(createFallbackPrograms())
         setPageInfo({ totalPages: 1, totalElements: createFallbackPrograms().length })
-        setNotice(previewDataNotice('项目目录'))
+        setNotice('')
         return
       }
 
@@ -59,7 +56,7 @@ export default function StudyAbroadProgramsPage() {
             keyword: deferredKeyword,
           }),
           8000,
-          '项目目录读取超时，请检查后端服务。',
+          '院校项目库读取超时，请检查后端服务。',
         )
         if (!active) return
         const normalized = normalizeProgramsPage(data)
@@ -68,12 +65,12 @@ export default function StudyAbroadProgramsPage() {
           totalPages: normalized.totalPages,
           totalElements: normalized.totalElements,
         })
-        setNotice(remoteDataNotice('项目目录'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createFallbackPrograms())
         setPageInfo({ totalPages: 1, totalElements: createFallbackPrograms().length })
-        setNotice(fallbackDataNotice('项目目录', error))
+        setNotice('院校项目库暂时不可用，请稍后再试。')
       }
     }
 
@@ -102,13 +99,14 @@ export default function StudyAbroadProgramsPage() {
     <>
       <div className="v2-main-column">
         <PageIntro
-          kicker="项目目录"
+          kicker="院校项目库"
           pathItems={[
             { label: '留学总览', to: '/station/studyabroad' },
-            { label: '项目目录' },
+            { label: '院校项目库' },
           ]}
-          title="把项目筛选、项目比较和详情判断拆成清晰的决策页面。"
-          lead="先缩小范围，再打开详情抽屉，最后把候选项目放到对比带里。"
+          title="院校项目库"
+          lead="浏览可申请的海外院校和专业项目，按国家、学科和合作项目筛选，也可以加入对比后查看详细要求。"
+          compact
         />
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         <section className="v2-summary-strip">
@@ -118,7 +116,7 @@ export default function StudyAbroadProgramsPage() {
             <p>当前列表页里可直接进入对比的项目数。</p>
           </article>
           <article className="v2-summary-card">
-            <span>对比带</span>
+            <span>已选项目</span>
             <strong>{selectedRows.length}</strong>
             <p>最多保留 3 个项目进行横向判断。</p>
           </article>
@@ -128,7 +126,7 @@ export default function StudyAbroadProgramsPage() {
             <p>来自后端分页结果的项目条目总数。</p>
           </article>
         </section>
-        <section className="v2-feed-list" aria-label="项目目录列表">
+        <section className="v2-feed-list" aria-label="院校项目库列表">
           {rows.map((row) => {
             const selected = selectedIds.includes(row.id)
             return (
@@ -159,8 +157,8 @@ export default function StudyAbroadProgramsPage() {
         <section className="v2-side-card">
           <div className="v2-side-card__head">
             <div>
-              <p className="v2-kicker">筛选控制器</p>
-              <h3>先收口，再打开详情</h3>
+              <p className="v2-kicker">筛选条件</p>
+              <h3>筛选院校项目</h3>
             </div>
           </div>
           <form className="v2-filter-form" onSubmit={(event) => event.preventDefault()}>

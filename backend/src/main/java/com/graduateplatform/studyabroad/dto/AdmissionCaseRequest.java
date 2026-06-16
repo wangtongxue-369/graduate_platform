@@ -64,6 +64,9 @@ public class AdmissionCaseRequest {
     @Size(max = 255)
     private String tags;
 
+    @Size(max = 200)
+    private String contact;
+
     @NotBlank
     @Size(max = 500)
     private String summary;

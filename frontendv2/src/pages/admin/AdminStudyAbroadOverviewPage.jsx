@@ -6,9 +6,6 @@ import PageIntro from '@/components/PageIntro.jsx'
 import AdminStudyAbroadSummaryStrip from '@/components/studyabroad/AdminStudyAbroadSummaryStrip.jsx'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -22,7 +19,7 @@ export default function AdminStudyAbroadOverviewPage() {
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [dashboard, setDashboard] = useState(fallbackDashboard)
-  const [notice, setNotice] = useState(previewDataNotice('留学管理'))
+  const [notice, setNotice] = useState('')
 
   useEffect(() => {
     let active = true
@@ -30,7 +27,7 @@ export default function AdminStudyAbroadOverviewPage() {
     async function loadDashboard() {
       if (!canUseRemote) {
         setDashboard(fallbackDashboard)
-        setNotice(previewDataNotice('留学管理'))
+        setNotice('')
         return
       }
 
@@ -42,11 +39,11 @@ export default function AdminStudyAbroadOverviewPage() {
         )
         if (!active) return
         setDashboard(data || fallbackDashboard)
-        setNotice(remoteDataNotice('留学管理'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setDashboard(fallbackDashboard)
-        setNotice(fallbackDataNotice('留学管理', error))
+        setNotice('留学管理数据暂时不可用，请稍后再试。')
       }
     }
 
@@ -65,36 +62,37 @@ export default function AdminStudyAbroadOverviewPage() {
   return (
     <div className="v2-main-column">
       <PageIntro
-        kicker="留学运营总览"
+        kicker="留学管理"
         pathItems={[
           { label: '管理员主站', to: '/admin' },
           { label: '留学管理' },
         ]}
-        title="先看内容库规模，再进入具体治理页完成操作。"
-        lead="总览只负责调度，不在这里堆叠全部深度编辑动作。"
+        title="留学管理"
+        lead="查看留学模块的数据规模，并进入院校项目、录取案例和经验内容的后台管理页面。"
+        compact
       />
       {notice ? <div className="v2-status-note">{notice}</div> : null}
       <AdminStudyAbroadSummaryStrip items={summaryItems} />
       <section className="v2-card-grid">
         <article className="v2-module-card">
-          <strong>院校项目治理</strong>
-          <p>进入分页筛选、抽屉编辑和删除流程。</p>
+          <strong>院校项目管理</strong>
+          <p>维护院校名称、专业项目、排名、学费、申请要求和合作项目标记。</p>
           <div className="v2-inline-actions">
-            <Link className="v2-primary-link" to="/admin/studyabroad/programs">进入项目治理</Link>
+            <Link className="v2-primary-link" to="/admin/studyabroad/programs">进入项目管理</Link>
           </div>
         </article>
         <article className="v2-module-card">
-          <strong>案例治理</strong>
-          <p>先筛选，再查看详情，最后进行低风险清理。</p>
+          <strong>录取案例管理</strong>
+          <p>查看学生提交的录取、候补和拒信案例，清理不适合展示的记录。</p>
           <div className="v2-inline-actions">
-            <Link className="v2-primary-link" to="/admin/studyabroad/cases">进入案例治理</Link>
+            <Link className="v2-primary-link" to="/admin/studyabroad/cases">进入案例管理</Link>
           </div>
         </article>
         <article className="v2-module-card">
-          <strong>经验治理</strong>
-          <p>把经验阅读和内容清理留在独立治理页完成。</p>
+          <strong>经验内容管理</strong>
+          <p>查看留学经验帖全文，并删除违规、重复或不适合公开展示的内容。</p>
           <div className="v2-inline-actions">
-            <Link className="v2-primary-link" to="/admin/studyabroad/experiences">进入经验治理</Link>
+            <Link className="v2-primary-link" to="/admin/studyabroad/experiences">进入经验管理</Link>
           </div>
         </article>
       </section>

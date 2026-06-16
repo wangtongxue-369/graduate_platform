@@ -1,12 +1,5 @@
 import { formatDateTimeLabel } from '@/lib/stationData.js'
 
-const laneToneMap = {
-  todo: '待启动',
-  active: '推进中',
-  interview: '面试中',
-  result: '已出结果',
-}
-
 export default function JobApplicationBoard({ groups = [], onEdit, onDelete }) {
   return (
     <section className="v2-check-card">
@@ -22,7 +15,6 @@ export default function JobApplicationBoard({ groups = [], onEdit, onDelete }) {
           <section className="v2-check-card" key={group.key}>
             <div className="v2-side-card__head">
               <div>
-                <p className="v2-kicker">{laneToneMap[group.key] || group.key}</p>
                 <h3>{group.title}</h3>
               </div>
               <span className="v2-note-text">{group.items.length}</span>

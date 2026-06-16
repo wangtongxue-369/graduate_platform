@@ -220,6 +220,19 @@ function appendParams(path, params = {}) {
   return query ? `${path}?${query}` : path
 }
 
+function normalizeResumePayload(payload = {}) {
+  return {
+    ...payload,
+    educationLevel: payload.educationLevel || payload.highestEducation || '',
+    education: payload.education || payload.educationExperience || '',
+    projects: payload.projects || payload.projectExperience || '',
+    projectExperience: payload.projectExperience || payload.projects || '',
+    internships: payload.internships || payload.internshipExperience || '',
+    internshipExperience: payload.internshipExperience || payload.internships || '',
+    skills: payload.skills || payload.skillsDescription || '',
+  }
+}
+
 export const employmentApi = {
   fairs(params = {}) {
     return request(appendParams('/api/job/fairs', params))
@@ -243,7 +256,7 @@ export const employmentApi = {
     return request('/api/job/resume', { token })
   },
   saveResume(payload, token) {
-    return request('/api/job/resume', { method: 'PUT', body: payload, token })
+    return request('/api/job/resume', { method: 'PUT', body: normalizeResumePayload(payload), token })
   },
   uploadResumeFile(file, token, onProgress) {
     const formData = new FormData()

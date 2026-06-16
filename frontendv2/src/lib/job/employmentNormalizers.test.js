@@ -6,13 +6,26 @@ import {
   normalizeFairPage,
   normalizeNotifications,
   normalizePostingDetail,
+  normalizeRecommendationPage,
   normalizeResume,
 } from './employmentNormalizers.js'
 
 describe('employment normalizers', () => {
   it('normalizes resume payloads with safe file defaults', () => {
-    expect(normalizeResume({ targetRole: '后端工程师' })).toMatchObject({
+    expect(normalizeResume({
       targetRole: '后端工程师',
+      phone: '13800000000',
+      email: 'dev@example.com',
+      education: '在校经历',
+      projects: '项目经历',
+      internships: '工作经历',
+    })).toMatchObject({
+      targetRole: '后端工程师',
+      phone: '13800000000',
+      email: 'dev@example.com',
+      educationExperience: '在校经历',
+      projectExperience: '项目经历',
+      internshipExperience: '工作经历',
       resumeFile: {
         hasFile: false,
         fileName: '',
@@ -37,6 +50,29 @@ describe('employment normalizers', () => {
       id: 5,
       title: '春招双选会',
       city: '上海',
+    })
+  })
+
+  it('normalizes recommendation pages from paged and array payloads', () => {
+    expect(
+      normalizeRecommendationPage({
+        items: [{ id: 9, title: '平台后端', companyName: '星河科技' }],
+        totalItems: 11,
+        totalPages: 2,
+        page: 1,
+        size: 10,
+      }),
+    ).toMatchObject({
+      totalItems: 11,
+      totalPages: 2,
+      page: 1,
+      size: 10,
+      items: [{ id: 9, title: '平台后端' }],
+    })
+    expect(normalizeRecommendationPage([{ id: 1 }])).toMatchObject({
+      totalItems: 1,
+      totalPages: 1,
+      page: 1,
     })
   })
 

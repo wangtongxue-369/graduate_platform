@@ -12,6 +12,51 @@ export const defaultJobCriteria = {
   unitType: '',
 }
 
+function firstText(...values) {
+  return values.find((value) => String(value || '').trim()) || ''
+}
+
+function normalizeEducation(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+  if (text.includes('博士')) return '博士'
+  if (text.includes('硕士') || text.includes('研究生')) return '硕士'
+  if (text.includes('本科') || text.includes('学士')) return '本科'
+  if (text.includes('专科') || text.includes('大专')) return '大专'
+  return ''
+}
+
+function normalizeDegree(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+  if (text.includes('博士')) return '博士'
+  if (text.includes('硕士')) return '硕士'
+  if (text.includes('学士') || text.includes('本科')) return '学士'
+  return ''
+}
+
+function normalizePoliticalStatus(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+  if (text.includes('党员')) return '中共党员'
+  if (text.includes('团员')) return '共青团员'
+  if (text.includes('群众')) return '群众'
+  return ''
+}
+
+export function createDefaultJobCriteriaFromUser(user = {}) {
+  const educationSource = firstText(user.education, user.educationLevel, user.degree, user.grade)
+  return {
+    ...defaultJobCriteria,
+    education: normalizeEducation(educationSource),
+    degree: normalizeDegree(firstText(user.degree, user.degreeLevel, educationSource)),
+    major: String(firstText(user.major, user.majorName)).trim(),
+    region: String(firstText(user.intentRegion, user.region, user.city)).trim(),
+    household: String(firstText(user.household, user.householdRegister, user.originPlace, user.birthPlace, user.nativePlace)).trim(),
+    politicalStatus: normalizePoliticalStatus(firstText(user.politicalStatus, user.politicsStatus)),
+  }
+}
+
 export const interviewStatusOptions = [
   { value: '', label: '全部' },
   { value: 'OPEN', label: '开放中' },
@@ -96,15 +141,17 @@ export function createEmptyFeedbackForm() {
 }
 
 export function createKaogongJobPreviewRows() {
-  return kaogongWorkspace.hotZones.map((item, index) => ({
+  const previewRows = kaogongWorkspace.hotZones.map((item, index) => ({
     id: `preview-job-${index}`,
     jobName: item.title,
     recruitingUnit: `${item.region} 招录单位`,
     region: item.region,
     examType: '公务员考试',
     recruitCount: item.openings,
-    educationRequirement: '本科',
+    educationRequirement: index === 1 ? '硕士及以上' : '本科及以上',
+    degreeRequirement: index === 1 ? '硕士及以上' : '学士及以上',
     majorRequirement: '方向相关专业',
+    householdRequirement: index === 0 ? '不限' : index === 1 ? '上海生源' : '北京户籍',
     matchScore: 80 + index * 4,
     matchReasons: [item.fit],
     registrationStart: '2026-02-03',
@@ -112,6 +159,44 @@ export function createKaogongJobPreviewRows() {
     sourceUrl: '',
     favorite: false,
   }))
+  return previewRows.concat([
+    {
+      id: 'preview-job-household-jiangsu',
+      jobName: '江苏生源行政执法岗',
+      recruitingUnit: '江苏省市场监管局',
+      region: '江苏',
+      examType: '江苏省公务员考试',
+      recruitCount: 3,
+      educationRequirement: '大专及以上',
+      degreeRequirement: '不限',
+      majorRequirement: '法学, 行政管理',
+      householdRequirement: '江苏生源',
+      matchScore: 76,
+      matchReasons: ['用于测试生源地筛选'],
+      registrationStart: '2026-02-11',
+      registrationEnd: '2026-02-18',
+      sourceUrl: '',
+      favorite: false,
+    },
+    {
+      id: 'preview-job-household-guangdong',
+      jobName: '广东户籍基层服务岗',
+      recruitingUnit: '广州市政务服务中心',
+      region: '广东',
+      examType: '广东省公务员考试',
+      recruitCount: 2,
+      educationRequirement: '硕士及以上',
+      degreeRequirement: '硕士及以上',
+      majorRequirement: '公共管理, 社会学',
+      householdRequirement: '广东户籍',
+      matchScore: 72,
+      matchReasons: ['用于测试户籍筛选'],
+      registrationStart: '2026-02-19',
+      registrationEnd: '2026-02-26',
+      sourceUrl: '',
+      favorite: false,
+    },
+  ])
 }
 
 export function createKaogongScorePreviewRows() {
@@ -186,6 +271,7 @@ export function createKaogongOverviewPreview() {
       { label: '考试订阅', value: formatCountText(calendar.length, '项') },
       { label: '我的房间', value: formatCountText(interviews.rooms.length, '间') },
     ],
+    subscriptionCount: calendar.length,
     countdown: {
       examType: '浙江省公务员考试',
       nodeType: '公告核对',
@@ -260,6 +346,16 @@ export function normalizeFavoriteJobs(data) {
     jobName: item.jobName || item.title || '未命名岗位',
     region: item.region || '地区待补充',
     recruitingUnit: item.recruitingUnit || item.companyName || '招录单位待补充',
+    examType: item.examType || '考试类型待补充',
+    recruitCount: Number(item.recruitCount || 0),
+    educationRequirement: item.educationRequirement || '学历待补充',
+    degreeRequirement: item.degreeRequirement || '学位待补充',
+    majorRequirement: item.majorRequirement || '专业待补充',
+    householdRequirement: item.householdRequirement || '不限',
+    registrationStart: item.registrationStart,
+    registrationEnd: item.registrationEnd,
+    sourceUrl: item.sourceUrl || '',
+    favorite: true,
   }))
 }
 
@@ -283,7 +379,9 @@ export function normalizeJobRows(rowsData, favoritesData = []) {
     examType: item.examType || '考试类型待补充',
     recruitCount: Number(item.recruitCount || 0),
     educationRequirement: item.educationRequirement || '学历待补充',
+    degreeRequirement: item.degreeRequirement || '学位待补充',
     majorRequirement: item.majorRequirement || '专业待补充',
+    householdRequirement: item.householdRequirement || '不限',
     matchScore: Number(item.matchScore || 0),
     matchReasons: ensureArray(item.matchReasons),
     registrationStart: item.registrationStart,

@@ -177,6 +177,7 @@ public class StudyAbroadService {
             .scholarship(normalize(req.getScholarship(), "未说明"))
             .applicationMode(normalize(req.getApplicationMode(), "匿名分享"))
             .tags(normalize(req.getTags(), ""))
+            .contact(normalize(req.getContact(), ""))
             .summary(req.getSummary().trim())
             .build();
         return toAdmissionCaseMap(admissionCaseRepository.save(item));
@@ -754,6 +755,7 @@ public class StudyAbroadService {
         map.put("scholarship", item.getScholarship());
         map.put("applicationMode", item.getApplicationMode());
         map.put("tags", splitTags(item.getTags()));
+        map.put("contact", item.getContact());
         map.put("summary", item.getSummary());
         map.put("createdAt", item.getCreatedAt() != null ? item.getCreatedAt().toString() : null);
         map.put("updatedAt", item.getUpdatedAt() != null ? item.getUpdatedAt().toString() : null);

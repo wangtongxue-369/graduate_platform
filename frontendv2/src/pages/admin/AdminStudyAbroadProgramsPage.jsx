@@ -16,9 +16,6 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -35,7 +32,7 @@ export default function AdminStudyAbroadProgramsPage() {
   const [page, setPage] = useState(0)
   const [rows, setRows] = useState(createFallbackPrograms())
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: createFallbackPrograms().length })
-  const [notice, setNotice] = useState(previewDataNotice('院校项目管理'))
+  const [notice, setNotice] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(createEmptyStudyAbroadSchoolForm())
@@ -48,7 +45,7 @@ export default function AdminStudyAbroadProgramsPage() {
       if (!canUseRemote) {
         setRows(createFallbackPrograms())
         setPageInfo({ totalPages: 1, totalElements: createFallbackPrograms().length })
-        setNotice(previewDataNotice('院校项目管理'))
+        setNotice('')
         return
       }
 
@@ -63,18 +60,18 @@ export default function AdminStudyAbroadProgramsPage() {
             keyword: deferredKeyword,
           }, token),
           8000,
-          '院校项目治理读取超时，请检查后端服务。',
+          '院校项目管理读取超时，请检查后端服务。',
         )
         if (!active) return
         const normalized = normalizeProgramsPage(data)
         setRows(normalized.content)
         setPageInfo({ totalPages: normalized.totalPages, totalElements: normalized.totalElements })
-        setNotice(remoteDataNotice('院校项目管理'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createFallbackPrograms())
         setPageInfo({ totalPages: 1, totalElements: createFallbackPrograms().length })
-        setNotice(fallbackDataNotice('院校项目管理', error))
+        setNotice('院校项目管理暂时不可用，请稍后再试。')
       }
     }
 
@@ -85,7 +82,7 @@ export default function AdminStudyAbroadProgramsPage() {
   }, [canUseRemote, deferredKeyword, filters.country, filters.partnerOnly, filters.subjectArea, page, token])
 
   const summaryItems = useMemo(() => ([
-    { label: '当前页项目', value: String(rows.length), note: '当前分页里可立即治理的项目数' },
+    { label: '当前页项目', value: String(rows.length), note: '当前分页里展示的项目数' },
     { label: '项目总数', value: String(pageInfo.totalElements), note: '来自后端分页结果的项目总量' },
     { label: '合作项目', value: String(rows.filter((item) => item.partnerProgram).length), note: '当前页里已经标记为合作的项目数' },
   ]), [pageInfo.totalElements, rows])
@@ -144,8 +141,9 @@ export default function AdminStudyAbroadProgramsPage() {
             { label: '留学管理', to: '/admin/studyabroad' },
             { label: '院校项目' },
           ]}
-          title="把筛选、创建、编辑和删除留在同一个项目治理工作区。"
-          lead="列表负责浏览，抽屉负责编辑，破坏性操作单独确认。"
+          title="院校项目管理"
+          lead="管理可供学生浏览和对比的院校项目。点击新建或编辑后，会弹出独立页面填写项目详情。"
+          compact
         />
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         <AdminStudyAbroadSummaryStrip items={summaryItems} />
@@ -204,7 +202,7 @@ export default function AdminStudyAbroadProgramsPage() {
       <EmploymentConfirmModal
         open={Boolean(pendingDelete)}
         title="确认删除这条院校项目？"
-        body="删除后会从当前项目治理列表中移除这条记录。"
+        body="删除后会从当前院校项目列表中移除这条记录。"
         confirmLabel="删除项目"
         onConfirm={confirmDelete}
         onClose={() => setPendingDelete(null)}

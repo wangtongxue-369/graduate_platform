@@ -145,6 +145,20 @@ function getDomainTitle(domain) {
   }[domain]
 }
 
+function getEmptyFormByDomain(domain) {
+  if (domain === 'jobs') return { ...emptyJobForm }
+  if (domain === 'scoreLines') return { ...emptyScoreLineForm }
+  return { ...emptyEventForm }
+}
+
+function getCreateButtonLabel(domain) {
+  return {
+    jobs: '新增岗位',
+    scoreLines: '新增分数线',
+    events: '新增考试节点',
+  }[domain]
+}
+
 function normalizeEditValue(row = {}, fallbackForm = {}) {
   return Object.fromEntries(
     Object.keys(fallbackForm).map((key) => {
@@ -356,6 +370,7 @@ export default function AdminKaogongPage() {
   const [counts, setCounts] = useState(createInitialCounts)
   const [forms, setForms] = useState(createInitialForms)
   const [editing, setEditing] = useState({ domain: '', id: null })
+  const [editorOpen, setEditorOpen] = useState(false)
   const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -492,12 +507,22 @@ export default function AdminKaogongPage() {
     setEditing({ domain: '', id: null })
     setForms((current) => ({
       ...current,
-      [activeDomain]: activeDomain === 'jobs'
-        ? { ...emptyJobForm }
-        : activeDomain === 'scoreLines'
-          ? { ...emptyScoreLineForm }
-          : { ...emptyEventForm },
+      [activeDomain]: getEmptyFormByDomain(activeDomain),
     }))
+  }
+
+  function openCreateEditor() {
+    setEditing({ domain: '', id: null })
+    setForms((current) => ({
+      ...current,
+      [activeDomain]: getEmptyFormByDomain(activeDomain),
+    }))
+    setEditorOpen(true)
+  }
+
+  function closeEditor() {
+    setEditorOpen(false)
+    resetEditor()
   }
 
   function startEditById(id) {
@@ -513,6 +538,7 @@ export default function AdminKaogongPage() {
           ? normalizeEditValue(row, emptyScoreLineForm)
           : normalizeEditValue(row, emptyEventForm),
     }))
+    setEditorOpen(true)
     setNotice(`已载入${getDomainTitle(activeDomain)}编辑态。`)
   }
 
@@ -559,6 +585,7 @@ export default function AdminKaogongPage() {
 
       setNotice(editingId ? `${getDomainTitle(activeDomain)}修改已保存。` : `${getDomainTitle(activeDomain)}新增完成。`)
       resetEditor()
+      setEditorOpen(false)
       await Promise.all([
         loadSummaryCounts(),
         loadActiveDomain({ keepNotice: false }),
@@ -579,34 +606,41 @@ export default function AdminKaogongPage() {
             { label: '管理员主站', to: '/admin' },
             { label: '考公治理' },
           ]}
-          title="把岗位台账、进面线索和考试节点收进同一张治理工位。"
-          lead="主区只处理当前数据轨道的结果与记录，筛选和编辑都压到右栏，避免再回到旧版“列表和表单挤成一屏”的后台。"
-          actions={<Link className="v2-secondary-link" to="/admin/employment">查看就业运营</Link>}
+          title="考公数据治理工作台"
+          lead="按岗位、分数线和考试节点分轨维护，筛选留在右侧，新增和编辑进入弹窗处理。"
+          actions={(
+            <>
+              <button className="v2-segment-button is-active" type="button" onClick={openCreateEditor}>
+                {getCreateButtonLabel(activeDomain)}
+              </button>
+              <Link className="v2-secondary-link" to="/admin/employment">查看就业运营</Link>
+            </>
+          )}
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         {loading ? <div className="v2-status-note">正在刷新考公治理工位…</div> : null}
 
-        <section className="v2-summary-strip" aria-label="考公治理摘要">
+        <section className="v2-summary-strip v2-admin-kaogong-metrics" aria-label="考公治理摘要">
           <article className="v2-summary-card">
             <span>岗位记录</span>
             <strong>{counts.jobs}</strong>
-            <p>学生端岗位匹配、收藏和报名窗口都直接依赖这里的台账。</p>
+            <p>{activeDomain === 'jobs' ? '当前维护轨道' : '匹配、收藏和报名窗口依赖此台账'}</p>
           </article>
           <article className="v2-summary-card">
             <span>分数线记录</span>
             <strong>{counts.scoreLines}</strong>
-            <p>分数线页只应该读到可追溯的岗位上下文，不再靠散乱备注补信息。</p>
+            <p>{activeDomain === 'scoreLines' ? '当前维护轨道' : '用于学生端进面线索回看'}</p>
           </article>
           <article className="v2-summary-card">
             <span>考试节点</span>
             <strong>{counts.events}</strong>
-            <p>考试日历和首页倒计时会按这些节点重新组装时间墙。</p>
+            <p>{activeDomain === 'events' ? '当前维护轨道' : '驱动考试日历和首页倒计时'}</p>
           </article>
         </section>
 
-        <section className="v2-side-card">
-          <div className="v2-segment-group" role="group" aria-label="考公治理视图">
+        <section className="v2-side-card v2-admin-kaogong-toolbar">
+          <div className="v2-segment-group v2-admin-kaogong-tabs" role="group" aria-label="考公治理视图">
             {domainTabs.map((item) => (
               <button
                 className={`v2-segment-button ${activeDomain === item.key ? 'is-active' : ''}`}
@@ -615,12 +649,17 @@ export default function AdminKaogongPage() {
                 onClick={() => {
                   setActiveDomain(item.key)
                   setEditing({ domain: '', id: null })
+                  setEditorOpen(false)
                 }}
               >
                 {item.label}
+                <span>{counts[item.key]} 条</span>
               </button>
             ))}
           </div>
+          <button className="v2-segment-button is-active" type="button" onClick={openCreateEditor}>
+            {getCreateButtonLabel(activeDomain)}
+          </button>
         </section>
 
         <section className="v2-card-grid v2-card-grid--dense" aria-label={`${activeTabMeta?.label || '考公治理'}记录列表`}>
@@ -694,7 +733,7 @@ export default function AdminKaogongPage() {
           {!activeRows.length ? (
             <article className="v2-empty-card v2-kaogong-admin-empty">
               <strong>当前筛选下还没有记录</strong>
-              <p>可以先放宽筛选，或者直接在右栏录入这一轨的第一条数据。</p>
+              <p>可以先放宽筛选，或者点击上方新增按钮录入这一轨的第一条数据。</p>
             </article>
           ) : null}
         </section>
@@ -732,70 +771,31 @@ export default function AdminKaogongPage() {
           <p>{activeTabMeta?.summary}</p>
           <form className="v2-filter-form" onSubmit={(event) => event.preventDefault()}>
             <Field label="筛选地区">
-              <input value={activeFilters.region} onChange={(event) => updateFilter('region', event.target.value)} />
+              <input placeholder="如：北京 / 上海" value={activeFilters.region} onChange={(event) => updateFilter('region', event.target.value)} />
             </Field>
             <Field label="筛选考试类型">
-              <input value={activeFilters.examType} onChange={(event) => updateFilter('examType', event.target.value)} />
+              <input placeholder="如：国家公务员考试" value={activeFilters.examType} onChange={(event) => updateFilter('examType', event.target.value)} />
             </Field>
             <Field label="筛选年份">
-              <input value={activeFilters.year} onChange={(event) => updateFilter('year', event.target.value)} />
+              <input placeholder="如：2027" value={activeFilters.year} onChange={(event) => updateFilter('year', event.target.value)} />
             </Field>
             {activeDomain !== 'events' ? (
               <>
                 <Field label="筛选单位类型">
-                  <input value={activeFilters.unitType} onChange={(event) => updateFilter('unitType', event.target.value)} />
+                  <input placeholder="如：税务 / 海关" value={activeFilters.unitType} onChange={(event) => updateFilter('unitType', event.target.value)} />
                 </Field>
                 <Field label="筛选岗位类别">
-                  <input value={activeFilters.jobCategory} onChange={(event) => updateFilter('jobCategory', event.target.value)} />
+                  <input placeholder="如：综合管理" value={activeFilters.jobCategory} onChange={(event) => updateFilter('jobCategory', event.target.value)} />
                 </Field>
               </>
             ) : null}
             <div className="v2-inline-actions">
+              <button className="v2-segment-button is-active" type="submit" onClick={() => loadActiveDomain()}>
+                应用筛选
+              </button>
               <button className="v2-segment-button" type="button" onClick={resetFilters}>重置筛选</button>
             </div>
           </form>
-        </section>
-
-        <section className="v2-side-card">
-          <div className="v2-side-card__head">
-            <div>
-              <p className="v2-kicker">{editingId ? '编辑记录' : '新增记录'}</p>
-              <h3>{activeTabMeta?.label}</h3>
-            </div>
-          </div>
-
-          {activeDomain === 'jobs' ? (
-            <JobEditorForm
-              editingId={editingId}
-              form={activeForm}
-              onChange={updateActiveForm}
-              onReset={resetEditor}
-              onSubmit={handleSubmit}
-              saving={saving}
-            />
-          ) : null}
-
-          {activeDomain === 'scoreLines' ? (
-            <ScoreLineEditorForm
-              editingId={editingId}
-              form={activeForm}
-              onChange={updateActiveForm}
-              onReset={resetEditor}
-              onSubmit={handleSubmit}
-              saving={saving}
-            />
-          ) : null}
-
-          {activeDomain === 'events' ? (
-            <EventEditorForm
-              editingId={editingId}
-              form={activeForm}
-              onChange={updateActiveForm}
-              onReset={resetEditor}
-              onSubmit={handleSubmit}
-              saving={saving}
-            />
-          ) : null}
         </section>
 
         <section className="v2-side-card">
@@ -809,6 +809,57 @@ export default function AdminKaogongPage() {
           </div>
         </section>
       </aside>
+
+      {editorOpen ? (
+        <div className="v2-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="admin-kaogong-editor-title">
+          <section className="v2-modal-card v2-admin-kaogong-editor-modal">
+            <div className="v2-modal-head">
+              <div>
+                <p className="v2-kicker">{editingId ? '编辑记录' : '新增记录'}</p>
+                <h3 id="admin-kaogong-editor-title">
+                  {editingId ? `编辑${activeTabMeta?.label}` : getCreateButtonLabel(activeDomain)}
+                </h3>
+              </div>
+              <button className="v2-secondary-link" type="button" onClick={closeEditor}>
+                关闭
+              </button>
+            </div>
+
+            {activeDomain === 'jobs' ? (
+              <JobEditorForm
+                editingId={editingId}
+                form={activeForm}
+                onChange={updateActiveForm}
+                onReset={resetEditor}
+                onSubmit={handleSubmit}
+                saving={saving}
+              />
+            ) : null}
+
+            {activeDomain === 'scoreLines' ? (
+              <ScoreLineEditorForm
+                editingId={editingId}
+                form={activeForm}
+                onChange={updateActiveForm}
+                onReset={resetEditor}
+                onSubmit={handleSubmit}
+                saving={saving}
+              />
+            ) : null}
+
+            {activeDomain === 'events' ? (
+              <EventEditorForm
+                editingId={editingId}
+                form={activeForm}
+                onChange={updateActiveForm}
+                onReset={resetEditor}
+                onSubmit={handleSubmit}
+                saving={saving}
+              />
+            ) : null}
+          </section>
+        </div>
+      ) : null}
     </>
   )
 }

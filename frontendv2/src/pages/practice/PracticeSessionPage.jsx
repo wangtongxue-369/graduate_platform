@@ -78,7 +78,6 @@ export default function PracticeSessionPage() {
 
     try {
       await practiceApi.saveAnswer(session.id, question.id, value, token)
-      setMessage('答案已保存。')
     } catch (error) {
       setMessage(error.message || '保存答案失败，请稍后重试。')
     }
@@ -147,6 +146,11 @@ export default function PracticeSessionPage() {
             question={currentQuestion}
             value={answers[currentQuestion.id]}
             onAnswer={(value) => handleAnswer(currentQuestion, value)}
+            isFirst={currentIndex === 0}
+            isLast={currentIndex === questions.length - 1}
+            onPrev={() => setCurrentIndex(currentIndex - 1)}
+            onNext={() => setCurrentIndex(currentIndex + 1)}
+            onSubmit={handleSubmit}
           />
         ) : null}
       </div>

@@ -393,24 +393,38 @@ class EmploymentModuleIntegrationTest {
                     Map.entry("expectedCities", "上海,苏州"),
                     Map.entry("expectedIndustries", "互联网,金融科技"),
                     Map.entry("expectedSalary", "18k-25k"),
-                    Map.entry("educationLevel", "本科"),
+                    Map.entry("highestEducation", "本科"),
                     Map.entry("major", "计算机科学与技术"),
+                    Map.entry("phone", "13800000000"),
+                    Map.entry("email", "job@example.com"),
                     Map.entry("skillTags", "Java,Spring Boot,MySQL"),
                     Map.entry("projectKeywords", "就业平台,权限系统"),
                     Map.entry("internshipKeywords", "后端开发"),
                     Map.entry("certificates", "CET-6"),
                     Map.entry("portfolioUrl", "https://github.com/example/resume"),
                     Map.entry("skills", "Java,Spring Boot"),
-                    Map.entry("projects", "就业平台")
+                    Map.entry("projects", "就业平台"),
+                    Map.entry("internships", "后端研发实习"),
+                    Map.entry("education", "学生会技术部")
                 ))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.templateType").value("技术岗"))
             .andExpect(jsonPath("$.data.targetRole").value("Java 后端工程师"))
+            .andExpect(jsonPath("$.data.educationLevel").value("本科"))
+            .andExpect(jsonPath("$.data.highestEducation").value("本科"))
+            .andExpect(jsonPath("$.data.phone").value("13800000000"))
+            .andExpect(jsonPath("$.data.email").value("job@example.com"))
             .andExpect(jsonPath("$.data.skillTags").value("Java,Spring Boot,MySQL"));
 
         mockMvc.perform(get("/api/job/resume").header("Authorization", "Bearer " + userToken))
             .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.highestEducation").value("本科"))
+            .andExpect(jsonPath("$.data.phone").value("13800000000"))
+            .andExpect(jsonPath("$.data.email").value("job@example.com"))
             .andExpect(jsonPath("$.data.skills").value("Java,Spring Boot"))
+            .andExpect(jsonPath("$.data.projects").value("就业平台"))
+            .andExpect(jsonPath("$.data.internships").value("后端研发实习"))
+            .andExpect(jsonPath("$.data.education").value("学生会技术部"))
             .andExpect(jsonPath("$.data.expectedCities").value("上海,苏州"));
 
         String createResponse = mockMvc.perform(post("/api/job/applications")

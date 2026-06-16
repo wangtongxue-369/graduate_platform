@@ -11,7 +11,6 @@ export default function JobNotificationPanel({
       <div className="v2-side-card__head">
         <div>
           <p className="v2-kicker">提醒收件箱</p>
-          <h3>只保留需要处理的就业提醒</h3>
         </div>
         <span className="v2-note-text">未读 {unreadCount}</span>
       </div>

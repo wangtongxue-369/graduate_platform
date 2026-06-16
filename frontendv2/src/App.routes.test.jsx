@@ -70,25 +70,25 @@ vi.mock('@/pages/student/studyabroad/StudyAbroadOverviewPage.jsx', () => ({
 
 vi.mock('@/pages/student/studyabroad/StudyAbroadProgramsPage.jsx', () => ({
   default: function StudyAbroadProgramsPageMock() {
-    return <h1>项目目录</h1>
+    return <h1>院校项目库</h1>
   },
 }))
 
 vi.mock('@/pages/student/studyabroad/StudyAbroadCasesPage.jsx', () => ({
   default: function StudyAbroadCasesPageMock() {
-    return <h1>案例档案</h1>
+    return <h1>录取案例库</h1>
   },
 }))
 
 vi.mock('@/pages/student/studyabroad/StudyAbroadApplicationsPage.jsx', () => ({
   default: function StudyAbroadApplicationsPageMock() {
-    return <h1>申请跟踪</h1>
+    return <h1>申请项目管理</h1>
   },
 }))
 
 vi.mock('@/pages/student/studyabroad/StudyAbroadTimelinePage.jsx', () => ({
   default: function StudyAbroadTimelinePageMock() {
-    return <h1>时间线</h1>
+    return <h1>申请时间线</h1>
   },
 }))
 
@@ -100,7 +100,7 @@ vi.mock('@/pages/student/studyabroad/StudyAbroadMaterialsPage.jsx', () => ({
 
 vi.mock('@/pages/student/studyabroad/StudyAbroadExperiencesPage.jsx', () => ({
   default: function StudyAbroadExperiencesPageMock() {
-    return <h1>留学经验</h1>
+    return <h1>留学经验库</h1>
   },
 }))
 
@@ -163,7 +163,16 @@ describe('frontendv2 route gating', () => {
 
     renderApp(['/station/studyabroad/experiences'])
 
-    expect(await screen.findByRole('heading', { name: '留学经验' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '留学经验库' })).toBeInTheDocument()
+  })
+
+  it('redirects legacy study abroad experience URLs into frontend v2 routes', async () => {
+    authState.isAuthed = true
+    authState.user = { id: 7, name: 'Test User', role: 'user', target: 'liuxue' }
+
+    renderApp(['/studyabroad/experience'])
+
+    expect(await screen.findByRole('heading', { name: '留学经验库' })).toBeInTheDocument()
   })
 
   it('routes admins into the study abroad overview console', async () => {

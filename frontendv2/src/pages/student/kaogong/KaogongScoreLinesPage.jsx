@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { kaogongApi } from '@legacy/lib/api.js'
-import PageIntro from '@/components/PageIntro.jsx'
 import {
   canUseRemoteToken,
   fallbackDataNotice,
   previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 import {
@@ -18,6 +16,11 @@ import {
 const scoreJobCategoryOptions = ['', '综合管理', '行政执法', '专业技术']
 const scoreUnitTypeOptions = ['', '中央机关直属机构', '地方机关', '事业单位']
 const scoreExamTypeOptions = ['', '国家公务员考试', '上海市公务员考试', '浙江省公务员考试']
+const scoreSortOptions = [
+  { value: 'score-desc', label: '进面线从高到低' },
+  { value: 'year-desc', label: '年份最新' },
+  { value: 'recruit-desc', label: '招录人数最多' },
+]
 
 function createScoreFilters() {
   return {
@@ -40,6 +43,7 @@ export default function KaogongScoreLinesPage() {
   const [loading, setLoading] = useState(false)
   const [actionPendingId, setActionPendingId] = useState(null)
   const [favoriteModalOpen, setFavoriteModalOpen] = useState(false)
+  const [sortMode, setSortMode] = useState('score-desc')
 
   useEffect(() => {
     let active = true
@@ -122,43 +126,53 @@ export default function KaogongScoreLinesPage() {
     setDraftFilters((current) => ({ ...current, [key]: value }))
   }
 
+  const sortedRows = [...rows].sort((left, right) => {
+    if (sortMode === 'year-desc') return Number(right.year || 0) - Number(left.year || 0)
+    if (sortMode === 'recruit-desc') return Number(right.recruitCount || 0) - Number(left.recruitCount || 0)
+    return Number(right.scoreLine || 0) - Number(left.scoreLine || 0)
+  })
+  const highestScore = sortedRows.reduce((highest, item) => Math.max(highest, Number(item.scoreLine || 0)), 0)
+  const scoreSummaryText = `共 ${rows.length} 条 · 最高进面线 ${highestScore || '待补充'} · 已收藏 ${favoriteRows.length}`
+  const visibleFavoriteRows = favoriteRows.slice(0, 2)
+  const favoriteHighestScore = favoriteRows.reduce((highest, item) => Math.max(highest, Number(item.scoreLine || 0)), 0)
+
   return (
     <>
       <div className="v2-main-column">
-        <PageIntro
-          kicker="分数线账本"
-          pathItems={[
-            { label: '考公主站', to: '/station/kaogong' },
-            { label: '进面账本' },
-          ]}
-          title="把历年进面线整理成一本能连续比对的账本，而不是查完就走的列表页。"
-          lead="主区专心做纵向比对，右侧负责筛选和收藏回看，让重点岗位的线真正沉淀下来。"
-        />
+        <section className="v2-kaogong-score-head" aria-label="分数线账本页头">
+          <div>
+            <p className="v2-kicker">考公主站 / 进面分数线</p>
+            <h2>进面分数线账本</h2>
+            <p>按地区、年份和岗位类型快速比对历年进面线。</p>
+          </div>
+          <strong>{scoreSummaryText}</strong>
+        </section>
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
-        {loading ? <div className="v2-status-note">正在刷新分数线账本...</div> : null}
 
-        <section className="v2-summary-strip" aria-label="分数线账本摘要">
-          <article className="v2-summary-card">
-            <span>记录数</span>
-            <strong>{rows.length}</strong>
-            <p>当前筛选下命中的分数线记录数。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>最高线</span>
-            <strong>{rows[0]?.scoreLine || '待补充'}</strong>
-            <p>优先判断最紧的进面线，再决定是否保留该岗位。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>已收藏</span>
-            <strong>{favoriteRows.length}</strong>
-            <p>收藏记录会留在右侧固定回看，不再只靠首页的一小段摘要。</p>
-          </article>
+        <section className="v2-kaogong-score-toolbar" aria-label="分数线账本工具栏">
+          <div className="v2-kaogong-score-metrics">
+            <span>记录 {rows.length}</span>
+            <span>最高线 {highestScore || '待补充'}</span>
+            <span>收藏 {favoriteRows.length}</span>
+          </div>
+          <label className="v2-field v2-kaogong-sort-field">
+            <span>排序</span>
+            <select value={sortMode} onChange={(event) => setSortMode(event.target.value)}>
+              {scoreSortOptions.map((item) => (
+                <option key={item.value} value={item.value}>{item.label}</option>
+              ))}
+            </select>
+          </label>
         </section>
 
         <section className="v2-ledger-card" aria-label="分数线账本结果">
-          {rows.map((item) => (
+          {sortedRows.map((item) => (
             <article className="v2-ledger-row v2-ledger-row--material v2-kaogong-score-row" key={item.id}>
+              <div className="v2-kaogong-score-value" aria-label={`${item.jobName} 进面线`}>
+                <span>进面线</span>
+                <strong>{item.scoreLine}</strong>
+              </div>
               <div className="v2-ledger-row__main">
                 <strong>{item.jobName}</strong>
                 <p>{item.recruitingUnit}</p>
@@ -170,7 +184,6 @@ export default function KaogongScoreLinesPage() {
                 <p>{item.dataNote}</p>
               </div>
               <div className="v2-ledger-row__meta">
-                <span>进面线 {item.scoreLine}</span>
                 <span>面试比 {item.interviewRatio}</span>
                 <span>招录 {item.recruitCount} / 进面 {item.interviewCount}</span>
                 <span>{item.source}</span>
@@ -199,16 +212,12 @@ export default function KaogongScoreLinesPage() {
         <section className="v2-side-card v2-kaogong-filter-card v2-kaogong-score-filter-card">
           <div className="v2-side-card__head">
             <div>
-              <p className="v2-kicker">筛选控制器</p>
-              <h3>先收口对比范围</h3>
+              <p className="v2-kicker">筛选分数线</p>
+              <h3>缩小对比范围</h3>
             </div>
           </div>
           <form className="v2-filter-form" onSubmit={handleApplyFilters}>
             <section className="v2-kaogong-filter-cluster" aria-label="分数线筛选器">
-              <div className="v2-kaogong-filter-cluster__head">
-                <strong>筛选条件</strong>
-                <span>先把对比范围收紧，再决定哪些年份和岗位线值得继续跟踪。</span>
-              </div>
               <div className="v2-kaogong-filter-grid">
                 <label className="v2-field">
                   <span>地区</span>
@@ -270,8 +279,10 @@ export default function KaogongScoreLinesPage() {
               </div>
             </section>
             <div className="v2-inline-actions v2-kaogong-filter-actions">
-              <button className="v2-segment-button is-active" type="submit">应用筛选</button>
-              <button className="v2-segment-button" type="button" onClick={resetFilters}>重置</button>
+              <button className="v2-segment-button is-active" type="submit" disabled={loading}>
+                {loading ? '筛选中…' : '应用筛选'}
+              </button>
+              <button className="v2-segment-button" type="button" disabled={loading} onClick={resetFilters}>重置</button>
             </div>
           </form>
         </section>
@@ -281,11 +292,22 @@ export default function KaogongScoreLinesPage() {
             <strong>已收藏分数线</strong>
             <span>{favoriteRows.length} 项</span>
           </div>
-          <p className="v2-kaogong-side-tip">
-            {favoriteRows.length
-              ? '右栏只保留入口，全部收藏分数线放到弹窗里集中回看。'
-              : '当前还没有收藏分数线，看到值得持续跟踪的岗位线时可以从这里集中查看。'}
-          </p>
+          <div className="v2-kaogong-score-favorite-preview">
+            {visibleFavoriteRows.map((item) => (
+              <button
+                className="v2-check-row v2-check-row--action"
+                key={`favorite-score-preview-${item.id}`}
+                type="button"
+                onClick={() => setFavoriteModalOpen(true)}
+              >
+                <span>
+                  <strong>{item.jobName}</strong>
+                  <small>{item.region} / {item.year} / {item.scoreLine}</small>
+                </span>
+              </button>
+            ))}
+            {!favoriteRows.length ? <p className="v2-kaogong-side-tip">当前还没有收藏分数线，看到值得持续跟踪的岗位线时可以先收藏。</p> : null}
+          </div>
           <button
             className="v2-secondary-link v2-kaogong-favorite-trigger"
             type="button"
@@ -309,6 +331,10 @@ export default function KaogongScoreLinesPage() {
               <div>
                 <p className="v2-kicker">收藏分数线</p>
                 <h3>关键分数线清单</h3>
+                <span>
+                  已收藏 {favoriteRows.length} 条分数线
+                  {favoriteHighestScore ? `，最高收藏线 ${favoriteHighestScore}` : '，先收藏重点岗位线后再集中比对。'}
+                </span>
               </div>
               <button
                 aria-label="关闭收藏分数线弹窗"
@@ -319,15 +345,49 @@ export default function KaogongScoreLinesPage() {
                 关闭
               </button>
             </div>
-            <div className="v2-check-list">
+            <div className="v2-kaogong-favorite-list">
               {favoriteRows.map((item) => (
-                <div className="v2-check-row" key={`favorite-score-modal-${item.id}`}>
-                  <strong>{item.jobName}</strong>
-                  <span>{item.region} / {item.year}</span>
-                  <span>{item.scoreLine}</span>
-                </div>
+                <article className="v2-kaogong-favorite-card v2-kaogong-score-favorite-card" key={`favorite-score-modal-${item.id}`}>
+                  <div className="v2-kaogong-favorite-score v2-kaogong-score-favorite-badge">
+                    <span>进面线</span>
+                    <strong>{item.scoreLine || '-'}</strong>
+                  </div>
+                  <div className="v2-kaogong-favorite-main">
+                    <div className="v2-kaogong-favorite-card__head">
+                      <div>
+                        <strong>{item.jobName}</strong>
+                        <p>{item.recruitingUnit || '招录单位待补充'}</p>
+                      </div>
+                      <span>{item.region} / {item.year || '年份待补充'}</span>
+                    </div>
+                    <div className="v2-kaogong-favorite-meta">
+                      <span>{item.examType || '考试类别待补充'}</span>
+                      <span>面试比 {item.interviewRatio || '待补充'}</span>
+                      <span>招录 {item.recruitCount || 0} / 进面 {item.interviewCount || 0}</span>
+                      <span>{item.source || '来源待补充'}</span>
+                    </div>
+                    <div className="v2-kaogong-favorite-foot">
+                      <span>{item.dataNote || '收藏后可用于横向对比历年岗位进面线。'}</span>
+                      <div className="v2-inline-actions">
+                        <button
+                          aria-label={`取消收藏分数线 ${item.jobName}`}
+                          className="v2-segment-button"
+                          type="button"
+                          disabled={!canUseRemote || actionPendingId === item.id}
+                          onClick={() => handleToggleFavorite({ ...item, favorite: true })}
+                        >
+                          {actionPendingId === item.id ? '处理中…' : '取消收藏'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </article>
               ))}
-              {!favoriteRows.length ? <p>当前还没有收藏分数线，先在主区钉住值得持续跟踪的岗位线再回来看。</p> : null}
+              {!favoriteRows.length ? (
+                <div className="v2-empty-card">
+                  <p>当前还没有收藏分数线，先在主区收藏值得持续跟踪的岗位线，再回到这里集中比对。</p>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

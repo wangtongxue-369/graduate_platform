@@ -56,6 +56,7 @@ export function createFallbackCases() {
     applicationMode: 'DIY',
     tags: ['案例预览'],
     summary: item.summary,
+    contact: index === 0 ? '可在答辩演示时填写邮箱或微信' : '',
     applicationYear: '2026',
     authorId: 9,
   }))
@@ -186,6 +187,7 @@ export function normalizeCase(item) {
     applicationMode: withDefault(item.applicationMode, ''),
     tags: normalizeTagList(item.tags),
     summary: withDefault(item.summary, '暂无案例摘要'),
+    contact: withDefault(item.contact, ''),
     applicationYear: withDefault(item.applicationYear, '2026'),
     authorId: item.authorId,
     createdAt: withDefault(item.createdAt, ''),
@@ -248,7 +250,6 @@ export function normalizeExperience(item) {
     country: withDefault(item.country, 'UK'),
     topic: withDefault(item.topic, 'Application'),
     authorName: withDefault(item.authorName, '匿名作者'),
-    readTime: withDefault(item.readTime, '5 min'),
     summary: withDefault(item.summary, '暂无摘要'),
     content: withDefault(item.content, ''),
     tags: normalizeTagList(item.tags),
@@ -306,10 +307,10 @@ export function buildOverviewState({
   ].filter((value) => value && new Date(value) < new Date()).length
 
   const summaryItems = [
-    { label: '项目目录', value: String(programs.length), note: '可用于选校判断的项目样本数' },
-    { label: '在申项目', value: String(applications.length), note: '已经进入个人推进链路的项目数' },
-    { label: '风险提醒', value: String(overdueCount), note: '逾期或已经落后的申请节点' },
-    { label: '经验沉淀', value: String(experiences.length), note: '可复用的公开经验与复盘样本' },
+    { label: '院校项目库', value: String(programs.length), note: '可用于选校参考的院校项目数量' },
+    { label: '申请项目', value: String(applications.length), note: '当前账号已经记录的申请项目数' },
+    { label: '截止提醒', value: String(overdueCount), note: '逾期或需要尽快处理的申请事项' },
+    { label: '留学经验库', value: String(experiences.length), note: '可浏览的公开经验帖数量' },
   ]
 
   const riskItems = [

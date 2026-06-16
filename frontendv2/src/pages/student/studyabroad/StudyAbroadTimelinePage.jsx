@@ -22,10 +22,7 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
   formatDateLabel,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -36,7 +33,7 @@ export default function StudyAbroadTimelinePage() {
   const [rows, setRows] = useState(createFallbackTimeline())
   const [filters, setFilters] = useState({ phase: 'all', status: 'all', keyword: '' })
   const deferredKeyword = useDeferredValue(filters.keyword)
-  const [notice, setNotice] = useState(previewDataNotice('时间线'))
+  const [notice, setNotice] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(createEmptyStudyAbroadTimelineForm(applications))
@@ -49,7 +46,7 @@ export default function StudyAbroadTimelinePage() {
       if (!canUseRemote) {
         setApplications(createFallbackApplications())
         setRows(createFallbackTimeline())
-        setNotice(previewDataNotice('时间线'))
+        setNotice('')
         return
       }
 
@@ -60,17 +57,17 @@ export default function StudyAbroadTimelinePage() {
             studyAbroadApi.timeline(token),
           ]),
           8000,
-          '时间线读取超时，请检查后端服务。',
+          '申请时间线读取超时，请检查后端服务。',
         )
         if (!active) return
         setApplications(normalizeApplications(applicationData))
         setRows(normalizeTimelineItems(timelineData))
-        setNotice(remoteDataNotice('时间线'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setApplications(createFallbackApplications())
         setRows(createFallbackTimeline())
-        setNotice(fallbackDataNotice('时间线', error))
+        setNotice('申请时间线暂时不可用，请稍后再试。')
       }
     }
 
@@ -148,13 +145,14 @@ export default function StudyAbroadTimelinePage() {
     <>
       <div className="v2-main-column">
         <PageIntro
-          kicker="时间线"
+          kicker="申请时间线"
           pathItems={[
             { label: '留学总览', to: '/station/studyabroad' },
-            { label: '时间线' },
+            { label: '申请时间线' },
           ]}
-          title="把阶段节点和截止日期挂到同一条时间轨道上。"
-          lead="先看节奏，再决定是否直接改状态、编辑节点或删除节点。"
+          title="申请时间线"
+          lead="记录语言考试、文书准备、网申提交、面试和录取结果等关键节点，避免错过截止日期。"
+          compact
         />
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         <section className="v2-timeline-card" aria-label="时间线轨道">
@@ -179,8 +177,8 @@ export default function StudyAbroadTimelinePage() {
         <section className="v2-side-card">
           <div className="v2-side-card__head">
             <div>
-              <p className="v2-kicker">轨道控制器</p>
-              <h3>筛选后再决定节点操作</h3>
+              <p className="v2-kicker">筛选条件</p>
+              <h3>筛选时间线节点</h3>
             </div>
             <button className="v2-primary-link" type="button" onClick={openCreateModal}>新增节点</button>
           </div>

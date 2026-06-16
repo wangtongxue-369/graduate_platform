@@ -70,6 +70,9 @@ public class StudyAbroadAdmissionCase {
     @Column(length = 255)
     private String tags;
 
+    @Column(length = 200)
+    private String contact;
+
     @Column(nullable = false, length = 500)
     private String summary;
 

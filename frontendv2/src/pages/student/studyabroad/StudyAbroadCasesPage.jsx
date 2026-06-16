@@ -4,6 +4,7 @@ import { studyAbroadApi } from '@legacy/lib/api.js'
 import EmploymentConfirmModal from '@/components/job/EmploymentConfirmModal.jsx'
 import PageIntro from '@/components/PageIntro.jsx'
 import StudyAbroadCaseSubmitModal from '@/components/studyabroad/StudyAbroadCaseSubmitModal.jsx'
+import StudyAbroadPageModal from '@/components/studyabroad/StudyAbroadPageModal.jsx'
 import {
   buildAdmissionCasePayload,
   createEmptyStudyAbroadCaseForm,
@@ -19,9 +20,6 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -38,8 +36,9 @@ export default function StudyAbroadCasesPage() {
   const [page, setPage] = useState(0)
   const [rows, setRows] = useState(createFallbackCases())
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: createFallbackCases().length })
-  const [notice, setNotice] = useState(previewDataNotice('案例档案'))
+  const [notice, setNotice] = useState('')
   const [selectedCase, setSelectedCase] = useState(createFallbackCases()[0] || null)
+  const [readingCase, setReadingCase] = useState(null)
   const [caseModalOpen, setCaseModalOpen] = useState(false)
   const [caseForm, setCaseForm] = useState(createEmptyStudyAbroadCaseForm())
   const [pendingDelete, setPendingDelete] = useState(null)
@@ -51,7 +50,7 @@ export default function StudyAbroadCasesPage() {
       if (!canUseRemote) {
         setRows(createFallbackCases())
         setPageInfo({ totalPages: 1, totalElements: createFallbackCases().length })
-        setNotice(previewDataNotice('案例档案'))
+        setNotice('')
         return
       }
 
@@ -66,20 +65,22 @@ export default function StudyAbroadCasesPage() {
             keyword: deferredKeyword,
           }),
           8000,
-          '案例档案读取超时，请检查后端服务。',
+          '录取案例库读取超时，请检查后端服务。',
         )
         if (!active) return
         const normalized = normalizeCasesPage(data)
         setRows(normalized.content)
         setPageInfo({ totalPages: normalized.totalPages, totalElements: normalized.totalElements })
         setSelectedCase(normalized.content[0] || null)
-        setNotice(remoteDataNotice('案例档案'))
+        setReadingCase(null)
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createFallbackCases())
         setPageInfo({ totalPages: 1, totalElements: createFallbackCases().length })
         setSelectedCase(createFallbackCases()[0] || null)
-        setNotice(fallbackDataNotice('案例档案', error))
+        setReadingCase(null)
+        setNotice('录取案例库暂时不可用，请稍后再试。')
       }
     }
 
@@ -122,13 +123,14 @@ export default function StudyAbroadCasesPage() {
     <>
       <div className="v2-main-column">
         <PageIntro
-          kicker="案例档案"
+          kicker="录取案例库"
           pathItems={[
             { label: '留学总览', to: '/station/studyabroad' },
-            { label: '案例档案' },
+            { label: '录取案例库' },
           ]}
-          title="把相近背景的录取样本收进同一条判断链路。"
-          lead="先筛选，再看详情，最后决定是否提交自己的匿名案例。"
+          title="录取案例库"
+          lead="查看往届学生的录取、候补和拒信案例，按国家、结果、本科专业和关键词筛选，也可以匿名提交自己的案例。"
+          compact
         />
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         <section className="v2-summary-strip">
@@ -148,7 +150,7 @@ export default function StudyAbroadCasesPage() {
             <p>当前列表里属于你的案例样本数量。</p>
           </article>
         </section>
-        <section className="v2-feed-list" aria-label="案例档案列表">
+        <section className="v2-feed-list" aria-label="录取案例库列表">
           {rows.map((row) => (
             <article className="v2-feed-item" key={row.id}>
               <div className="v2-feed-index">{row.applicationYear}</div>
@@ -160,7 +162,7 @@ export default function StudyAbroadCasesPage() {
               </div>
               <div className="v2-feed-side">
                 <span>{getAdmissionResultLabel(row.admissionResult)}</span>
-                <button className="v2-secondary-link" type="button" onClick={() => setSelectedCase(row)}>查看详情</button>
+                <button className="v2-secondary-link" type="button" onClick={() => { setSelectedCase(row); setReadingCase(row) }}>查看详情</button>
                 {row.authorId === user?.id ? (
                   <button className="v2-secondary-link" type="button" onClick={() => setPendingDelete(row)}>删除</button>
                 ) : null}
@@ -174,7 +176,7 @@ export default function StudyAbroadCasesPage() {
           <div className="v2-side-card__head">
             <div>
               <p className="v2-kicker">案例筛选</p>
-              <h3>缩小样本，再进入详情</h3>
+              <h3>筛选录取案例</h3>
             </div>
             <button className="v2-primary-link" type="button" onClick={() => setCaseModalOpen(true)}>提交案例</button>
           </div>
@@ -211,24 +213,26 @@ export default function StudyAbroadCasesPage() {
             </div>
           </form>
         </section>
-        {selectedCase ? (
-          <section className="v2-side-card">
-            <div className="v2-side-card__head">
-              <div>
-                <p className="v2-kicker">案例详情</p>
-                <h3>{selectedCase.school}</h3>
-              </div>
-            </div>
-            <div className="v2-check-list">
-              <div className="v2-check-row"><strong>项目</strong><span>{selectedCase.program}</span></div>
-              <div className="v2-check-row"><strong>背景</strong><span>{selectedCase.studentMajor} / GPA {selectedCase.gpa}</span></div>
-              <div className="v2-check-row"><strong>语言</strong><span>{selectedCase.languageType} {selectedCase.languageScore}</span></div>
-              <div className="v2-check-row"><strong>软背景</strong><span>{selectedCase.softBackground || '未补充'}</span></div>
-              <div className="v2-check-row"><strong>总结</strong><span>{selectedCase.summary}</span></div>
-            </div>
-          </section>
-        ) : null}
       </aside>
+
+      <StudyAbroadPageModal
+        open={Boolean(readingCase)}
+        kicker="录取案例详情"
+        title={readingCase?.school || '案例详情'}
+        lead={readingCase ? `${readingCase.program}，${getAdmissionResultLabel(readingCase.admissionResult)}。` : ''}
+        onClose={() => setReadingCase(null)}
+      >
+        {readingCase ? (
+          <div className="v2-check-list">
+            <div className="v2-check-row"><strong>项目</strong><span>{readingCase.program}</span></div>
+            <div className="v2-check-row"><strong>背景</strong><span>{readingCase.studentMajor} / GPA {readingCase.gpa}</span></div>
+            <div className="v2-check-row"><strong>语言</strong><span>{readingCase.languageType} {readingCase.languageScore}</span></div>
+            <div className="v2-check-row"><strong>软背景</strong><span>{readingCase.softBackground || '未补充'}</span></div>
+            <div className="v2-check-row"><strong>联系方式</strong><span>{readingCase.contact || '未公开'}</span></div>
+            <div className="v2-check-row"><strong>总结</strong><span>{readingCase.summary}</span></div>
+          </div>
+        ) : null}
+      </StudyAbroadPageModal>
 
       <StudyAbroadCaseSubmitModal
         open={caseModalOpen}
@@ -240,7 +244,7 @@ export default function StudyAbroadCasesPage() {
       <EmploymentConfirmModal
         open={Boolean(pendingDelete)}
         title="确认删除这条案例样本？"
-        body="删除后会从当前案例档案中移除这条记录。"
+        body="删除后会从当前录取案例库中移除这条记录。"
         confirmLabel="删除案例"
         onConfirm={confirmDelete}
         onClose={() => setPendingDelete(null)}

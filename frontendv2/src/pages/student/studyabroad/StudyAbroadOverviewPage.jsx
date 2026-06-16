@@ -38,9 +38,6 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -53,7 +50,7 @@ export default function StudyAbroadOverviewPage() {
   const [timeline, setTimeline] = useState(createFallbackTimeline())
   const [materials, setMaterials] = useState(createFallbackMaterials())
   const [experiences, setExperiences] = useState(createFallbackExperiences())
-  const [notice, setNotice] = useState(previewDataNotice('留学总览'))
+  const [notice, setNotice] = useState('')
   const [applicationDrawerOpen, setApplicationDrawerOpen] = useState(false)
   const [timelineModalOpen, setTimelineModalOpen] = useState(false)
   const [materialDrawerOpen, setMaterialDrawerOpen] = useState(false)
@@ -70,7 +67,7 @@ export default function StudyAbroadOverviewPage() {
 
     async function loadOverview() {
       if (!canUseRemote) {
-        setNotice(previewDataNotice('留学总览'))
+        setNotice('')
         return
       }
 
@@ -103,10 +100,10 @@ export default function StudyAbroadOverviewPage() {
         setTimeline(nextTimeline)
         setMaterials(nextMaterials)
         setExperiences(nextExperiences)
-        setNotice(remoteDataNotice('留学总览'))
+        setNotice('')
       } catch (error) {
         if (!active) return
-        setNotice(fallbackDataNotice('留学总览', error))
+        setNotice('留学总览暂时不可用，请稍后再试。')
       }
     }
 
@@ -196,8 +193,9 @@ export default function StudyAbroadOverviewPage() {
       <div className="v2-main-column">
         <PageIntro
           kicker="留学总览"
-          title="先看推进态势，再决定去哪个子页继续把申请往前推。"
-          lead="Command Deck 把申请、风险、目录和案例放进同一张调度视图。"
+          title="留学总览"
+          lead="汇总你的申请项目、截止提醒、材料进度、院校项目和录取案例，方便答辩和日常管理时快速进入对应功能。"
+          compact
         />
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         <StudyAbroadCommandDeck

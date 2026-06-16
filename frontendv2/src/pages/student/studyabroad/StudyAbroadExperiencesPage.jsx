@@ -19,9 +19,6 @@ import {
 } from '@/lib/studyabroad/studyAbroadNormalizers.js'
 import {
   canUseRemoteToken,
-  fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -33,11 +30,12 @@ export default function StudyAbroadExperiencesPage() {
   const [page, setPage] = useState(0)
   const [rows, setRows] = useState(createFallbackExperiences())
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, totalElements: createFallbackExperiences().length })
-  const [notice, setNotice] = useState(previewDataNotice('留学经验'))
+  const [notice, setNotice] = useState('')
   const [composerOpen, setComposerOpen] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [form, setForm] = useState(createEmptyStudyAbroadExperienceForm())
   const [pendingDelete, setPendingDelete] = useState(null)
+  const [readingItem, setReadingItem] = useState(null)
 
   useEffect(() => {
     let active = true
@@ -46,7 +44,7 @@ export default function StudyAbroadExperiencesPage() {
       if (!canUseRemote) {
         setRows(createFallbackExperiences())
         setPageInfo({ totalPages: 1, totalElements: createFallbackExperiences().length })
-        setNotice(previewDataNotice('留学经验'))
+        setNotice('')
         return
       }
 
@@ -60,18 +58,18 @@ export default function StudyAbroadExperiencesPage() {
             keyword: deferredKeyword,
           }),
           8000,
-          '留学经验读取超时，请检查后端服务。',
+          '留学经验库读取超时，请检查后端服务。',
         )
         if (!active) return
         const normalized = normalizeExperiencesPage(data)
         setRows(normalized.content)
         setPageInfo({ totalPages: normalized.totalPages, totalElements: normalized.totalElements })
-        setNotice(remoteDataNotice('留学经验'))
+        setNotice('')
       } catch (error) {
         if (!active) return
         setRows(createFallbackExperiences())
         setPageInfo({ totalPages: 1, totalElements: createFallbackExperiences().length })
-        setNotice(fallbackDataNotice('留学经验', error))
+        setNotice('留学经验库暂时不可用，请稍后再试。')
       }
     }
 
@@ -82,7 +80,7 @@ export default function StudyAbroadExperiencesPage() {
   }, [canUseRemote, deferredKeyword, filters.country, filters.topic, page, token])
 
   const myExperienceCount = useMemo(
-    () => rows.filter((item) => item.authorId === user?.id).length,
+    () => rows.filter((item) => canManageExperience(item, user)).length,
     [rows, user?.id],
   )
 
@@ -93,6 +91,7 @@ export default function StudyAbroadExperiencesPage() {
   }
 
   function openEditDrawer(item) {
+    setReadingItem(null)
     setEditingItem(item)
     setForm({
       ...createEmptyStudyAbroadExperienceForm(),
@@ -134,13 +133,14 @@ export default function StudyAbroadExperiencesPage() {
     <>
       <div className="v2-main-column">
         <PageIntro
-          kicker="留学经验"
+          kicker="留学经验库"
           pathItems={[
             { label: '留学总览', to: '/station/studyabroad' },
-            { label: '经验沉淀' },
+            { label: '留学经验库' },
           ]}
-          title="把可复用的申请经验沉淀成可筛选、可阅读、可维护的经验流。"
-          lead="阅读和创作分层，避免把长表单和长列表堆在同一屏里。"
+          title="留学经验库"
+          lead="本校同学发布的申请经验，欢迎同学们交流！"
+          compact
         />
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         <section className="v2-summary-strip">
@@ -163,7 +163,7 @@ export default function StudyAbroadExperiencesPage() {
         <section className="v2-feed-list" aria-label="留学经验列表">
           {rows.map((item) => (
             <article className="v2-feed-item" key={item.id}>
-              <div className="v2-feed-index">{item.readTime}</div>
+              <div className="v2-feed-index">{formatPublishedAt(item.createdAt)}</div>
               <div className="v2-feed-body">
                 <strong>{item.title}</strong>
                 <p>{item.authorName} / {getTopicLabel(item.topic)}</p>
@@ -171,9 +171,12 @@ export default function StudyAbroadExperiencesPage() {
               </div>
               <div className="v2-feed-side">
                 <span>{item.country}</span>
-                <button className="v2-secondary-link" type="button" onClick={() => openEditDrawer(item)}>查看 / 编辑</button>
-                {item.authorId === user?.id ? (
-                  <button className="v2-secondary-link" type="button" onClick={() => setPendingDelete(item)}>删除</button>
+                <button className="v2-secondary-link" type="button" onClick={() => setReadingItem(item)}>查看全文</button>
+                {canManageExperience(item, user) ? (
+                  <>
+                    <button className="v2-secondary-link" type="button" onClick={() => openEditDrawer(item)}>编辑</button>
+                    <button className="v2-secondary-link" type="button" onClick={() => setPendingDelete(item)}>删除</button>
+                  </>
                 ) : null}
               </div>
             </article>
@@ -184,8 +187,8 @@ export default function StudyAbroadExperiencesPage() {
         <section className="v2-side-card">
           <div className="v2-side-card__head">
             <div>
-              <p className="v2-kicker">经验筛选</p>
-              <h3>先收口，再决定要读还是要写</h3>
+              <p className="v2-kicker">筛选条件</p>
+              <h3>筛选经验帖</h3>
             </div>
             <button className="v2-primary-link" type="button" onClick={openCreateDrawer}>发布经验</button>
           </div>
@@ -236,6 +239,46 @@ export default function StudyAbroadExperiencesPage() {
         onConfirm={confirmDelete}
         onClose={() => setPendingDelete(null)}
       />
+
+      {readingItem ? (
+        <div className="v2-modal-overlay" onClick={() => setReadingItem(null)}>
+          <article className="v2-modal-card v2-studyabroad-reading-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="v2-modal-head">
+              <div>
+                <p className="v2-kicker">{readingItem.authorName} / {formatPublishedAt(readingItem.createdAt)}</p>
+                <h3>{readingItem.title}</h3>
+              </div>
+              <button className="v2-secondary-link" type="button" onClick={() => setReadingItem(null)}>关闭</button>
+            </div>
+            <div className="v2-check-list">
+              <div className="v2-check-row"><strong>主题</strong><span>{getTopicLabel(readingItem.topic)}</span></div>
+              <div className="v2-check-row"><strong>国家 / 地区</strong><span>{readingItem.country}</span></div>
+            </div>
+            <p className="v2-status-note">{readingItem.summary}</p>
+            <div className="v2-studyabroad-reading-body">
+              {(readingItem.content || readingItem.summary || '').split('\n').filter(Boolean).map((paragraph, index) => (
+                <p key={`${readingItem.id}-${index}`}>{paragraph}</p>
+              ))}
+            </div>
+            {readingItem.tags?.length ? (
+              <div className="v2-inline-actions">
+                {readingItem.tags.map((tag) => <span className="v2-tag" key={tag}>{tag}</span>)}
+              </div>
+            ) : null}
+          </article>
+        </div>
+      ) : null}
     </>
   )
+}
+
+function canManageExperience(item, user) {
+  return item.authorId != null && user?.id != null && String(item.authorId) === String(user.id)
+}
+
+function formatPublishedAt(value) {
+  if (!value) return '发布时间待补充'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10)
+  return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
 }

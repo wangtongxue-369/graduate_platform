@@ -36,6 +36,7 @@ const emptyForm = {
   applicationMode: 'DIY',
   tags: '',
   summary: '',
+  contact: '',
 }
 
 const demoCases = [
@@ -58,7 +59,8 @@ const demoCases = [
     scholarship: '无奖学金',
     applicationMode: 'DIY',
     tags: ['低科研', 'DIY', 'CS'],
-    summary: '课程匹配和项目经历写得比较具体，PS 没有只重复简历，是这次申请里比较关键的一点。联系方式：wx_admitcase_ucl',
+    contact: 'wx_admitcase_ucl',
+    summary: '课程匹配和项目经历写得比较具体，PS 没有只重复简历，是这次申请里比较关键的一点。',
   },
   {
     id: 'case-hkust-ds',
@@ -79,7 +81,8 @@ const demoCases = [
     scholarship: '无奖学金',
     applicationMode: '中介申请',
     tags: ['港新', '数据方向', '实习突出'],
-    summary: '港校比较看重递交节奏和材料完整度，提前准备成绩单和推荐信能减少后期压力。联系方式：grad_admit_hkust@qq.com',
+    contact: 'grad_admit_hkust@qq.com',
+    summary: '港校比较看重递交节奏和材料完整度，提前准备成绩单和推荐信能减少后期压力。',
   },
   {
     id: 'case-nus-ai',
@@ -100,7 +103,8 @@ const demoCases = [
     scholarship: '无',
     applicationMode: 'DIY',
     tags: ['拒信复盘', '语言偏弱', 'AI'],
-    summary: '语言和 GPA 都没有优势时，单靠课程项目比较吃亏，建议补强可量化项目或扩大匹配院校范围。联系方式：论坛 ID nus_reject_26',
+    contact: '论坛 ID nus_reject_26',
+    summary: '语言和 GPA 都没有优势时，单靠课程项目比较吃亏，建议补强可量化项目或扩大匹配院校范围。',
   },
   {
     id: 'case-columbia-stat',
@@ -121,7 +125,8 @@ const demoCases = [
     scholarship: '无奖学金',
     applicationMode: 'DIY',
     tags: ['美硕', '统计', 'GRE 高分', 'DIY'],
-    summary: '哥大统计系 MA 项目 STEM 认证，30 学分可选 4 门核心 + 6 门选修。PS 里把实习和竞赛跟课程方向做了很细的映射，三段量化经历是主要加分项。NYC 地理位置对找实习帮助大。联系方式：wx_columbia_stat25',
+    contact: 'wx_columbia_stat25',
+    summary: '哥大统计系 MA 项目 STEM 认证，30 学分可选 4 门核心 + 6 门选修。PS 里把实习和竞赛跟课程方向做了很细的映射，三段量化经历是主要加分项。NYC 地理位置对找实习帮助大。',
   },
   {
     id: 'case-edinburgh-ai',
@@ -142,7 +147,8 @@ const demoCases = [
     scholarship: '无',
     applicationMode: 'DIY',
     tags: ['拒信复盘', 'AI', '英国', '开源'],
-    summary: '爱丁堡 AI 项目在 Informatics 学院，雅思要求 7.0 单项不低于 6.5。同年申请者背景很强竞争激烈，PS 里对 AI 方向的兴趣点写得不够具体可能是主要问题，建议把科研和开源经历跟目标教授的研究组做对应。联系方式：ed_reject_25@163.com',
+    contact: 'ed_reject_25@163.com',
+    summary: '爱丁堡 AI 项目在 Informatics 学院，雅思要求 7.0 单项不低于 6.5。同年申请者背景很强竞争激烈，PS 里对 AI 方向的兴趣点写得不够具体可能是主要问题，建议把科研和开源经历跟目标教授的研究组做对应。',
   },
   {
     id: 'case-melbourne-it',
@@ -163,7 +169,8 @@ const demoCases = [
     scholarship: '无奖学金',
     applicationMode: '中介申请',
     tags: ['澳洲', 'IT', '跨专业友好'],
-    summary: '墨尔本 MIT 项目对非 CS 背景友好（2 年制只需一门编程课），但雅思要求 6.5 单项不低于 6.0，写作小分低于 6.0 会被卡，申请前一定确认语言小分。联系方式：wx_melb_it_2026',
+    contact: 'wx_melb_it_2026',
+    summary: '墨尔本 MIT 项目对非 CS 背景友好（2 年制只需一门编程课），但雅思要求 6.5 单项不低于 6.0，写作小分低于 6.0 会被卡，申请前一定确认语言小分。',
   },
   {
     id: 'case-manchester-ds',
@@ -184,7 +191,8 @@ const demoCases = [
     scholarship: '无奖学金',
     applicationMode: 'DIY',
     tags: ['英国', '数据科学', '数学背景'],
-    summary: '曼大 Data Science 有多个方向（Statistics / CS / Business），选对方向很重要。PS 侧重统计和 ML 课程基础，实习中做的 A/B 测试和特征工程经历匹配度高。注意奖学金需要单独申请，常规录取不自带奖。联系方式：manc_ds_case@gmail.com',
+    contact: 'manc_ds_case@gmail.com',
+    summary: '曼大 Data Science 有多个方向（Statistics / CS / Business），选对方向很重要。PS 侧重统计和 ML 课程基础，实习中做的 A/B 测试和特征工程经历匹配度高。注意奖学金需要单独申请，常规录取不自带奖。',
   },
   {
     id: 'case-ntu-fintech',
@@ -205,7 +213,8 @@ const demoCases = [
     scholarship: '无奖学金',
     applicationMode: 'DIY',
     tags: ['港新', '金融科技', 'CFA'],
-    summary: 'NTU FinTech 在数理学院 (SPMS) 下，有 IPA 和 DFS 两个 track。项目对量化背景友好，雅思最低 6.0。PS 里把实习经历和未来职业规划做了很清晰的串联，CFA L1 和竞赛增加了金融侧的可信度。联系方式：wx_ntu_fintech26',
+    contact: 'wx_ntu_fintech26',
+    summary: 'NTU FinTech 在数理学院 (SPMS) 下，有 IPA 和 DFS 两个 track。项目对量化背景友好，雅思最低 6.0。PS 里把实习经历和未来职业规划做了很清晰的串联，CFA L1 和竞赛增加了金融侧的可信度。',
   },
   {
     id: 'case-ubc-mds',
@@ -226,7 +235,8 @@ const demoCases = [
     scholarship: '无',
     applicationMode: '中介申请',
     tags: ['拒信复盘', '加拿大', '数据科学'],
-    summary: 'UBC MDS 是 CS + 统计联合项目，仅 10 个月加速制，毕业可拿 3 年工签。竞争激烈，录取者普遍有 2 年以上工作经验，纯应届背景竞争力偏弱。建议补充更扎实的项目经历或考虑 UBC 其他 CS 研究型项目。联系方式：ubc_mds_fail@outlook.com',
+    contact: 'ubc_mds_fail@outlook.com',
+    summary: 'UBC MDS 是 CS + 统计联合项目，仅 10 个月加速制，毕业可拿 3 年工签。竞争激烈，录取者普遍有 2 年以上工作经验，纯应届背景竞争力偏弱。建议补充更扎实的项目经历或考虑 UBC 其他 CS 研究型项目。',
   },
   {
     id: 'case-cuhk-cs',
@@ -247,7 +257,8 @@ const demoCases = [
     scholarship: '无奖学金',
     applicationMode: 'DIY',
     tags: ['港三', 'CS', '竞赛', 'DIY'],
-    summary: '港中文 CSE 在工程学院下，雅思要求 6.5+，申请费 HKD 400。11 月底递交，1 月中旬拿到 offer。ACM 银牌和腾讯实习在 CV 里很加分，港三 CS 对竞赛经历认可度高，PS 侧重算法能力的具体体现。联系方式：wx_cuhk_cs_offer',
+    contact: 'wx_cuhk_cs_offer',
+    summary: '港中文 CSE 在工程学院下，雅思要求 6.5+，申请费 HKD 400。11 月底递交，1 月中旬拿到 offer。ACM 银牌和腾讯实习在 CV 里很加分，港三 CS 对竞赛经历认可度高，PS 侧重算法能力的具体体现。',
   },
   {
     id: 'case-uva-ai',
@@ -268,7 +279,8 @@ const demoCases = [
     scholarship: '无',
     applicationMode: 'DIY',
     tags: ['拒信复盘', '欧洲', 'AI', '课程匹配'],
-    summary: 'UvA AI 是 2 年制（120EC）研究导向项目，在理学院 Informatics Institute 下，雅思要求 7.0 单项 6.5。欧洲项目对课程匹配度要求严格，数学转 AI 即使有科研也补不了先修课缺口。建议提前补修编程和 AI 相关课程。联系方式：uva_ai_reject26@gmail.com',
+    contact: 'uva_ai_reject26@gmail.com',
+    summary: 'UvA AI 是 2 年制（120EC）研究导向项目，在理学院 Informatics Institute 下，雅思要求 7.0 单项 6.5。欧洲项目对课程匹配度要求严格，数学转 AI 即使有科研也补不了先修课缺口。建议提前补修编程和 AI 相关课程。',
   },
   {
     id: 'case-kcl-law',
@@ -289,7 +301,8 @@ const demoCases = [
     scholarship: '无奖学金',
     applicationMode: '中介申请',
     tags: ['英国', '法学', 'LLM', '跨专业'],
-    summary: 'KCL 法学 LLM 在 Dickson Poon 法学院下，国际商法是其中一个专业方向。雅思 7.0 单项 6.5。法学跨方向申请（如法本申商法方向）PS 叙事逻辑非常关键，需要讲清为什么选这个方向以及职业规划。红圈所实习对 PS 支撑很大。联系方式：wx_kcl_llm25',
+    contact: 'wx_kcl_llm25',
+    summary: 'KCL 法学 LLM 在 Dickson Poon 法学院下，国际商法是其中一个专业方向。雅思 7.0 单项 6.5。法学跨方向申请（如法本申商法方向）PS 叙事逻辑非常关键，需要讲清为什么选这个方向以及职业规划。红圈所实习对 PS 支撑很大。',
   },
   {
     id: 'case-duke-ece',
@@ -310,7 +323,8 @@ const demoCases = [
     scholarship: 'Merit-based $5,000',
     applicationMode: 'DIY',
     tags: ['美硕', 'ECE', '顶会', '奖学金', 'DIY'],
-    summary: '杜克 ECE 在 Pratt 工程学院下，可选 coursework / project / thesis 三条 track，有 ML、量子计算等多个方向。强推 + 顶会 workshop 在美国申请中加成明显，GRE 328 过线后不再是短板。$5000 是 Merit-based 入学奖。联系方式：duke_ece26@163.com',
+    contact: 'duke_ece26@163.com',
+    summary: '杜克 ECE 在 Pratt 工程学院下，可选 coursework / project / thesis 三条 track，有 ML、量子计算等多个方向。强推 + 顶会 workshop 在美国申请中加成明显，GRE 328 过线后不再是短板。$5000 是 Merit-based 入学奖。',
   },
   {
     id: 'case-usyd-commerce',
@@ -331,7 +345,8 @@ const demoCases = [
     scholarship: '无奖学金',
     applicationMode: '中介申请',
     tags: ['澳洲', '商科', '低 GPA 逆袭', 'GMAT'],
-    summary: '悉尼 MCom 在商学院下，Finance 方向 1.5 年制，三重认证（AACSB / EQUIS / AMBA）。雅思 7.0 单项 6.0。GPA 不高但 GMAT 640 弥补了短板，PS 详细写了两段创业实践和商业计划书经历。低 GPA 同学可以考虑用 GMAT 拉分。联系方式：wx_usyd_mcom25',
+    contact: 'wx_usyd_mcom25',
+    summary: '悉尼 MCom 在商学院下，Finance 方向 1.5 年制，三重认证（AACSB / EQUIS / AMBA）。雅思 7.0 单项 6.0。GPA 不高但 GMAT 640 弥补了短板，PS 详细写了两段创业实践和商业计划书经历。低 GPA 同学可以考虑用 GMAT 拉分。',
   },
   {
     id: 'case-utokyo-ist',
@@ -352,7 +367,8 @@ const demoCases = [
     scholarship: '无',
     applicationMode: 'DIY',
     tags: ['拒信复盘', '日本', '研究导向'],
-    summary: '东大情报理工需要参加入学考试（笔试 + 面试），非纯申请制。研究计划书质量是核心，套磁的教授研究方向与自己感兴趣的 ML 应用不太匹配。日本顶尖院校很看研究室 fit，建议提前联系教授确认接收意愿。联系方式：utokyo_ist_26@qq.com',
+    contact: 'utokyo_ist_26@qq.com',
+    summary: '东大情报理工需要参加入学考试（笔试 + 面试），非纯申请制。研究计划书质量是核心，套磁的教授研究方向与自己感兴趣的 ML 应用不太匹配。日本顶尖院校很看研究室 fit，建议提前联系教授确认接收意愿。',
   },
   {
     id: 'case-utoronto-mscac',
@@ -373,7 +389,8 @@ const demoCases = [
     scholarship: '$2,000 CAD Entrance Award',
     applicationMode: 'DIY',
     tags: ['加拿大', 'CS', '带薪实习', 'DIY'],
-    summary: '多大 MScAC 是 8 个月课程 + 8 个月强制带薪 co-op 实习，在 CS 系下，不要求 GRE。项目对编程能力和工程经验要求较高，PS 里需要写清楚职业规划，开源贡献和系统课项目是主要亮点。联系方式：wx_utm_scac25',
+    contact: 'wx_utm_scac25',
+    summary: '多大 MScAC 是 8 个月课程 + 8 个月强制带薪 co-op 实习，在 CS 系下，不要求 GRE。项目对编程能力和工程经验要求较高，PS 里需要写清楚职业规划，开源贡献和系统课项目是主要亮点。',
   },
 ]
 
@@ -428,7 +445,6 @@ export default function AdmissionCasesPage() {
           totalPages: data.totalPages || 1,
           totalElements: data.totalElements || 0,
         })
-        setNotice('录取案例库来自后端公开接口，未登录也可以浏览。')
       } catch (error) {
         if (!active) return
         if (isDevMode) {
@@ -587,6 +603,12 @@ export default function AdmissionCasesPage() {
                   <span>{item.standardizedScore || '无标化'}</span>
                 </div>
                 <p className="muted">{item.summary}</p>
+                {item.contact ? (
+                  <div className="case-contact">
+                    <strong>联系方式</strong>
+                    <span>{item.contact}</span>
+                  </div>
+                ) : null}
                 <div className="case-soft">
                   <strong>软背景</strong>
                   <span>{item.softBackground || '暂未补充'}</span>
@@ -724,6 +746,10 @@ export default function AdmissionCasesPage() {
             <label className="field">
               <span>案例总结</span>
               <textarea rows="3" value={form.summary} placeholder="这次申请最关键的优势、遗憾或建议" onChange={(event) => updateForm('summary', event.target.value)} />
+            </label>
+            <label className="field">
+              <span>联系方式（选填，供浏览者联系你）</span>
+              <input value={form.contact} placeholder="微信号 / 邮箱 / 其他" onChange={(event) => updateForm('contact', event.target.value)} />
             </label>
             <div className="hero-actions">
               <button className="btn primary" type="submit" disabled={!canUseRemote && !isDevMode}>提交案例</button>
