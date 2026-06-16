@@ -483,6 +483,136 @@ describe('kaogong student split pages', () => {
     })
   })
 
+  it('matches the legacy calendar filter controls and hides the remote-connected notice', async () => {
+    apiMocks.kaogongApi.calendarExamGroupsPage.mockResolvedValue({
+      content: [],
+      totalElements: 0,
+      totalPages: 1,
+    })
+
+    renderPage(<KaogongCalendarPage />)
+/*
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.calendarExamGroupsPage).toHaveBeenCalled()
+    })
+
+    expect(screen.getByLabelText('地区')).toHaveAttribute('placeholder', '如：北京/上海')
+    expect(screen.getByLabelText('年份')).toHaveAttribute('placeholder', '可选，如：2027')
+    expect(screen.getByLabelText('考试类型').tagName).toBe('SELECT')
+    expect(screen.getByRole('option', { name: '国家公务员考试' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '上海市公务员考试' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '事业单位考试' })).toBeInTheDocument()
+    expect(screen.queryByText('考试日历：已连接后端')).not.toBeInTheDocument()
+  })
+
+  it('surfaces the nearest upcoming exam node in the calendar spotlight', async () => {
+    apiMocks.kaogongApi.calendarExamGroupsPage.mockResolvedValue({
+      content: [
+        {
+          key: 'bj::national::2027',
+          region: '北京',
+          examType: '国家公务员考试',
+          year: '2027',
+          events: [
+            { id: 1, nodeType: '报名开始', title: '2027 国考北京考区：报名开始', eventDate: '2099-02-03' },
+            { id: 2, nodeType: '笔试', title: '2027 国考北京考区：笔试', eventDate: '2099-03-12' },
+          ],
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+
+    renderPage(<KaogongCalendarPage />)
+
+    const spotlight = await screen.findByLabelText('当前最近节点')
+    expect(within(spotlight).getByText('报名开始')).toBeInTheDocument()
+    expect(within(spotlight).getByText('2027 国考北京考区：报名开始')).toBeInTheDocument()
+    expect(within(spotlight).getByText('国家公务员考试')).toBeInTheDocument()
+    expect(within(spotlight).getByText('北京 / 2027')).toBeInTheDocument()
+  })
+
+  it('renders each exam group as a flow card with an ordered timeline', async () => {
+    apiMocks.kaogongApi.calendarExamGroupsPage.mockResolvedValue({
+      content: [
+        {
+          key: 'bj::national::2027',
+          region: '鍖椾含',
+          examType: '鍥藉鍏姟鍛樿€冭瘯',
+          year: '2027',
+          events: [
+            { id: 1, nodeType: '鍏憡鍙戝竷', title: '2027 鍥藉鍏姟鍛樿€冭瘯鍖椾含鑰冨尯锛氬叕鍛婂彂甯?', eventDate: '2099-05-13' },
+            { id: 2, nodeType: '鎶ュ悕寮€濮?', title: '2027 鍥藉鍏姟鍛樿€冭瘯鍖椾含鑰冨尯锛氭姤鍚嶅紑濮?', eventDate: '2099-05-18' },
+            { id: 3, nodeType: '绗旇瘯', title: '2027 鍥藉鍏姟鍛樿€冭瘯鍖椾含鑰冨尯锛氱瑪璇?', eventDate: '2099-06-12' },
+          ],
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+
+    renderPage(<KaogongCalendarPage />)
+
+    const flowCard = await screen.findByLabelText('鍥藉鍏姟鍛樿€冭瘯 鑰冭瘯娴佺▼')
+    expect(within(flowCard).getByText('涓嬩竴鑺傜偣')).toBeInTheDocument()
+
+    const timeline = within(flowCard).getByRole('list', { name: '鍥藉鍏姟鍛樿€冭瘯 鏃堕棿绾? })
+    expect(within(timeline).getAllByRole('listitem')).toHaveLength(3)
+    expect(within(timeline).getByText('鍏憡鍙戝竷')).toBeInTheDocument()
+    expect(within(timeline).getByText('鎶ュ悕寮€濮?)).toBeInTheDocument()
+    expect(within(timeline).getByText('绗旇瘯')).toBeInTheDocument()
+  })
+
+*/
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.calendarExamGroupsPage).toHaveBeenCalled()
+    })
+
+    expect(screen.getByLabelText('地区')).toHaveAttribute('placeholder', '如：北京/上海')
+    expect(screen.getByLabelText('年份')).toHaveAttribute('placeholder', '可选，如：2027')
+    expect(screen.getByLabelText('考试类型').tagName).toBe('SELECT')
+    expect(screen.getByRole('option', { name: '国家公务员考试' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '上海市公务员考试' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '事业单位考试' })).toBeInTheDocument()
+    expect(screen.queryByText('考试日历：已连接后端')).not.toBeInTheDocument()
+  })
+
+  it('renders each exam group as a flow card with an ordered timeline', async () => {
+    apiMocks.kaogongApi.calendarExamGroupsPage.mockResolvedValue({
+      content: [
+        {
+          key: 'bj::national::2027',
+          region: '北京',
+          examType: '国家公务员考试',
+          year: '2027',
+          events: [
+            { id: 1, nodeType: '公告发布', title: '2027 国考北京考区：公告发布', eventDate: '2099-05-13' },
+            { id: 2, nodeType: '报名开始', title: '2027 国考北京考区：报名开始', eventDate: '2099-05-18' },
+            { id: 3, nodeType: '成绩公布', title: '2027 国考北京考区：成绩公布', eventDate: '2099-06-12' },
+          ],
+        },
+      ],
+      totalElements: 1,
+      totalPages: 1,
+    })
+
+    renderPage(<KaogongCalendarPage />)
+
+    const flowCard = await screen.findByLabelText('exam-flow-card bj::national::2027')
+    expect(within(flowCard).getByText('下一节点')).toBeInTheDocument()
+    expect(within(flowCard).getByText('1', { selector: '.v2-calendar-rail__index' })).toBeInTheDocument()
+
+    const timeline = within(flowCard).getByRole('list', { name: 'exam-flow-timeline bj::national::2027' })
+    expect(within(timeline).getAllByRole('listitem')).toHaveLength(3)
+    expect(within(timeline).getByText('公告发布')).toBeInTheDocument()
+    expect(within(timeline).getByText('报名开始')).toBeInTheDocument()
+    expect(within(timeline).getByText('成绩公布')).toBeInTheDocument()
+    expect(within(timeline).getByText('2099-05-13')).toBeInTheDocument()
+    expect(within(timeline).getByText('2099-05-18')).toBeInTheDocument()
+    expect(within(timeline).getByText('2099-06-12')).toBeInTheDocument()
+  })
+
   it('supports exam subscription actions and reminder updates in the calendar workspace', async () => {
     apiMocks.kaogongApi.calendarExamGroupsPage.mockResolvedValue({
       content: [
@@ -528,7 +658,7 @@ describe('kaogong student split pages', () => {
 
     renderPage(<KaogongCalendarPage />)
 
-    expect(await screen.findByText('浙江省公务员考试')).toBeInTheDocument()
+    expect((await screen.findAllByText('浙江省公务员考试')).length).toBeGreaterThan(0)
     fireEvent.click(screen.getByRole('button', { name: '订阅考试' }))
 
     await waitFor(() => {
