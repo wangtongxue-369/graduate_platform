@@ -120,14 +120,13 @@ export default function KaoyanMaterialUploadPage() {
     <>
       <div className="v2-main-column">
         <PageIntro
-          kicker="上传资料"
+          kicker="考研资料"
           pathItems={[
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '资料中枢', to: '/station/kaoyan/materials' },
             { label: '上传资料' },
           ]}
-          title="上传页只处理资料提交，不和公开资料浏览混在一起。"
-          lead="把旧版的标题、分类、附件约束和上传进度保留下来，再用新版分栏重新组织输入顺序。"
+          title="上传资料"
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}

@@ -22,7 +22,7 @@ import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 export default function KaoyanStudyRoomPage() {
   const navigate = useNavigate()
   const { roomId } = useParams()
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const previewRoom = createKaoyanSupportPreview().rooms[0]
   const [room, setRoom] = useState(normalizeRoomDetail(previewRoom, roomId))
@@ -36,6 +36,7 @@ export default function KaoyanStudyRoomPage() {
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const [realtimeState, setRealtimeState] = useState('preview')
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false)
 
   async function refreshMessages() {
     if (!canUseRemote || !roomId) return
@@ -93,9 +94,22 @@ export default function KaoyanStudyRoomPage() {
     }
   }
 
+  const canLeave = Boolean(currentRoom?.id || currentRoom?.roomId)
+  const canJoin = !canLeave && !room.closed
+  const canClose = Boolean(room.isOwner)
+
   useEffect(() => {
     loadRoomWorkspace(activePeriod)
   }, [activePeriod, canUseRemote, roomId, token])
+
+  // Auto-join when the page is opened by the room's creator so they don't
+  // need to click "加入房间" manually every time.
+  useEffect(() => {
+    if (!loading && room.isOwner && canJoin) {
+      handleJoinRoom()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, room.isOwner, canJoin])
 
   useEffect(() => {
     if (!canUseRemote || !roomId) return undefined
@@ -167,10 +181,6 @@ export default function KaoyanStudyRoomPage() {
     }
   }
 
-  const canLeave = Boolean(currentRoom?.id || currentRoom?.roomId)
-  const canJoin = !canLeave && !room.closed
-  const canClose = Boolean(room.isOwner)
-
   return (
     <>
       <div className="v2-main-column">
@@ -182,32 +192,15 @@ export default function KaoyanStudyRoomPage() {
             { label: room.name || '自习室' },
           ]}
           title={room.name || '同频自习室'}
-          lead="房间页只处理实时讨论、房间加入与排行协作，筛选和建房仍留在同频自习室大厅。"
+          lead="专注每一分钟，剩下的交给时间。"
           actions={<Link className="v2-secondary-link" to="/station/kaoyan/support/rooms">返回同频自习室</Link>}
         />
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         {loading ? <div className="v2-status-note">正在同步房间数据…</div> : null}
 
-        <section className="v2-summary-strip" aria-label="房间摘要">
-          <article className="v2-summary-card">
-            <span>房间成员</span>
-            <strong>{room.memberCount}</strong>
-            <p>实时成员清单和排行都以当前房间为中心展开。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>消息数量</span>
-            <strong>{messages.length}</strong>
-            <p>讨论流支持 SSE，同步失败时会回退手动刷新。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>实时状态</span>
-            <strong>{realtimeState}</strong>
-            <p>如果显示 fallback，页面仍可继续使用，只是不再自动推送。</p>
-          </article>
-        </section>
-
         <StudyRoomChatPanel
+          currentUserId={user?.id}
           draft={draft}
           messages={messages}
           realtimeState={realtimeState}
@@ -229,12 +222,31 @@ export default function KaoyanStudyRoomPage() {
           leaderboard={leaderboard}
           members={room.members || []}
           room={room}
-          onCloseRoom={handleCloseRoom}
+          onCloseRoom={() => setShowCloseConfirm(true)}
           onJoinRoom={handleJoinRoom}
           onLeaveRoom={handleLeaveRoom}
           onPeriodChange={setActivePeriod}
         />
       </aside>
+
+      {showCloseConfirm ? (
+        <div className="v2-modal-overlay" onClick={() => setShowCloseConfirm(false)}>
+          <div className="v2-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <h3>关闭自习室</h3>
+            <p style={{ margin: '12px 0 20px', color: 'var(--v2-soft-strong)' }}>
+              确定要关闭此自习室吗？关闭后所有成员将被移出，讨论记录保留但不可继续发言。
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="v2-segment-button" type="button" onClick={() => setShowCloseConfirm(false)}>
+                取消
+              </button>
+              <button className="v2-segment-button is-active" type="button" onClick={handleCloseRoom}>
+                确认关闭
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }

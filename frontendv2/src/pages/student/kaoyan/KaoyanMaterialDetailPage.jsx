@@ -15,14 +15,6 @@ import {
   remoteDataNotice,
 } from '@/lib/stationData.js'
 
-function statusLabel(status) {
-  return {
-    PENDING: '待审核',
-    APPROVED: '已通过',
-    REJECTED: '已拒绝',
-  }[status] || status || '未知状态'
-}
-
 export default function KaoyanMaterialDetailPage() {
   const { materialId } = useParams()
   const navigate = useNavigate()
@@ -106,6 +98,8 @@ export default function KaoyanMaterialDetailPage() {
     }
   }
 
+  const attachments = Array.isArray(detail.attachments) ? detail.attachments : []
+
   return (
     <>
       <div className="v2-main-column">
@@ -123,25 +117,43 @@ export default function KaoyanMaterialDetailPage() {
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
 
-        <section className="v2-summary-strip" aria-label="资料详情摘要">
-          <article className="v2-summary-card">
-            <span>审核状态</span>
-            <strong>{statusLabel(detail.status)}</strong>
-            <p>当前资料的审核结果与公开状态。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>浏览次数</span>
-            <strong>{detail.viewCount || 0}</strong>
-            <p>公开页浏览量，用来判断资料是否持续被使用。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>下载次数</span>
-            <strong>{detail.downloadCount || 0}</strong>
-            <p>附件下载总量，方便判断资料实际价值。</p>
-          </article>
+        <section className="v2-article-card" aria-label="资料附件">
+          <div className="v2-side-card__head">
+            <h3 className="v2-card-title">附件下载</h3>
+            <span className="v2-plan-status-pill">{`共 ${attachments.length} 个`}</span>
+          </div>
+          {attachments.length ? (
+            <div className="v2-attachment-list">
+              {attachments.map((item) => (
+                <div className="v2-attachment-row" key={item.id}>
+                  <div className="v2-attachment-row__meta">
+                    <strong>{item.originalName}</strong>
+                    <span>{formatBytes(item.fileSize)}</span>
+                  </div>
+                  <button
+                    className="v2-segment-button is-active"
+                    type="button"
+                    disabled={downloadingId === String(item.id)}
+                    onClick={(event) => handleDownload(event, item)}
+                  >
+                    {downloadingId === String(item.id) ? '下载中…' : '下载附件'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>当前资料没有可下载附件。</p>
+          )}
+          <p
+            className="muted"
+            style={{ fontSize: 12, marginTop: 12, textAlign: 'right' }}
+          >
+            {`浏览 ${detail.viewCount || 0} · 下载 ${detail.downloadCount || 0}`}
+          </p>
         </section>
 
         <section className="v2-article-card">
+          <h3 className="v2-card-title">资料信息</h3>
           <div className="v2-check-list">
             <div className="v2-check-row">
               <strong>适用院校 / 专业</strong>
@@ -164,29 +176,6 @@ export default function KaoyanMaterialDetailPage() {
       </div>
 
       <aside className="v2-side-column">
-        <section className="v2-side-card">
-          <p className="v2-kicker">附件列表</p>
-          <div className="v2-check-list">
-            {(detail.attachments || []).map((item) => (
-              <div className="v2-check-row" key={item.id}>
-                <strong>{item.originalName}</strong>
-                <span>{formatBytes(item.fileSize)}</span>
-                <span>{`下载 ${item.downloadCount || 0}`}</span>
-                <a
-                  className="v2-secondary-link"
-                  href={materialApi.downloadUrl(detail.id, item.id)}
-                  rel="noreferrer"
-                  target="_blank"
-                  onClick={(event) => handleDownload(event, item)}
-                >
-                  {downloadingId === String(item.id) ? '下载中…' : '下载附件'}
-                </a>
-              </div>
-            ))}
-            {!detail.attachments?.length ? <p>当前资料没有可下载附件。</p> : null}
-          </div>
-        </section>
-
         <section className="v2-side-card">
           <p className="v2-kicker">快捷入口</p>
           <div className="v2-side-action-stack">

@@ -649,6 +649,23 @@ export function createEmptyRoomForm() {
   }
 }
 
+function isClosedRoomFlag(value) {
+  if (value === true || value === 1) return true
+  if (typeof value !== 'string') return false
+  return ['true', '1', 'yes', 'closed'].includes(value.trim().toLowerCase())
+}
+
+export function isOpenStudyRoom(room) {
+  if (!room || typeof room !== 'object') return false
+  if (isClosedRoomFlag(room.closed)) return false
+  const status = String(room.status || '').trim().toUpperCase()
+  return !status || status === 'OPEN'
+}
+
+export function filterOpenStudyRooms(rows) {
+  return ensureArray(rows).filter(isOpenStudyRoom)
+}
+
 export function normalizeSupportRows(mentorsData, roomsData, unreadData) {
   const mentorPage = ensurePage(mentorsData)
   const roomPage = ensurePage(roomsData)

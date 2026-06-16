@@ -285,8 +285,8 @@ export default function KaoyanSchoolsPage() {
             { label: '考研主站', to: '/station/kaoyan' },
             { label: '择校账本' },
           ]}
-          title="把院校档案、分数线和收藏动作叠在同一张比较账本里。"
-          lead="主区只显示比较结果，筛选收进右栏，收藏单独回看。"
+          title="择校账本"
+          lead="选对方向，比埋头赶路更重要。"
           actions={<Link className="v2-secondary-link" to="/station/kaoyan/schools/favorites">查看收藏账本</Link>}
         />
 

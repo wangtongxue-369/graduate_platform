@@ -77,7 +77,6 @@ export default function CounselingSessionList({
               </div>
               <p className="v2-counseling-session-item__subject">{item.subject || '未命名咨询'}</p>
               <div className="v2-counseling-session-item__meta">
-                <span>{item.unreadCount ? `未读 ${item.unreadCount}` : '已读完当前会话'}</span>
                 <span>{formatDateTimeLabel(item.createdAt)}</span>
               </div>
             </button>

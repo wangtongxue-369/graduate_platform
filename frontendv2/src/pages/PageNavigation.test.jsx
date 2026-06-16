@@ -107,9 +107,7 @@ describe('page-level return paths', () => {
     )
 
     expect(
-      await screen.findByRole('heading', {
-        name: '我的资料状态按旧版工作流拆回待审、通过、拒绝与全部视角，方便追踪每份资料的流转。',
-      }),
+      await screen.findByRole('heading', { name: '我的资料' }),
     ).toBeInTheDocument()
   })
 

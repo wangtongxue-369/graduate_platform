@@ -273,6 +273,12 @@ describe('kaoyan student split pages', () => {
       fireEvent.click(screen.getByRole('button', { name: `选择 ${todayKey}` }))
       expect(screen.getByRole('button', { name: '打卡' })).toBeInTheDocument()
       expect(screen.getByText('暂无打卡记录')).toBeInTheDocument()
+
+      const nextMonthFirstDay = new Date(today.getFullYear(), today.getMonth() + 1, 1, 12)
+      const nextMonthFirstDayKey = toDateKey(nextMonthFirstDay)
+      fireEvent.click(document.querySelector('.v2-plan-calendar-head button:last-child'))
+      fireEvent.click(screen.getByRole('button', { name: new RegExp(nextMonthFirstDayKey) }))
+      expect(screen.getByText(nextMonthFirstDayKey)).toBeInTheDocument()
     }
   })
 
@@ -624,9 +630,6 @@ describe('kaoyan student split pages', () => {
     })
     expect(await screen.findByRole('heading', { name: '政治冲刺笔记' })).toBeInTheDocument()
     expect(screen.getByText('notes.pdf')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '下载附件' })).toHaveAttribute(
-      'href',
-      '/api/kaoyan/materials/101/attachments/301/download',
-    )
+    expect(screen.getByRole('button', { name: '下载附件' })).toBeInTheDocument()
   })
 })
