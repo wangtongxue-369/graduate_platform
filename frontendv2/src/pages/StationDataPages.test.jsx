@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import KaoyanSchoolsPage from '@/pages/student/kaoyan/KaoyanSchoolsPage.jsx'
 import { KaogongCalendarPage } from '@/pages/student/kaogong/KaogongStationPage.jsx'
-import { JobResumePage } from '@/pages/student/job/JobStationPage.jsx'
+import JobStationPage, { JobResumePage } from '@/pages/student/job/JobStationPage.jsx'
 import { StudyAbroadProgramsPage } from '@/pages/student/studyabroad/StudyAbroadStationPage.jsx'
 
 const authState = vi.hoisted(() => ({
@@ -215,7 +215,38 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
     expect(screen.getAllByText('平台后端工程师').length).toBeGreaterThan(0)
     expect(screen.getAllByText('resume-final.pdf').length).toBeGreaterThan(0)
     expect(screen.getAllByText('上海, 杭州').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('Java, Spring Boot, MySQL').length).toBeGreaterThan(0)
+    expect(screen.getByDisplayValue('Java, Spring Boot, MySQL')).toBeInTheDocument()
+  })
+
+  it('keeps the legacy job station entry pointed at the new overview workspace', async () => {
+    apiMocks.employmentApi.resume.mockResolvedValue({
+      targetRole: '平台后端工程师',
+      resumeFile: { hasFile: true, fileName: 'resume-final.pdf' },
+    })
+    apiMocks.employmentApi.recommendations.mockResolvedValue([
+      { id: 1, title: '后端开发', companyName: '星河科技', matchScore: 92, matchReasons: ['技能匹配'] },
+    ])
+    apiMocks.employmentApi.applications.mockResolvedValue([
+      { id: 7, companyName: '星河科技', jobTitle: '后端开发', status: 'FIRST_INTERVIEW', nextStepAt: '2026-06-20T14:00:00' },
+    ])
+    apiMocks.employmentApi.fairs.mockResolvedValue({
+      items: [{ id: 4, title: '上海春招专场', city: '上海', industry: '互联网' }],
+      totalItems: 1,
+      totalPages: 1,
+      page: 1,
+    })
+    apiMocks.employmentApi.notifications.mockResolvedValue({
+      items: [{ id: 30, title: '推荐提醒', readFlag: false }],
+      unreadCount: 1,
+    })
+
+    renderPage(<JobStationPage />)
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '先看推进总览，再进入简历、推荐、投递和招聘会工作区。',
+      }),
+    ).toBeInTheDocument()
   })
 
   it('renders remote study-abroad program data with rightbar filters', async () => {
