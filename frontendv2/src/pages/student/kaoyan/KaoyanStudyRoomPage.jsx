@@ -22,7 +22,7 @@ import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 export default function KaoyanStudyRoomPage() {
   const navigate = useNavigate()
   const { roomId } = useParams()
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const previewRoom = createKaoyanSupportPreview().rooms[0]
   const [room, setRoom] = useState(normalizeRoomDetail(previewRoom, roomId))
@@ -189,25 +189,8 @@ export default function KaoyanStudyRoomPage() {
         {notice ? <div className="v2-status-note">{notice}</div> : null}
         {loading ? <div className="v2-status-note">正在同步房间数据…</div> : null}
 
-        <section className="v2-summary-strip" aria-label="房间摘要">
-          <article className="v2-summary-card">
-            <span>房间成员</span>
-            <strong>{room.memberCount}</strong>
-            <p>实时成员清单和排行都以当前房间为中心展开。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>消息数量</span>
-            <strong>{messages.length}</strong>
-            <p>讨论流支持 SSE，同步失败时会回退手动刷新。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>实时状态</span>
-            <strong>{realtimeState}</strong>
-            <p>如果显示 fallback，页面仍可继续使用，只是不再自动推送。</p>
-          </article>
-        </section>
-
         <StudyRoomChatPanel
+          currentUserId={user?.id}
           draft={draft}
           messages={messages}
           realtimeState={realtimeState}

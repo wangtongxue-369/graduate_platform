@@ -117,28 +117,6 @@ export default function KaoyanMaterialDetailPage() {
 
         {notice ? <div className="v2-status-note">{notice}</div> : null}
 
-        <section className="v2-article-card">
-          <h3 className="v2-card-title">资料信息</h3>
-          <div className="v2-check-list">
-            <div className="v2-check-row">
-              <strong>适用院校 / 专业</strong>
-              <span>{detail.school} / {detail.major}</span>
-            </div>
-            <div className="v2-check-row">
-              <strong>资料分类</strong>
-              <span>{detail.subject} / {detail.materialType} / {detail.year}</span>
-            </div>
-            <div className="v2-check-row">
-              <strong>上传者</strong>
-              <span>{detail.uploaderName || '匿名上传者'}</span>
-            </div>
-            <div className="v2-check-row">
-              <strong>资料介绍</strong>
-              <span>{detail.description || '暂无资料说明。'}</span>
-            </div>
-          </div>
-        </section>
-
         <section className="v2-article-card" aria-label="资料附件">
           <div className="v2-side-card__head">
             <h3 className="v2-card-title">附件下载</h3>
@@ -172,6 +150,28 @@ export default function KaoyanMaterialDetailPage() {
           >
             {`浏览 ${detail.viewCount || 0} · 下载 ${detail.downloadCount || 0}`}
           </p>
+        </section>
+
+        <section className="v2-article-card">
+          <h3 className="v2-card-title">资料信息</h3>
+          <div className="v2-check-list">
+            <div className="v2-check-row">
+              <strong>适用院校 / 专业</strong>
+              <span>{detail.school} / {detail.major}</span>
+            </div>
+            <div className="v2-check-row">
+              <strong>资料分类</strong>
+              <span>{detail.subject} / {detail.materialType} / {detail.year}</span>
+            </div>
+            <div className="v2-check-row">
+              <strong>上传者</strong>
+              <span>{detail.uploaderName || '匿名上传者'}</span>
+            </div>
+            <div className="v2-check-row">
+              <strong>资料介绍</strong>
+              <span>{detail.description || '暂无资料说明。'}</span>
+            </div>
+          </div>
         </section>
       </div>
 
