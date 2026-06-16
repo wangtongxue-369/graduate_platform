@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { kaogongApi } from '@legacy/lib/api.js'
@@ -49,7 +49,7 @@ export default function KaogongInterviewsPage() {
           content: preview.rooms,
           totalElements: preview.rooms.length,
         })
-        setMyRooms(preview.rooms.slice(0, 2))
+        setMyRooms(preview.rooms.slice(0, 6))
         setNotice(previewDataNotice('模拟面试'))
         return
       }
@@ -80,7 +80,7 @@ export default function KaogongInterviewsPage() {
           content: preview.rooms,
           totalElements: preview.rooms.length,
         })
-        setMyRooms(preview.rooms.slice(0, 2))
+        setMyRooms(preview.rooms.slice(0, 6))
         setNotice(fallbackDataNotice('模拟面试', error))
       } finally {
         if (active) setLoading(false)
@@ -112,13 +112,16 @@ export default function KaogongInterviewsPage() {
 
     setCreating(true)
     try {
-      const created = await kaogongApi.createInterviewRoom({
-        title: roomForm.title.trim(),
-        jobDirection: roomForm.jobDirection.trim(),
-        scheduledAt: `${roomForm.scheduledAt}:00`,
-        description: roomForm.description.trim(),
-        inviteNote: roomForm.inviteNote.trim(),
-      }, token)
+      const created = await kaogongApi.createInterviewRoom(
+        {
+          title: roomForm.title.trim(),
+          jobDirection: roomForm.jobDirection.trim(),
+          scheduledAt: `${roomForm.scheduledAt}:00`,
+          description: roomForm.description.trim(),
+          inviteNote: roomForm.inviteNote.trim(),
+        },
+        token,
+      )
       setRoomForm(createInterviewRoomForm())
       navigate(`/station/kaogong/interviews/rooms/${created.id}`)
     } catch (error) {
@@ -153,14 +156,14 @@ export default function KaogongInterviewsPage() {
           <div>
             <p className="v2-kicker">{isReview ? '评价房间' : '加入房间'}</p>
             <h2>{isReview ? '选择房间查看复盘评价' : '选择一个面试房间'}</h2>
-            <p>{isReview ? '先选中房间，再进入房间里的复盘评价区域继续补充。' : '先筛选标题、方向和时间，再进入讨论区交流。'}</p>
+            <p>{isReview ? '选中房间后进入复盘评价区域，继续补充亮点、问题和建议。' : '先筛选标题、方向和时间，再进入讨论区交流。'}</p>
           </div>
           <button className="v2-secondary-link" type="button" onClick={() => setView('home')}>
             返回
           </button>
         </section>
 
-        {loading ? <div className="v2-status-note">正在刷新模拟面试大厅…</div> : null}
+        {loading ? <div className="v2-status-note">正在刷新模拟面试大厅...</div> : null}
 
         <section className="v2-kaogong-interview-room-list" aria-label={isReview ? '评价房间列表' : '加入房间列表'}>
           {roomsPage.content.map((room) => (
@@ -262,7 +265,7 @@ export default function KaogongInterviewsPage() {
           <div className="v2-inline-actions">
             <button className="v2-segment-button" type="button" onClick={() => setView('home')}>取消</button>
             <button className="v2-segment-button is-active" disabled={creating} type="submit">
-              {creating ? '创建中...' : '创建并进入讨论区'}
+              {creating ? '创建中...' : '创建并进入房间'}
             </button>
           </div>
         </form>
@@ -292,32 +295,14 @@ export default function KaogongInterviewsPage() {
           <button className="v2-kaogong-interview-action-card" type="button" onClick={() => setView('join')}>
             <span>02</span>
             <strong>加入房间</strong>
-            <p>先选择已有房间，再进入房间交流、上传附件和参与练习。</p>
+            <p>选择已有房间，进入后交流、上传附件和参与练习。</p>
           </button>
           <button className="v2-kaogong-interview-action-card" type="button" onClick={() => setView('reviews')}>
             <span>03</span>
             <strong>评价房间</strong>
-            <p>查看房间复盘评价，进入后继续补充亮点、问题和建议。</p>
+            <p>查看房间复盘评价，继续补充亮点、问题和建议。</p>
           </button>
         </section>
-
-        {/* <section className="v2-summary-strip" aria-label="模拟面试大厅摘要">
-          <article className="v2-summary-card">
-            <span>可进入房间</span>
-            <strong>{roomsPage.content.length}</strong>
-            <p>点击加入房间后再查看完整房间列表。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>当前房间</span>
-            <strong>{currentRoom?.title || '暂无'}</strong>
-            <p>已加入的进行中房间会保留续接入口。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>我参与过</span>
-            <strong>{myRooms.length}</strong>
-            <p>你的房间记录会放在右侧，方便回到原上下文。</p>
-          </article>
-        </section> */}
       </>
     )
   }
@@ -413,10 +398,11 @@ export default function KaogongInterviewsPage() {
 
           <section className="v2-room-side-section">
             <div className="v2-room-side-section__head">
-              <strong>当前房间：</strong>
+              <strong>当前房间</strong>
               <span>{currentRoom ? '可续接' : '暂无'}</span>
             </div>
-            <span>{currentRoom ? currentRoom.title : '暂无'}</span>
+            <strong className="v2-room-current-title">{currentRoom ? currentRoom.title : '暂无当前房间'}</strong>
+            {currentRoom ? <span className="v2-room-current-meta">{getInterviewStatusLabel(currentRoom.status)}</span> : null}
             {currentRoom ? (
               <button
                 className="v2-segment-button is-active"
@@ -426,7 +412,7 @@ export default function KaogongInterviewsPage() {
                 继续当前房间
               </button>
             ) : (
-              <p>当前没有进行中的模拟面试房间，先筛房或新建一间。</p>
+              <p>加入或创建房间后，这里会保留最近进行中的房间。</p>
             )}
           </section>
 

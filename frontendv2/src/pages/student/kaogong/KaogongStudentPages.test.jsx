@@ -1018,10 +1018,21 @@ describe('kaogong student split pages', () => {
     expect(screen.getByText('结尾再收紧')).toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('发送消息'), { target: { value: '下一轮过应变题' } })
-    fireEvent.click(screen.getByRole('button', { name: '发送消息' }))
+    fireEvent.click(screen.getByRole('button', { name: '发送' }))
 
     await waitFor(() => {
       expect(apiMocks.kaogongApi.sendInterviewMessage).toHaveBeenCalledWith(7, { content: '下一轮过应变题' }, 'remote-token')
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '面试结束' }))
+    expect(await screen.findByRole('heading', { name: '结束房间前填写复盘' })).toBeInTheDocument()
+    const endDialog = screen.getByRole('dialog', { name: '结束房间前填写复盘' })
+    fireEvent.change(within(endDialog).getByLabelText('评价内容'), { target: { value: '结尾再收紧，分点更清楚' } })
+    fireEvent.click(screen.getByRole('button', { name: '提交总结并结束房间' }))
+
+    await waitFor(() => {
+      expect(apiMocks.kaogongApi.addInterviewFeedback).toHaveBeenCalled()
+      expect(apiMocks.kaogongApi.updateInterviewRoomStatus).toHaveBeenCalledWith(7, 'COMPLETED', 'remote-token')
     })
   })
 })
