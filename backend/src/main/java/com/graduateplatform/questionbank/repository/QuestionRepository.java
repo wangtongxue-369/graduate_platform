@@ -12,6 +12,11 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findByBankId(Long bankId);
     Page<Question> findByBankId(Long bankId, Pageable pageable);
 
+    // 管理员治理列表 + 公共预览列表共用：active=false 的软删题目一概不返回，
+    // 与学生侧 findPracticeCandidates 口径一致。
+    List<Question> findByBankIdAndActiveTrue(Long bankId);
+    Page<Question> findByBankIdAndActiveTrue(Long bankId, Pageable pageable);
+
     // 题库停用 = bank.active=false；不再级联翻转题目自身的 active，
     // 这样 disable→enable 题库后题目能恢复，可见性统一在查询侧过滤。
     // bank.active 为 NULL 视为启用，兼容 active 列加入前的历史数据

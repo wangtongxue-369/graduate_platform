@@ -47,7 +47,9 @@ public class QuestionService {
     public List<QuestionResponse> getQuestions(Long bankId) {
         bankRepository.findById(bankId)
             .orElseThrow(() -> new BusinessException("题库不存在"));
-        return questionRepository.findByBankId(bankId).stream()
+        // 软删除（active=false）的题目不返回给公共预览接口，
+        // 否则管理员删掉的题目仍对学生可见，与管理员列表口径一致。
+        return questionRepository.findByBankIdAndActiveTrue(bankId).stream()
             .map(QuestionResponse::from)
             .toList();
     }
@@ -61,7 +63,8 @@ public class QuestionService {
         }
 
         var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "id"));
-        Page<Question> questionPage = questionRepository.findByBankId(bankId, pageable);
+        // 软删除（active=false）的题目不再回到管理员治理列表，否则"删除"按钮看起来无效。
+        Page<Question> questionPage = questionRepository.findByBankIdAndActiveTrue(bankId, pageable);
 
         List<QuestionResponse> content = questionPage.getContent().stream()
             .map(QuestionResponse::from)
@@ -163,8 +166,10 @@ public class QuestionService {
         Question question = questionRepository.findById(id)
             .orElseThrow(() -> new BusinessException("题目不存在"));
 
+        // "停用"只翻转 status，不再连带翻转 active；
+        // active=false 专门表示"已软删除"，由 deleteQuestion 维护，避免两个动作语义混叠：
+        // 旧实现里 disable→enable 会把 active 还原为 true，已被软删的题目也会因此"复活"。
         question.setStatus(status);
-        question.setActive("published".equals(status));
         questionRepository.save(question);
         return QuestionResponse.from(question);
     }
@@ -285,8 +290,9 @@ public class QuestionService {
                 saveSnapshot(question);
 
                 if (validatedStatus != null) {
+                    // 与单条 toggleQuestionStatus 保持一致：status 与 active 解耦，
+                    // 避免批量"启用"把软删题目误复活。
                     question.setStatus(validatedStatus);
-                    question.setActive("published".equals(validatedStatus));
                 }
                 if (validatedChapter != null) {
                     question.setChapter(validatedChapter);

@@ -11,6 +11,24 @@ describe('practice normalizers', () => {
     expect(parseQuestionOptions('["A","B"]')).toEqual(['A', 'B'])
   })
 
+  it('flattens object-shaped options to strings to avoid React child crash', () => {
+    expect(
+      parseQuestionOptions([
+        { key: 'A', value: '客观实在性' },
+        { key: 'B', value: '物质性' },
+      ]),
+    ).toEqual(['A.客观实在性', 'B.物质性'])
+
+    expect(
+      parseQuestionOptions('[{"key":"A","value":"对"},{"key":"B","value":"错"}]'),
+    ).toEqual(['A.对', 'B.错'])
+
+    expect(parseQuestionOptions([{ value: '只有正文' }, { label: '只有标签' }, null])).toEqual([
+      '只有正文',
+      '只有标签',
+    ])
+  })
+
   it('recognizes all subjective question types', () => {
     expect(isSubjectiveQuestionType('subjective')).toBe(true)
     expect(isSubjectiveQuestionType('essay')).toBe(true)

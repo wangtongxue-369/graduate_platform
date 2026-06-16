@@ -565,8 +565,75 @@ class QuestionBankModuleIntegrationTest {
             .andExpect(jsonPath("$.data.updated").value(2))
             .andExpect(jsonPath("$.data.failed").value(0));
 
-        assertThat(questionRepository.findById(q1.getId()).orElseThrow().getActive()).isFalse();
-        assertThat(questionRepository.findById(q2.getId()).orElseThrow().getActive()).isFalse();
+        // 批量"停用"只翻转 status，不再连带翻转 active；active 仅由删除维护，
+        // 这样"停用→启用"循环不会把已软删题目误复活，也与单条 toggleQuestionStatus 口径一致。
+        Question r1 = questionRepository.findById(q1.getId()).orElseThrow();
+        Question r2 = questionRepository.findById(q2.getId()).orElseThrow();
+        assertThat(r1.getStatus()).isEqualTo("disabled");
+        assertThat(r2.getStatus()).isEqualTo("disabled");
+        assertThat(r1.getActive()).isTrue();
+        assertThat(r2.getActive()).isTrue();
+    }
+
+    // Bug：管理员题目治理列表里软删（active=false）的题目仍然出现，
+    // 导致点"删除"后题目"没消失"，看起来按钮无效。
+    @Test
+    void adminQuestionListExcludesSoftDeletedQuestions() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+        Question keep = questionRepository.save(Question.builder()
+            .bank(bank).stem("保留题").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").status("published").active(true).versionNo(1).build());
+        Question toDelete = questionRepository.save(Question.builder()
+            .bank(bank).stem("即将删除").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").status("published").active(true).versionNo(1).build());
+
+        // 删除前：两条都在
+        mockMvc.perform(get("/api/admin/question-banks/" + bank.getId() + "/questions")
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.content.length()").value(2));
+
+        mockMvc.perform(delete("/api/admin/questions/" + toDelete.getId())
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk());
+
+        // 删除后：列表只剩保留题
+        mockMvc.perform(get("/api/admin/question-banks/" + bank.getId() + "/questions")
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.content.length()").value(1))
+            .andExpect(jsonPath("$.data.content[0].id").value(keep.getId()));
+
+        // 实体仍然在库里（软删保留历史），只是 active=false
+        Question reloaded = questionRepository.findById(toDelete.getId()).orElseThrow();
+        assertThat(reloaded.getActive()).isFalse();
+    }
+
+    // Bug：单条"停用→启用"会把 active 翻回 true，已被删除的题目因此"复活"，
+    // 现在单条状态切换只翻转 status，active 完全由 deleteQuestion 维护。
+    @Test
+    void toggleQuestionStatusDoesNotResurrectSoftDeletedQuestion() throws Exception {
+        QuestionBank bank = bankRepository.save(bank("考研政治", "kaoyan", "政治", "middle"));
+        Question q = questionRepository.save(Question.builder()
+            .bank(bank).stem("Q").optionsJson("[]").answer("A").chapter("第1章").questionType("single")
+            .difficulty("easy").status("published").active(true).versionNo(1).build());
+
+        // 软删
+        mockMvc.perform(delete("/api/admin/questions/" + q.getId())
+                .header("Authorization", "Bearer " + adminToken))
+            .andExpect(status().isOk());
+        assertThat(questionRepository.findById(q.getId()).orElseThrow().getActive()).isFalse();
+
+        // 再"启用"也不应让 active 复活——active 与 status 解耦
+        mockMvc.perform(put("/api/admin/questions/" + q.getId() + "/status")
+                .header("Authorization", "Bearer " + adminToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json(Map.of("status", "published"))))
+            .andExpect(status().isOk());
+
+        Question reloaded = questionRepository.findById(q.getId()).orElseThrow();
+        assertThat(reloaded.getActive()).isFalse();
+        assertThat(reloaded.getStatus()).isEqualTo("published");
     }
 
     private QuestionBank bank(String name, String target, String subject, String difficulty) {
