@@ -395,7 +395,7 @@ export function JobResumePage() {
           { label: '就业主站', to: '/station/job' },
           { label: '简历档案' },
         ]}
-        title="先确认求职目标和附件状态，再进入更细的简历编辑动作。"
+        title="先确认求职定位和附件状态，再进入简历编辑与导出。"
         lead="这个页面不保留右栏。"
       />
 

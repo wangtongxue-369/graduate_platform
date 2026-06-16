@@ -189,8 +189,8 @@ export function AdminEmploymentPage() {
   return (
     <AdminDomainPage
       domainKey="employment"
-      title="先处理招聘会、岗位和通知，再谈运营效果。"
-      lead="先处理招聘会、岗位清洗和通知触达。"
+      title="先切换治理对象，再处理招聘会、岗位、提醒触达与简历状态。"
+      lead="先看总览指标，再进入当前治理对象的工作区。"
     />
   )
 }

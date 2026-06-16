@@ -232,4 +232,36 @@ describe('page-level return paths', () => {
       }),
     ).toBeInTheDocument()
   })
+
+  it('renders the split student resume route from its own page module', async () => {
+    authState.user = { id: 10, name: '就业测试用户', role: 'user', target: 'job' }
+
+    render(
+      <MemoryRouter initialEntries={['/station/job/resume']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '先确认求职定位和附件状态，再进入简历编辑与导出。',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('renders the dedicated admin employment route instead of the generic admin placeholder', async () => {
+    authState.user = { id: 11, name: '就业管理员', role: 'admin', target: 'job' }
+
+    render(
+      <MemoryRouter initialEntries={['/admin/employment']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '先切换治理对象，再处理招聘会、岗位、提醒触达与简历状态。',
+      }),
+    ).toBeInTheDocument()
+  })
 })
