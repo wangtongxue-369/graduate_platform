@@ -79,7 +79,9 @@ public class QuestionBankService {
     @Transactional(readOnly = true)
     public PagedResult<BankResponse> getBanksPaged(int page, int size) {
         var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
-        Page<QuestionBank> bankPage = repository.findAll(pageable);
+        // 软删除（active=false）的题库不再回到管理员治理列表，否则"删除"按钮看起来无效。
+        // NULL 视为启用，兼容 active 列引入前的历史数据。
+        Page<QuestionBank> bankPage = repository.findActiveBanksPaged(pageable);
 
         List<BankResponse> content = bankPage.getContent().stream().map(bank -> {
             long questionCount = bank.getQuestions().stream()
@@ -152,11 +154,10 @@ public class QuestionBankService {
         QuestionBank bank = repository.findById(id)
             .orElseThrow(() -> new BusinessException("题库不存在"));
 
-        // 仅翻转题库自身状态；题目可见性由查询侧 bank.active 联合过滤决定，
-        // 不再级联改写题目 active —— 否则 disable→enable 单向不可逆，
-        // 重新启用后题目仍是 disabled，公共列表显示 questionCount=0。
+        // 仅翻转题库自身 status；active 由 deleteBank 维护。
+        // 解耦后"停用→启用"不会把已软删的题库误复活，
+        // 与题目 toggleQuestionStatus 口径一致。
         bank.setStatus(status);
-        bank.setActive("active".equals(status));
         repository.save(bank);
         return BankResponse.from(bank);
     }
