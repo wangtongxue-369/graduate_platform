@@ -1860,6 +1860,154 @@ html[data-theme="dark"] .v2-glass-card {
   line-height: 1.6;
 }
 
+.v2-kaogong-calendar-pill {
+  flex-shrink: 0;
+  font-size: 0.84rem;
+}
+
+.v2-kaogong-subscription-row {
+  gap: 7px;
+}
+
+.v2-kaogong-subscription-label {
+  color: var(--v2-soft-strong);
+  font-size: 0.78rem;
+}
+
+.v2-kaogong-subscription-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--v2-line);
+  color: var(--v2-soft-strong);
+  font-size: 0.9rem;
+}
+
+.v2-kaogong-subscription-foot small {
+  text-align: right;
+  line-height: 1.5;
+}
+
+.v2-kaogong-jobs-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px;
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-radius-lg);
+  background: var(--v2-paper);
+  box-shadow: var(--v2-shadow);
+}
+
+.v2-kaogong-jobs-head > div {
+  display: grid;
+  gap: 6px;
+}
+
+.v2-kaogong-jobs-head h2 {
+  margin: 0;
+  font-family: "Source Han Serif SC", "Songti SC", "STSong", serif;
+  font-size: clamp(1.65rem, 2.2vw, 2.35rem);
+  line-height: 1.08;
+  color: var(--v2-ink);
+}
+
+.v2-kaogong-jobs-head p {
+  margin: 0;
+  color: var(--v2-soft-strong);
+  line-height: 1.55;
+}
+
+.v2-kaogong-jobs-head > strong {
+  flex-shrink: 0;
+  color: var(--v2-soft-strong);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.v2-kaogong-active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.v2-kaogong-active-filters span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--v2-line);
+  border-radius: 999px;
+  background: var(--v2-paper);
+  color: var(--v2-soft-strong);
+  font-size: 0.86rem;
+}
+
+.v2-feed-item--kaogong {
+  grid-template-columns: 58px minmax(0, 1fr) minmax(190px, auto);
+  gap: 18px;
+  padding: 20px 22px;
+}
+
+.v2-feed-item--kaogong .v2-feed-body {
+  gap: 7px;
+}
+
+.v2-feed-item--kaogong .v2-feed-body strong {
+  font-size: 1.06rem;
+}
+
+.v2-feed-item--kaogong .v2-tag-row {
+  margin-top: 2px;
+}
+
+.v2-feed-item--kaogong .v2-feed-side {
+  align-self: center;
+}
+
+.v2-kaogong-filter-card {
+  align-self: start;
+}
+
+.v2-kaogong-filter-card .v2-side-card__head h3 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+.v2-kaogong-filter-card .v2-filter-form {
+  gap: 14px;
+}
+
+.v2-kaogong-filter-card .v2-kaogong-filter-cluster {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.v2-kaogong-filter-card .v2-field {
+  gap: 7px;
+}
+
+.v2-kaogong-filter-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--v2-line);
+  color: var(--v2-soft-strong);
+}
+
+.v2-kaogong-filter-foot .v2-secondary-link {
+  width: auto;
+}
+
 .v2-post-edit-layout {
   grid-template-columns: minmax(0, 1.75fr) minmax(240px, 0.78fr);
   align-items: start;
@@ -3489,6 +3637,11 @@ html[data-theme="dark"] .v2-plan-side-fact {
   justify-content: center;
 }
 
+.v2-kaogong-filter-actions .v2-segment-button:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
 .v2-kaogong-side-panel .v2-check-list {
   gap: 10px;
 }
@@ -3520,9 +3673,122 @@ html[data-theme="dark"] .v2-plan-side-fact {
 }
 
 .v2-kaogong-favorite-modal {
-  width: min(560px, 100%);
+  width: min(860px, 100%);
   display: grid;
   gap: 16px;
+}
+
+.v2-kaogong-favorite-modal .v2-modal-head span {
+  display: block;
+  margin-top: 6px;
+  color: var(--v2-soft);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.v2-kaogong-favorite-list {
+  display: grid;
+  gap: 12px;
+  max-height: min(58vh, 560px);
+  padding-right: 4px;
+  overflow: auto;
+}
+
+.v2-kaogong-favorite-card {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 86%, white);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v2-paper) 96%, white);
+}
+
+.v2-kaogong-favorite-score {
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  align-content: center;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--v2-highlight-soft) 72%, white);
+  color: var(--v2-action);
+}
+
+.v2-kaogong-favorite-score span {
+  color: var(--v2-soft);
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.v2-kaogong-favorite-score strong {
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.v2-kaogong-favorite-main {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.v2-kaogong-favorite-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.v2-kaogong-favorite-card__head strong {
+  display: block;
+  color: var(--v2-ink);
+  font-size: 1rem;
+}
+
+.v2-kaogong-favorite-card__head p {
+  margin: 4px 0 0;
+  color: var(--v2-soft-strong);
+  line-height: 1.5;
+}
+
+.v2-kaogong-favorite-card__head > span {
+  flex-shrink: 0;
+  color: var(--v2-soft);
+  font-size: 0.92rem;
+}
+
+.v2-kaogong-favorite-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.v2-kaogong-favorite-meta span {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--v2-line) 76%, white);
+  border-radius: 999px;
+  color: var(--v2-soft-strong);
+  background: color-mix(in srgb, var(--v2-paper-strong) 90%, white);
+  font-size: 0.88rem;
+}
+
+.v2-kaogong-favorite-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--v2-line) 84%, white);
+  color: var(--v2-soft);
+  font-size: 0.9rem;
+}
+
+.v2-kaogong-favorite-foot .v2-inline-actions {
+  margin-top: 0;
+  justify-content: flex-end;
 }
 
 .v2-kaogong-calendar-workbench {
@@ -5111,6 +5377,25 @@ html[data-theme="dark"] .v2-post-markdown .v2-shiki-codeblock__body .shiki span 
 
   .v2-practice-dashboard-control-dock__segments .v2-segment-button {
     flex-basis: calc(50% - 8px);
+  }
+
+  .v2-kaogong-favorite-card {
+    grid-template-columns: 1fr;
+  }
+
+  .v2-kaogong-favorite-score {
+    width: max-content;
+    min-width: 48px;
+  }
+
+  .v2-kaogong-favorite-card__head,
+  .v2-kaogong-favorite-foot {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .v2-kaogong-favorite-foot .v2-inline-actions {
+    justify-content: flex-start;
   }
 
   .v2-counseling-board {

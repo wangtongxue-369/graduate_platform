@@ -696,46 +696,104 @@ public class DataInitializer implements CommandLineRunner {
 
     private void initCivilServicePosts() {
         long count = civilServicePostRepository.count();
-        if (count > 0) {
-            return;
+        java.time.LocalDate start = java.time.LocalDate.now().plusDays(10);
+        if (count == 0) {
+            civilServicePostRepository.save(CivilServicePost.builder()
+                .examType("国家公务员考试").year(2027).region("北京")
+                .jobName("综合管理岗").recruitingUnit("国家税务总局北京市税务局")
+                .unitType("中央机关直属机构").jobCategory("综合管理").recruitCount(3)
+                .educationRequirement("本科及以上").degreeRequirement("学士及以上")
+                .majorRequirement("计算机科学, 软件工程, 信息管理")
+                .householdRequirement("不限").politicalStatusRequirement("不限")
+                .examSubjects("行测, 申论").registrationStart(start).registrationEnd(start.plusDays(8))
+                .sourceUrl("https://example.edu/kaogong/jobs/1")
+                .remark("示例数据，用于岗位匹配功能联调。")
+                .build());
+
+            civilServicePostRepository.save(CivilServicePost.builder()
+                .examType("上海市公务员考试").year(2027).region("上海")
+                .jobName("信息化建设岗").recruitingUnit("上海市某区政务服务中心")
+                .unitType("地方机关").jobCategory("行政执法").recruitCount(2)
+                .educationRequirement("本科及以上").degreeRequirement("学士及以上")
+                .majorRequirement("计算机, 电子信息, 数据科学")
+                .householdRequirement("上海生源优先").politicalStatusRequirement("不限")
+                .examSubjects("行测, 申论, 专业科目").registrationStart(start.plusDays(20)).registrationEnd(start.plusDays(28))
+                .sourceUrl("https://example.edu/kaogong/jobs/2")
+                .remark("示例数据，可替换为正式招录公告数据。")
+                .build());
+
+            civilServicePostRepository.save(CivilServicePost.builder()
+                .examType("事业单位考试").year(2027).region("江苏")
+                .jobName("网络安全技术岗").recruitingUnit("江苏省某事业单位")
+                .unitType("事业单位").jobCategory("专业技术").recruitCount(1)
+                .educationRequirement("本科及以上").degreeRequirement("不限")
+                .majorRequirement("网络空间安全, 计算机科学")
+                .householdRequirement("不限").politicalStatusRequirement("中共党员")
+                .examSubjects("职业能力倾向测验, 综合应用能力").registrationStart(start.plusDays(32)).registrationEnd(start.plusDays(40))
+                .sourceUrl("https://example.edu/kaogong/jobs/3")
+                .remark("示例数据，覆盖政治面貌匹配场景。")
+                .build());
         }
 
-        java.time.LocalDate start = java.time.LocalDate.now().plusDays(10);
-        civilServicePostRepository.save(CivilServicePost.builder()
+        initHouseholdFilterPosts(start);
+    }
+
+    private void initHouseholdFilterPosts(java.time.LocalDate start) {
+        saveCivilServicePostIfMissing(CivilServicePost.builder()
             .examType("国家公务员考试").year(2027).region("北京")
-            .jobName("综合管理岗").recruitingUnit("国家税务总局北京市税务局")
-            .unitType("中央机关直属机构").jobCategory("综合管理").recruitCount(3)
-            .educationRequirement("本科及以上").degreeRequirement("学士及以上")
-            .majorRequirement("计算机科学, 软件工程, 信息管理")
-            .householdRequirement("不限").politicalStatusRequirement("不限")
-            .examSubjects("行测, 申论").registrationStart(start).registrationEnd(start.plusDays(8))
-            .sourceUrl("https://example.edu/kaogong/jobs/1")
-            .remark("示例数据，用于岗位匹配功能联调。")
+            .jobName("北京户籍综合岗").recruitingUnit("北京市基层治理服务中心")
+            .unitType("地方机关").jobCategory("综合管理").recruitCount(2)
+            .educationRequirement("大专及以上").degreeRequirement("不限")
+            .majorRequirement("公共管理, 法学, 汉语言文学")
+            .householdRequirement("北京户籍").politicalStatusRequirement("不限")
+            .examSubjects("行测, 申论").registrationStart(start.plusDays(12)).registrationEnd(start.plusDays(19))
+            .sourceUrl("https://example.edu/kaogong/jobs/household-beijing")
+            .remark("示例数据，用于验证户籍筛选。")
             .build());
 
-        civilServicePostRepository.save(CivilServicePost.builder()
+        saveCivilServicePostIfMissing(CivilServicePost.builder()
             .examType("上海市公务员考试").year(2027).region("上海")
-            .jobName("信息化建设岗").recruitingUnit("上海市某区政务服务中心")
-            .unitType("地方机关").jobCategory("行政执法").recruitCount(2)
+            .jobName("上海生源数据治理岗").recruitingUnit("上海市数据服务中心")
+            .unitType("事业单位").jobCategory("专业技术").recruitCount(1)
             .educationRequirement("本科及以上").degreeRequirement("学士及以上")
-            .majorRequirement("计算机, 电子信息, 数据科学")
-            .householdRequirement("上海生源优先").politicalStatusRequirement("不限")
-            .examSubjects("行测, 申论, 专业科目").registrationStart(start.plusDays(20)).registrationEnd(start.plusDays(28))
-            .sourceUrl("https://example.edu/kaogong/jobs/2")
-            .remark("示例数据，可替换为正式招录公告数据。")
+            .majorRequirement("计算机科学, 数据科学, 信息管理")
+            .householdRequirement("上海生源").politicalStatusRequirement("不限")
+            .examSubjects("行测, 申论, 专业科目").registrationStart(start.plusDays(24)).registrationEnd(start.plusDays(31))
+            .sourceUrl("https://example.edu/kaogong/jobs/household-shanghai")
+            .remark("示例数据，用于验证上海生源筛选。")
             .build());
 
-        civilServicePostRepository.save(CivilServicePost.builder()
-            .examType("事业单位考试").year(2027).region("江苏")
-            .jobName("网络安全技术岗").recruitingUnit("江苏省某事业单位")
-            .unitType("事业单位").jobCategory("专业技术").recruitCount(1)
-            .educationRequirement("本科及以上").degreeRequirement("不限")
-            .majorRequirement("网络空间安全, 计算机科学")
-            .householdRequirement("不限").politicalStatusRequirement("中共党员")
-            .examSubjects("职业能力倾向测验, 综合应用能力").registrationStart(start.plusDays(32)).registrationEnd(start.plusDays(40))
-            .sourceUrl("https://example.edu/kaogong/jobs/3")
-            .remark("示例数据，覆盖政治面貌匹配场景。")
+        saveCivilServicePostIfMissing(CivilServicePost.builder()
+            .examType("江苏省公务员考试").year(2027).region("江苏")
+            .jobName("江苏生源行政执法岗").recruitingUnit("江苏省市场监管局")
+            .unitType("地方机关").jobCategory("行政执法").recruitCount(3)
+            .educationRequirement("本科及以上").degreeRequirement("学士及以上")
+            .majorRequirement("法学, 行政管理, 经济学")
+            .householdRequirement("江苏生源").politicalStatusRequirement("不限")
+            .examSubjects("行测, 申论").registrationStart(start.plusDays(36)).registrationEnd(start.plusDays(43))
+            .sourceUrl("https://example.edu/kaogong/jobs/household-jiangsu")
+            .remark("示例数据，用于验证江苏生源筛选。")
             .build());
+
+        saveCivilServicePostIfMissing(CivilServicePost.builder()
+            .examType("广东省公务员考试").year(2027).region("广东")
+            .jobName("广东户籍基层服务岗").recruitingUnit("广州市政务服务中心")
+            .unitType("地方机关").jobCategory("综合管理").recruitCount(2)
+            .educationRequirement("硕士及以上").degreeRequirement("硕士及以上")
+            .majorRequirement("公共管理, 社会学, 新闻传播")
+            .householdRequirement("广东户籍").politicalStatusRequirement("不限")
+            .examSubjects("行测, 申论").registrationStart(start.plusDays(44)).registrationEnd(start.plusDays(52))
+            .sourceUrl("https://example.edu/kaogong/jobs/household-guangdong")
+            .remark("示例数据，用于验证户籍与硕士学历筛选。")
+            .build());
+    }
+
+    private void saveCivilServicePostIfMissing(CivilServicePost post) {
+        boolean exists = civilServicePostRepository.findAll().stream()
+            .anyMatch(item -> java.util.Objects.equals(item.getSourceUrl(), post.getSourceUrl()));
+        if (!exists) {
+            civilServicePostRepository.save(post);
+        }
     }
 
     private void initScoreLines() {
