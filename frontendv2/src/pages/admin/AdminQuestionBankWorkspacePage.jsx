@@ -18,6 +18,10 @@ export default function AdminQuestionBankWorkspacePage() {
   const [snapshotQuestionId, setSnapshotQuestionId] = useState(null)
   const [snapshots, setSnapshots] = useState([])
   const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState('success')
+
+  function showSuccess(msg) { setMessage(msg); setMessageType('success') }
+  function showError(msg) { setMessage(msg); setMessageType('error') }
 
   async function loadQuestions(nextPage = page) {
     const data = await adminQuestionBankApi.questions(bankId, nextPage, 20, token)
@@ -25,7 +29,7 @@ export default function AdminQuestionBankWorkspacePage() {
   }
 
   useEffect(() => {
-    loadQuestions().catch((error) => setMessage(error.message || '题库工作区加载失败。'))
+    loadQuestions().catch((error) => { showError(error.message || '题库工作区加载失败。') })
   }, [bankId, page, token])
 
   function toggleSelected(id) {
@@ -37,55 +41,87 @@ export default function AdminQuestionBankWorkspacePage() {
   }
 
   async function handleSaveQuestion(payload, question) {
-    if (question?.id) {
-      await adminQuestionBankApi.updateQuestion(question.id, payload, token)
-      setMessage('题目已更新。')
-    } else {
-      await adminQuestionBankApi.createQuestion(bankId, payload, token)
-      setMessage('题目已创建。')
-    }
+    try {
+      if (question?.id) {
+        await adminQuestionBankApi.updateQuestion(question.id, payload, token)
+        showSuccess('题目已更新。')
+      } else {
+        await adminQuestionBankApi.createQuestion(bankId, payload, token)
+        showSuccess('题目已创建。')
+      }
 
-    setEditingQuestion(null)
-    await loadQuestions()
+      setEditingQuestion(null)
+      await loadQuestions()
+    } catch (error) {
+      showError(error.message || '题目保存失败，请稍后重试。')
+    }
   }
 
   async function handleOpenSnapshots(questionId) {
-    setSnapshotQuestionId(questionId)
-    const items = await adminQuestionBankApi.snapshots(questionId, token)
-    setSnapshots(items || [])
+    try {
+      setSnapshotQuestionId(questionId)
+      const items = await adminQuestionBankApi.snapshots(questionId, token)
+      setSnapshots(items || [])
+    } catch (error) {
+      showError(error.message || '快照加载失败。')
+    }
   }
 
   async function handleToggleStatus(question) {
-    const nextStatus = question.active !== false ? 'inactive' : 'active'
-    await adminQuestionBankApi.toggleQuestionStatus(question.id, nextStatus, token)
-    setMessage('题目状态已更新。')
-    await loadQuestions()
+    try {
+      const nextStatus = question.active !== false ? 'inactive' : 'active'
+      await adminQuestionBankApi.toggleQuestionStatus(question.id, nextStatus, token)
+      showSuccess('题目状态已更新。')
+      await loadQuestions()
+    } catch (error) {
+      showError(error.message || '题目状态更新失败。')
+    }
   }
 
   async function handleDelete(questionId) {
-    await adminQuestionBankApi.deleteQuestion(questionId, token)
-    setMessage('题目已删除。')
-    await loadQuestions()
+    try {
+      await adminQuestionBankApi.deleteQuestion(questionId, token)
+      showSuccess('题目已删除。')
+      await loadQuestions()
+    } catch (error) {
+      showError(error.message || '题目删除失败。')
+    }
   }
 
   async function handleBatchCreate(batchText) {
-    const parsed = JSON.parse(batchText)
-    await adminQuestionBankApi.batchCreateQuestions(bankId, parsed, token)
-    setMessage('批量题目已导入。')
-    await loadQuestions()
+    try {
+      const parsed = JSON.parse(batchText)
+      await adminQuestionBankApi.batchCreateQuestions(bankId, parsed, token)
+      showSuccess('批量题目已导入。')
+      await loadQuestions()
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        showError('JSON 格式错误，请检查输入内容是否为合法的 JSON 数组。')
+      } else {
+        showError(error.message || '批量导入失败，请稍后重试。')
+      }
+    }
   }
 
   async function handleFileImport(file) {
-    await adminQuestionBankApi.importQuestions(bankId, file, token)
-    setMessage('题库文件已导入。')
-    await loadQuestions()
+    try {
+      await adminQuestionBankApi.importQuestions(bankId, file, token)
+      showSuccess('题库文件已导入。')
+      await loadQuestions()
+    } catch (error) {
+      showError(error.message || '文件导入失败，请检查文件格式是否正确。')
+    }
   }
 
   async function handleBatchStatus(status) {
-    await adminQuestionBankApi.batchUpdateQuestions(selectedIds, { status }, token)
-    setMessage('选中题目状态已批量更新。')
-    setSelectedIds([])
-    await loadQuestions()
+    try {
+      await adminQuestionBankApi.batchUpdateQuestions(selectedIds, { status }, token)
+      showSuccess('选中题目状态已批量更新。')
+      setSelectedIds([])
+      await loadQuestions()
+    } catch (error) {
+      showError(error.message || '批量状态更新失败。')
+    }
   }
 
   return (
@@ -102,7 +138,7 @@ export default function AdminQuestionBankWorkspacePage() {
           lead="在单题库上下文中完成题目编辑、批量导入、状态切换和快照回看。"
         />
 
-        {message ? <div className="v2-status-note">{message}</div> : null}
+        {message ? <div className={messageType === 'error' ? 'v2-status-error' : 'v2-status-note'}>{message}</div> : null}
 
         <AdminQuestionWorkspaceTable
           questions={questions.content}

@@ -20,6 +20,10 @@ export default function AdminQuestionBanksPage() {
   const [editingBank, setEditingBank] = useState(null)
   const [form, setForm] = useState(emptyBankForm)
   const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState('success')
+
+  function showSuccess(msg) { setMessage(msg); setMessageType('success') }
+  function showError(msg) { setMessage(msg); setMessageType('error') }
 
   async function loadBanks(nextPage = page) {
     const data = await adminQuestionBankApi.banks(nextPage, 20, token)
@@ -27,7 +31,7 @@ export default function AdminQuestionBanksPage() {
   }
 
   useEffect(() => {
-    loadBanks().catch((error) => setMessage(error.message || '题库治理总览加载失败。'))
+    loadBanks().catch((error) => { showError(error.message || '题库治理总览加载失败。') })
   }, [page, token])
 
   function handleCreate() {
@@ -49,30 +53,47 @@ export default function AdminQuestionBanksPage() {
   async function handleSaveBank(event) {
     event.preventDefault()
 
-    if (editingBank?.id) {
-      await adminQuestionBankApi.updateBank(editingBank.id, form, token)
-      setMessage('题库已更新。')
-    } else {
-      await adminQuestionBankApi.createBank(form, token)
-      setMessage('题库已创建。')
+    if (!form.name.trim()) {
+      showError('题库名称不能为空，请填写后再保存。')
+      return
     }
 
-    setEditingBank(null)
-    setForm(emptyBankForm)
-    await loadBanks()
+    try {
+      if (editingBank?.id) {
+        await adminQuestionBankApi.updateBank(editingBank.id, form, token)
+        showSuccess('题库已更新。')
+      } else {
+        await adminQuestionBankApi.createBank(form, token)
+        showSuccess('题库已创建。')
+      }
+
+      setEditingBank(null)
+      setForm(emptyBankForm)
+      await loadBanks()
+    } catch (error) {
+      showError(error.message || '题库保存失败，请稍后重试。')
+    }
   }
 
   async function handleToggle(bank) {
-    const nextStatus = bank.active !== false ? 'inactive' : 'active'
-    await adminQuestionBankApi.toggleBankStatus(bank.id, nextStatus, token)
-    setMessage('题库状态已更新。')
-    await loadBanks()
+    try {
+      const nextStatus = bank.active !== false ? 'inactive' : 'active'
+      await adminQuestionBankApi.toggleBankStatus(bank.id, nextStatus, token)
+      showSuccess('题库状态已更新。')
+      await loadBanks()
+    } catch (error) {
+      showError(error.message || '题库状态更新失败。')
+    }
   }
 
   async function handleDelete(bankId) {
-    await adminQuestionBankApi.deleteBank(bankId, token)
-    setMessage('题库已删除。')
-    await loadBanks()
+    try {
+      await adminQuestionBankApi.deleteBank(bankId, token)
+      showSuccess('题库已删除。')
+      await loadBanks()
+    } catch (error) {
+      showError(error.message || '题库删除失败。')
+    }
   }
 
   return (
@@ -88,7 +109,7 @@ export default function AdminQuestionBanksPage() {
           lead="先在总览页处理题库级动作，再进入单题库工作区处理题目、导入和快照。"
         />
 
-        {message ? <div className="v2-status-note">{message}</div> : null}
+        {message ? <div className={messageType === 'error' ? 'v2-status-error' : 'v2-status-note'}>{message}</div> : null}
 
         <AdminQuestionBankToolbar onCreate={handleCreate} />
         <AdminQuestionBankGrid
@@ -115,16 +136,16 @@ export default function AdminQuestionBanksPage() {
 
             <form className="v2-filter-form" onSubmit={handleSaveBank}>
               <label className="v2-field">
-                <span>题库名称</span>
-                <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} />
+                <span>题库名称 *</span>
+                <input required value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="请输入题库名称" />
               </label>
               <label className="v2-field">
-                <span>方向</span>
-                <input value={form.target} onChange={(event) => setForm((current) => ({ ...current, target: event.target.value }))} />
+                <span>方向 *</span>
+                <input required value={form.target} onChange={(event) => setForm((current) => ({ ...current, target: event.target.value }))} placeholder="考研 / 考公 / 留学" />
               </label>
               <label className="v2-field">
-                <span>科目</span>
-                <input value={form.subject} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} />
+                <span>科目 *</span>
+                <input required value={form.subject} onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))} placeholder="政治 / 英语 / 数学等" />
               </label>
               <label className="v2-field">
                 <span>难度</span>
@@ -136,7 +157,7 @@ export default function AdminQuestionBanksPage() {
               </label>
               <label className="v2-field">
                 <span>描述</span>
-                <textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
+                <textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} placeholder="题库简要说明" />
               </label>
               <div className="v2-inline-actions">
                 <button className="v2-primary-link" type="submit">保存题库</button>
