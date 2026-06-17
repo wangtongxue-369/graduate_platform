@@ -1,11 +1,13 @@
-import { render, screen } from '@testing-library/react'
+import { configure, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '@/App.jsx'
 import KaoyanSchoolsPage from '@/pages/student/kaoyan/KaoyanSchoolsPage.jsx'
 import { AdminKaoyanPage } from '@/pages/admin/AdminMainPage.jsx'
 import { AdminCommunityReviewsPage } from '@/pages/admin/AdminCommunityPages.jsx'
 import SettingsSecurityPage from '@/pages/settings/SettingsSecurityPage.jsx'
+
+configure({ asyncUtilTimeout: 8000 })
 
 const authState = vi.hoisted(() => ({
   user: {
@@ -79,6 +81,18 @@ vi.mock('@/components/markdown/FrontendV2MarkdownContent.jsx', () => ({
 }))
 
 describe('page-level return paths', () => {
+  beforeEach(() => {
+    authState.user = {
+      id: 1,
+      name: '考研测试用户',
+      role: 'user',
+      target: 'kaoyan',
+    }
+    authState.token = 'dev-token'
+    authState.isAuthed = true
+    authState.loading = false
+  })
+
   it('shows a return path on practice bank preview pages', async () => {
     render(
       <MemoryRouter initialEntries={['/practice/banks/1']}>

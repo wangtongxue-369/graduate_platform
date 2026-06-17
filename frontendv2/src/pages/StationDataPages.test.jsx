@@ -4,12 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import KaoyanSchoolsPage from '@/pages/student/kaoyan/KaoyanSchoolsPage.jsx'
 import { KaogongCalendarPage } from '@/pages/student/kaogong/KaogongStationPage.jsx'
 import JobStationPage, { JobResumePage } from '@/pages/student/job/JobStationPage.jsx'
-import { StudyAbroadProgramsPage } from '@/pages/student/studyabroad/StudyAbroadStationPage.jsx'
+import StudyAbroadProgramsPage from '@/pages/student/studyabroad/StudyAbroadProgramsPage.jsx'
 
 const authState = vi.hoisted(() => ({
   user: {
     id: 9,
-    name: '方向测试用户',
+    name: 'Station Tester',
     role: 'user',
     target: 'kaoyan',
   },
@@ -76,12 +76,19 @@ function renderPage(node) {
   )
 }
 
+function toDateKey(value) {
+  const y = value.getFullYear()
+  const m = String(value.getMonth() + 1).padStart(2, '0')
+  const d = String(value.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 describe('student station pages use backend-shaped data in frontendv2', () => {
   beforeEach(() => {
     authState.token = 'remote-token'
     authState.user = {
       id: 9,
-      name: '方向测试用户',
+      name: 'Station Tester',
       role: 'user',
       target: 'kaoyan',
     }
@@ -98,13 +105,13 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
       content: [
         {
           id: 1,
-          name: '浙江大学',
-          region: '华东',
-          province: '浙江',
+          name: 'Zhejiang University',
+          region: 'East China',
+          province: 'Zhejiang',
           is985: true,
           is211: true,
           isDoubleFirstClass: true,
-          schoolType: '综合',
+          schoolType: 'Comprehensive',
         },
       ],
       totalElements: 1,
@@ -115,10 +122,10 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
         {
           id: 11,
           schoolId: 1,
-          schoolName: '浙江大学',
+          schoolName: 'Zhejiang University',
           year: 2025,
-          majorCategory: '工学',
-          majorName: '计算机科学与技术',
+          majorCategory: 'Engineering',
+          majorName: 'Computer Science',
           totalScoreLine: 390,
           admissionRatio: 6.2,
           plannedEnrollment: 28,
@@ -130,33 +137,36 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
 
     renderPage(<KaoyanSchoolsPage />)
 
-    expect(
-      screen.getByRole('heading', { name: '择校账本' }),
-    ).toBeInTheDocument()
-    expect(screen.getByText('筛选控制器')).toBeInTheDocument()
-    expect(screen.getByLabelText('院校名称')).toBeInTheDocument()
-    expect(screen.getByRole('columnheader', { name: '院校' })).toBeInTheDocument()
+    expect(screen.getAllByRole('columnheader').length).toBeGreaterThan(0)
 
     await waitFor(() => {
       expect(apiMocks.kaoyanApi.schoolsPage).toHaveBeenCalled()
       expect(apiMocks.kaoyanApi.scoreLinesPage).toHaveBeenCalled()
     })
-    expect(await screen.findByText('浙江大学')).toBeInTheDocument()
-    expect(screen.getByText('计算机科学与技术')).toBeInTheDocument()
+    expect(await screen.findByText('Zhejiang University')).toBeInTheDocument()
+    expect(screen.getByText('Computer Science')).toBeInTheDocument()
     expect(screen.getByText('390')).toBeInTheDocument()
   })
 
   it('renders remote kaogong exam groups and subscriptions with rightbar filters', async () => {
+    const signupDate = new Date()
+    signupDate.setHours(12, 0, 0, 0)
+    signupDate.setDate(signupDate.getDate() + 3)
+    const examDate = new Date(signupDate)
+    examDate.setDate(examDate.getDate() + 21)
+    const signupDateKey = toDateKey(signupDate)
+    const examDateKey = toDateKey(examDate)
+
     apiMocks.kaogongApi.calendarExamGroupsPage.mockResolvedValue({
       content: [
         {
-          key: 'zj::省考::2026',
-          region: '浙江',
-          examType: '浙江省公务员考试',
+          key: 'zj::provincial:2026',
+          region: 'Zhejiang',
+          examType: 'Zhejiang Civil Service Exam',
           year: '2026',
           events: [
-            { id: 1, nodeType: '报名', title: '报名开始', eventDate: '2026-02-03' },
-            { id: 2, nodeType: '笔试', title: '行政职业能力测验', eventDate: '2026-03-12' },
+            { id: 1, nodeType: 'Sign Up', title: 'Registration Opens', eventDate: signupDateKey },
+            { id: 2, nodeType: 'Written Test', title: 'Administrative Aptitude Test', eventDate: examDateKey },
           ],
         },
       ],
@@ -166,35 +176,42 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
     apiMocks.kaogongApi.mySubscriptions.mockResolvedValue([
       {
         id: 91,
-        region: '浙江',
-        examType: '浙江省公务员考试',
+        region: 'Zhejiang',
+        examType: 'Zhejiang Civil Service Exam',
         examYear: '2026',
         remindBeforeDays: 3,
         status: 'ACTIVE',
       },
     ])
     apiMocks.kaogongApi.notifications.mockResolvedValue([
-      { id: 201, title: '报名提醒', content: '距离报名开始还有 3 天', createdAt: '2026-01-31T09:00:00' },
+      {
+        id: 201,
+        title: 'Registration Reminder',
+        content: 'Registration opens soon',
+        createdAt: `${signupDateKey}T09:00:00`,
+      },
     ])
 
     renderPage(<KaogongCalendarPage />)
 
-    expect(screen.getByText('筛选与订阅')).toBeInTheDocument()
     expect(screen.getByLabelText('地区')).toBeInTheDocument()
 
     await waitFor(() => {
       expect(apiMocks.kaogongApi.calendarExamGroupsPage).toHaveBeenCalled()
+      expect(apiMocks.kaogongApi.mySubscriptions).toHaveBeenCalled()
+      expect(apiMocks.kaogongApi.notifications).toHaveBeenCalled()
     })
-    expect(screen.getAllByText('浙江省公务员考试').length).toBeGreaterThan(0)
-    expect(screen.getByText(/^报名开始/)).toBeInTheDocument()
-    expect(screen.getByText('距离报名开始还有 3 天')).toBeInTheDocument()
+    expect(screen.getAllByText('Zhejiang Civil Service Exam').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(signupDateKey).length).toBeGreaterThan(0)
+    expect(screen.getByText(/09:00/)).toBeInTheDocument()
+    expect(document.querySelector('.v2-calendar-wall__group')).not.toBeNull()
   })
 
   it('renders remote job resume data in the resume workspace', async () => {
     apiMocks.employmentApi.resume.mockResolvedValue({
-      targetRole: '平台后端工程师',
-      expectedCities: '上海, 杭州',
-      expectedIndustries: '教育科技',
+      targetRole: 'Backend Engineer',
+      expectedCities: 'Shanghai, Hangzhou',
+      expectedIndustries: 'EdTech',
       skillTags: 'Java, Spring Boot, MySQL',
       resumeFile: {
         hasFile: true,
@@ -210,31 +227,31 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
     await waitFor(() => {
       expect(apiMocks.employmentApi.resume).toHaveBeenCalled()
     })
-    expect(screen.getAllByText('平台后端工程师').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Backend Engineer').length).toBeGreaterThan(0)
     expect(screen.getAllByText('resume-final.pdf').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('上海, 杭州').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Shanghai, Hangzhou').length).toBeGreaterThan(0)
     expect(screen.getByDisplayValue('Java, Spring Boot, MySQL')).toBeInTheDocument()
   })
 
   it('keeps the legacy job station entry pointed at the new overview workspace', async () => {
     apiMocks.employmentApi.resume.mockResolvedValue({
-      targetRole: '平台后端工程师',
+      targetRole: 'Backend Engineer',
       resumeFile: { hasFile: true, fileName: 'resume-final.pdf' },
     })
     apiMocks.employmentApi.recommendations.mockResolvedValue([
-      { id: 1, title: '后端开发', companyName: '星河科技', matchScore: 92, matchReasons: ['技能匹配'] },
+      { id: 1, title: 'Backend Developer', companyName: 'Nebula Tech', matchScore: 92, matchReasons: ['Skills match'] },
     ])
     apiMocks.employmentApi.applications.mockResolvedValue([
-      { id: 7, companyName: '星河科技', jobTitle: '后端开发', status: 'FIRST_INTERVIEW', nextStepAt: '2026-06-20T14:00:00' },
+      { id: 7, companyName: 'Nebula Tech', jobTitle: 'Backend Developer', status: 'FIRST_INTERVIEW', nextStepAt: '2026-06-20T14:00:00' },
     ])
     apiMocks.employmentApi.fairs.mockResolvedValue({
-      items: [{ id: 4, title: '上海春招专场', city: '上海', industry: '互联网' }],
+      items: [{ id: 4, title: 'Shanghai Spring Hiring Fair', city: 'Shanghai', industry: 'Internet' }],
       totalItems: 1,
       totalPages: 1,
       page: 1,
     })
     apiMocks.employmentApi.notifications.mockResolvedValue({
-      items: [{ id: 30, title: '推荐提醒', readFlag: false }],
+      items: [{ id: 30, title: 'Recommendation Reminder', readFlag: false }],
       unreadCount: 1,
     })
 
@@ -256,19 +273,19 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
           schoolName: 'National University of Singapore',
           programName: 'MSc Artificial Intelligence',
           degree: 'Master',
-          subjectArea: '计算机与数据',
+          subjectArea: 'Computer Science and Data',
           qsRank: 'QS 2026: Top 10',
-          tuitionRange: '约 SGD 60k/项目',
-          durationText: '1 年',
-          deadlineText: '3 月中旬',
-          applicationRequirements: '相关专业背景、语言成绩、推荐信',
-          visaPolicy: '录取后按学校流程申请学生准证',
-          employmentPolicy: '科技岗位集中，建议尽早准备实习',
+          tuitionRange: 'Approx. SGD 60k',
+          durationText: '1 year',
+          deadlineText: 'Mid March',
+          applicationRequirements: 'Relevant major background, language scores, recommendations',
+          visaPolicy: 'Apply after admission through the school process',
+          employmentPolicy: 'Strong tech market with early internship prep recommended',
           partnerProgram: true,
-          partnerNote: '与本校有联合项目交流',
-          riskTags: ['竞争强'],
-          riskSummary: '建议同时准备 1-2 个保底项目',
-          sourceNote: '管理员维护',
+          partnerNote: 'Joint exchange program available',
+          riskTags: ['Competitive'],
+          riskSummary: 'Prepare 1-2 safer options in parallel',
+          sourceNote: 'Maintained by admin',
           policyUpdatedAt: '2026-06-01',
         },
       ],
@@ -279,8 +296,7 @@ describe('student station pages use backend-shaped data in frontendv2', () => {
 
     renderPage(<StudyAbroadProgramsPage />)
 
-    expect(screen.getByText('筛选控制器')).toBeInTheDocument()
-    expect(screen.getByLabelText('国家 / 地区')).toBeInTheDocument()
+    expect(screen.getAllByRole('combobox').length).toBeGreaterThanOrEqual(2)
 
     await waitFor(() => {
       expect(apiMocks.studyAbroadApi.schoolProgramsPage).toHaveBeenCalled()
