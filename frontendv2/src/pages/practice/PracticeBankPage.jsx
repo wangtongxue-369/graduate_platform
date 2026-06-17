@@ -67,6 +67,10 @@ export default function PracticeBankPage() {
   const [mode, setMode] = useState('chapter')
   const [filters, setFilters] = useState(defaultFilters)
   const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState('success')
+
+  function showSuccess(msg) { setMessage(msg); setMessageType('success') }
+  function showError(msg) { setMessage(msg); setMessageType('error') }
 
   useEffect(() => {
     let active = true
@@ -93,7 +97,7 @@ export default function PracticeBankPage() {
         if (!active) return
         setBank(null)
         setQuestions([])
-        setMessage(error.message || '题库详情暂时不可用。')
+        showError(error.message || '题库详情暂时不可用。')
       }
     }
 
@@ -130,16 +134,20 @@ export default function PracticeBankPage() {
       return
     }
 
-    const session = await practiceApi.createSession({
-      bankId: Number(bankId),
-      mode,
-      chapter: filters.chapter || undefined,
-      questionType: filters.questionType || undefined,
-      difficulty: filters.difficulty || undefined,
-      year: filters.year ? Number(filters.year) : undefined,
-    }, token)
+    try {
+      const session = await practiceApi.createSession({
+        bankId: Number(bankId),
+        mode,
+        chapter: filters.chapter || undefined,
+        questionType: filters.questionType || undefined,
+        difficulty: filters.difficulty || undefined,
+        year: filters.year ? Number(filters.year) : undefined,
+      }, token)
 
-    navigate(`/practice/sessions/${session.id}`)
+      navigate(`/practice/sessions/${session.id}`)
+    } catch (error) {
+      showError(error.message || '创建练习会话失败，请稍后重试。')
+    }
   }
 
   return (
@@ -163,7 +171,7 @@ export default function PracticeBankPage() {
           )}
         />
 
-        {message ? <div className="v2-status-note">{message}</div> : null}
+        {message ? <div className={messageType === 'error' ? 'v2-status-error' : 'v2-status-note'}>{message}</div> : null}
 
         {bank ? (
           <section className="v2-summary-strip" aria-label="题库摘要">

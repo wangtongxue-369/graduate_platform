@@ -16,13 +16,17 @@ export default function PracticeSessionPage() {
   const [answers, setAnswers] = useState({})
   const [currentIndex, setCurrentIndex] = useState(0)
   const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState('success')
+
+  function showSuccess(msg) { setMessage(msg); setMessageType('success') }
+  function showError(msg) { setMessage(msg); setMessageType('error') }
 
   useEffect(() => {
     if (!isAuthed || !token || token === 'dev-token') {
       setSession(null)
       setQuestions([])
       setAnswers({})
-      setMessage('登录后才可以继续练习会话。')
+      showError('登录后才可以继续练习会话。')
       return undefined
     }
 
@@ -51,7 +55,7 @@ export default function PracticeSessionPage() {
         setSession(null)
         setQuestions([])
         setAnswers({})
-        setMessage(error.message || '练习会话暂时不可用。')
+        showError(error.message || '练习会话暂时不可用。')
       }
     }
 
@@ -79,7 +83,7 @@ export default function PracticeSessionPage() {
     try {
       await practiceApi.saveAnswer(session.id, question.id, value, token)
     } catch (error) {
-      setMessage(error.message || '保存答案失败，请稍后重试。')
+      showError(error.message || '保存答案失败，请稍后重试。')
     }
   }
 
@@ -93,9 +97,9 @@ export default function PracticeSessionPage() {
 
       setSession(refreshed)
       setQuestions(normalizedQuestions)
-      setMessage('练习已提交，正在展示结果讲评。')
+      showSuccess('练习已提交，正在展示结果讲评。')
     } catch (error) {
-      setMessage(error.message || '交卷失败，请稍后再试。')
+      showError(error.message || '交卷失败，请稍后再试。')
     }
   }
 
@@ -120,7 +124,7 @@ export default function PracticeSessionPage() {
           )}
         />
 
-        {message ? <div className="v2-status-note">{message}</div> : null}
+        {message ? <div className={messageType === 'error' ? 'v2-status-error' : 'v2-status-note'}>{message}</div> : null}
 
         {!isAuthed || !token || token === 'dev-token' ? (
           <section className="v2-article-card">
