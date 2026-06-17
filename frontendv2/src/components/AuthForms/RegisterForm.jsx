@@ -125,7 +125,7 @@ export default function RegisterForm({ onSwitchLogin }) {
   }
 
   return (
-    <form className="v2-auth-form v2-auth-form--dense" onSubmit={handleSubmit}>
+    <form className="v2-auth-form v2-auth-form--dense v2-auth-form--register" onSubmit={handleSubmit}>
       <div className="v2-auth-grid">
         <label className="v2-auth-field">
           <span>注册方式</span>

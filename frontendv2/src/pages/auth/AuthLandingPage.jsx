@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import AppBootScreen from '@/components/AppBootScreen.jsx'
 import AuthHeroShell from '@/components/AuthHeroShell.jsx'
@@ -7,16 +7,15 @@ import ForgotPasswordForm from '@/components/AuthForms/ForgotPasswordForm.jsx'
 import LoginForm from '@/components/AuthForms/LoginForm.jsx'
 import RegisterForm from '@/components/AuthForms/RegisterForm.jsx'
 
-const introTabs = [
-  { key: 'overview', label: '平台介绍', copy: '登录后进入社区，再根据方向与角色继续深入。' },
-  { key: 'directions', label: '方向模块', copy: '考研、考公、就业、留学都按真实后端功能拆分。' },
-  { key: 'admin', label: '管理能力', copy: '管理员走单独治理主站，默认从社区治理开始。' },
-]
+const authPanelCopy = {
+  login: '使用账号、邮箱、手机号或学号登录，进入社区与对应方向模块继续使用。',
+  register: '注册后即可补全个人方向、学校与目标信息，系统会按你的身份进入对应功能区。',
+  reset: '通过验证码重设密码后，可继续使用原账号返回平台。',
+}
 
 export default function AuthLandingPage() {
   const { isAuthed, user, loading } = useAuth()
   const [mode, setMode] = useState('login')
-  const [activeTab, setActiveTab] = useState('overview')
 
   if (loading) {
     return (
@@ -26,17 +25,16 @@ export default function AuthLandingPage() {
       />
     )
   }
-  if (isAuthed && user) return <Navigate replace to="/app" />
 
-  const currentIntro = introTabs.find((item) => item.key === activeTab) || introTabs[0]
+  if (isAuthed && user) return <Navigate replace to="/app" />
 
   return (
     <AuthHeroShell>
       <section className="v2-auth-panel v2-glass-card">
         <div className="v2-auth-panel__head">
-          <p className="v2-kicker">身份入口</p>
-          <h2>选择认证方式</h2>
-          <p>{currentIntro.copy}</p>
+          <p className="v2-kicker">账户入口</p>
+          <h2>登录与注册</h2>
+          <p>{authPanelCopy[mode] || authPanelCopy.login}</p>
         </div>
 
         <div aria-label="认证方式切换" className="v2-auth-tabs" role="tablist">
@@ -60,21 +58,6 @@ export default function AuthLandingPage() {
           </button>
         </div>
 
-        <div className="v2-auth-intro-tabs" role="tablist" aria-label="站点信息标签">
-          {introTabs.map((item) => (
-            <button
-              aria-selected={activeTab === item.key}
-              className={`v2-auth-intro-tab ${activeTab === item.key ? 'is-active' : ''}`}
-              key={item.key}
-              onClick={() => setActiveTab(item.key)}
-              role="tab"
-              type="button"
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
         <div className="v2-auth-panel__body">
           {mode === 'login' ? (
             <LoginForm
@@ -88,12 +71,6 @@ export default function AuthLandingPage() {
           {mode === 'reset' ? (
             <ForgotPasswordForm onSwitchLogin={() => setMode('login')} />
           ) : null}
-        </div>
-
-        <div className="v2-auth-actions-row">
-          <Link className="v2-secondary-link" to="/role-auth">
-            直接预览不同身份
-          </Link>
         </div>
       </section>
     </AuthHeroShell>

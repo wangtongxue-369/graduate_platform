@@ -1,32 +1,54 @@
+const siteHighlights = [
+  {
+    title: '一站式信息入口',
+    description: '社区、资料与方向工具统一收口，减少来回切换。',
+  },
+  {
+    title: '按方向进入功能区',
+    description: '考研、考公考编、就业、留学按目标展示对应菜单与内容。',
+  },
+  {
+    title: '兼顾学生与管理端',
+    description: '学生侧负责浏览互动，管理侧负责审核与运营维护。',
+  },
+]
+
+const quickFacts = [
+  '社区帖子支持正文编辑、评论互动与附件上传。',
+  '个人设置会同步你的方向、资料与发帖管理。',
+  '不同身份登录后进入不同工作区，减少无关入口干扰。',
+]
+
 export default function AuthHeroShell({ children }) {
   return (
     <div className="v2-auth-shell">
       <div className="v2-auth-shell__inner">
         <aside className="v2-auth-shell__intro">
-          <nav aria-label="站点介绍导航" className="v2-auth-intro-nav">
-            <a href="#platform">平台结构</a>
-            <a href="#directions">方向主站</a>
-            <a href="#admin">管理体系</a>
-          </nav>
-
-          <section className="v2-auth-intro-card v2-glass-card" id="platform">
+          <section className="v2-auth-intro-card v2-glass-card">
             <p className="v2-kicker">graduate platform</p>
-            <h1>登录或注册后进入平台</h1>
+            <h1>面向升学与求职场景的学生服务平台</h1>
             <p className="v2-lead">
-              这一版把游客态收口成说明与认证入口。进入系统后，默认从社区开始，再沿着你的方向功能与管理路径逐层深入。
+              整合信息浏览、经验交流、资料管理与方向工具，
+              让你从登录后就能更快进入适合自己的学习或求职工作区。
             </p>
           </section>
 
           <section className="v2-auth-intro-grid">
-            <article className="v2-auth-intro-mini v2-glass-card" id="directions">
-              <strong>方向主站</strong>
-              <p>考研、考公、就业、留学都按各自后端能力拆成独立菜单，不再摊在一个页面里。</p>
-            </article>
+            {siteHighlights.map((item) => (
+              <article className="v2-auth-intro-mini v2-glass-card" key={item.title}>
+                <strong>{item.title}</strong>
+                <p>{item.description}</p>
+              </article>
+            ))}
+          </section>
 
-            <article className="v2-auth-intro-mini v2-glass-card" id="admin">
-              <strong>管理体系</strong>
-              <p>管理员登录后直接进入社区治理，再延伸到题库、考研、考公与就业运营。</p>
-            </article>
+          <section className="v2-auth-intro-mini v2-glass-card v2-auth-intro-mini--facts">
+            <strong>快速了解</strong>
+            <ul className="v2-auth-intro-list">
+              {quickFacts.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
           </section>
         </aside>
 
