@@ -86,7 +86,13 @@ public class KaoyanService {
 
     public List<Map<String, Object>> myFavoriteScoreLines(Long userId) {
         return favoriteRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
-            .map(f -> toScoreLineMap(f.getScoreLine()))
+            .map(f -> f.getScoreLine())
+            // 过滤掉已停用院校 / 已停用分数线，避免学生侧看到失效数据
+            .filter(line -> line != null
+                && Boolean.TRUE.equals(line.getActive())
+                && line.getSchool() != null
+                && Boolean.TRUE.equals(line.getSchool().getActive()))
+            .map(this::toScoreLineMap)
             .toList();
     }
 
@@ -246,7 +252,11 @@ public class KaoyanService {
     private Specification<GraduateScoreLine> scoreLineSpec(Map<String, String> filters, boolean activeOnly) {
         return (root, query, builder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            if (activeOnly) predicates.add(builder.isTrue(root.get("active")));
+            if (activeOnly) {
+                predicates.add(builder.isTrue(root.get("active")));
+                // 学生侧：停用院校下的分数线条目同样不展示
+                predicates.add(builder.isTrue(root.get("school").get("active")));
+            }
             if (hasText(filters.get("schoolId"))) {
                 predicates.add(builder.equal(root.get("school").get("id"), toLong(filters.get("schoolId"))));
             }
