@@ -139,13 +139,18 @@ export default function JobFairsPage() {
   }
 
   async function handleOpenDetail(fair) {
+    setSelectedFair(normalizeFairDetail(fair))
+
     if (!canUseRemote) {
-      setSelectedFair(normalizeFairDetail(fair))
       return
     }
 
-    const data = await employmentApi.fairDetail(fair.id)
-    setSelectedFair(normalizeFairDetail(data))
+    try {
+      const data = await employmentApi.fairDetail(fair.id)
+      setSelectedFair(normalizeFairDetail(data))
+    } catch (error) {
+      setNotice(fallbackDataNotice('招聘会详情', error))
+    }
   }
 
   async function handleSavePreference(nextPreference) {
