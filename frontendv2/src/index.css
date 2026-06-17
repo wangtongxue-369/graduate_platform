@@ -3031,6 +3031,10 @@ html[data-theme="dark"] [class*="_selectItem_"][data-state='checked'] {
   width: min(480px, 100%);
 }
 
+.v2-room-join-conflict {
+  width: min(480px, 100%);
+}
+
 .v2-module-card.is-inactive {
   opacity: 0.7;
 }
