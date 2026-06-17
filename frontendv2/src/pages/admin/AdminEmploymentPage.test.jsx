@@ -160,4 +160,64 @@ describe('admin employment page', () => {
     expect(screen.getAllByRole('button', { name: '已选中' })).toHaveLength(1)
     expect(screen.getByText('resume-final.pdf')).toBeInTheDocument()
   })
+
+  it('creates fairs and jobs from the admin employment editor', async () => {
+    apiMocks.adminEmploymentApi.fairs.mockResolvedValue([])
+    apiMocks.adminEmploymentApi.jobs.mockResolvedValue([])
+    apiMocks.adminEmploymentApi.resumes.mockResolvedValue([])
+    apiMocks.adminEmploymentApi.createFair.mockResolvedValue({
+      id: 31,
+      title: '新增招聘会',
+      companyName: '新增企业',
+      active: true,
+    })
+    apiMocks.adminEmploymentApi.createJob.mockResolvedValue({
+      id: 41,
+      title: '新增岗位',
+      companyName: '新增企业',
+      active: true,
+    })
+
+    renderPage()
+
+    expect(await screen.findByTestId('admin-employment-page')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '新增' }))
+    fireEvent.change(screen.getByLabelText('标题'), {
+      target: { value: '新增招聘会' },
+    })
+    fireEvent.change(screen.getByLabelText('企业名称'), {
+      target: { value: '新增企业' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '创建招聘会' }))
+
+    await waitFor(() => {
+      expect(apiMocks.adminEmploymentApi.createFair).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: '新增招聘会',
+          companyName: '新增企业',
+        }),
+        'remote-token',
+      )
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: '岗位台账' }))
+    fireEvent.click(screen.getByRole('button', { name: '新增' }))
+    fireEvent.change(screen.getByLabelText('标题'), {
+      target: { value: '新增岗位' },
+    })
+    fireEvent.change(screen.getByLabelText('企业名称'), {
+      target: { value: '新增企业' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '创建岗位' }))
+
+    await waitFor(() => {
+      expect(apiMocks.adminEmploymentApi.createJob).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: '新增岗位',
+          companyName: '新增企业',
+        }),
+        'remote-token',
+      )
+    })
+  })
 })
