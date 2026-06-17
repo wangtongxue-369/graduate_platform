@@ -27,11 +27,9 @@ export default function StudyRoomSidebar({
   createdRooms,
   myElapsedSeconds = 0,
   tickNow = Date.now(),
-  canJoin,
   canLeave,
   canClose,
   onPeriodChange,
-  onJoinRoom,
   onLeaveRoom,
   onCloseRoom,
 }) {
@@ -60,7 +58,6 @@ export default function StudyRoomSidebar({
             <span>{formatDuration(myElapsedSeconds)}</span>
           </div>
           <div className="v2-inline-actions">
-            {canJoin ? <button className="v2-segment-button is-active" type="button" onClick={onJoinRoom}>加入房间</button> : null}
             {canLeave ? <button className="v2-segment-button" type="button" onClick={onLeaveRoom}>退出房间</button> : null}
             {canClose ? <button className="v2-segment-button" type="button" onClick={onCloseRoom}>关闭房间</button> : null}
           </div>

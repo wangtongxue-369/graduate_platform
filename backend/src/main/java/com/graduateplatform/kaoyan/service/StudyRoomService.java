@@ -117,16 +117,15 @@ public class StudyRoomService {
     // ========== Membership ==========
 
     public Map<String, Object> joinRoom(Long userId, Long roomId) {
-        // 如果已经是本房间的成员，直接返回，不重复创建
-        Optional<StudyRoomMember> alreadyInRoom = memberRepository.findByRoomIdAndUserIdAndLeftAtIsNull(roomId, userId);
-        if (alreadyInRoom.isPresent()) {
-            StudyRoomSession session = sessionRepository.findByUserIdAndRoomIdAndEndedAtIsNull(userId, roomId).orElse(null);
-            Map<String, Object> result = toMemberMap(alreadyInRoom.get());
-            result.put("sessionStartedAt", session != null ? session.getStartedAt().toString() : alreadyInRoom.get().getJoinedAt().toString());
-            return result;
+        // 并发场景下两次 joinRoom 同时通过 exists 检查会重复插入。
+        // 防御策略：先 exists 判重 → 重复则直接返回已有；即使并发突破了 exists
+        // 落到 save，DB 唯一约束（如果部署过 DDL）或下面的 catch + 再查兜底
+        // 会把第二次请求吸收掉，避免暴露「Query did not return a unique result」。
+        if (memberRepository.existsByRoomIdAndUserIdAndLeftAtIsNull(roomId, userId)) {
+            return buildAlreadyJoinedResult(roomId, userId);
         }
 
-        Optional<StudyRoomMember> existing = memberRepository.findCurrentMembership(userId);
+        Optional<StudyRoomMember> existing = memberRepository.findFirstByUserIdAndLeftAtIsNullOrderByJoinedAtDesc(userId);
         if (existing.isPresent()) {
             throw new BusinessException("请先离开当前所在自习室，再加入新房间");
         }
@@ -136,22 +135,41 @@ public class StudyRoomService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("用户不存在"));
 
-        StudyRoomMember member = StudyRoomMember.builder()
-                .room(room).user(user).build();
-        member = memberRepository.save(member);
+        try {
+            StudyRoomMember member = StudyRoomMember.builder()
+                    .room(room).user(user).build();
+            member = memberRepository.saveAndFlush(member);
 
-        StudyRoomSession session = StudyRoomSession.builder()
-                .room(room).user(user).build();
-        sessionRepository.save(session);
+            StudyRoomSession session = StudyRoomSession.builder()
+                    .room(room).user(user).build();
+            sessionRepository.saveAndFlush(session);
 
-        emitRoomEvent(roomId, "member-joined", Map.of(
-                "member", toMemberMap(member),
-                "memberCount", memberRepository.findByRoomIdAndLeftAtIsNull(roomId).size()
-        ));
-        emitLeaderboardUpdate(roomId, "all");
+            emitRoomEvent(roomId, "member-joined", Map.of(
+                    "member", toMemberMap(member),
+                    "memberCount", memberRepository.findByRoomIdAndLeftAtIsNull(roomId).size()
+            ));
+            emitLeaderboardUpdate(roomId, "all");
 
-        Map<String, Object> result = toMemberMap(member);
-        result.put("sessionStartedAt", session.getStartedAt().toString());
+            Map<String, Object> result = toMemberMap(member);
+            result.put("sessionStartedAt", session.getStartedAt().toString());
+            return result;
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // 唯一约束（如果部署过 DDL）或并发重复插入：退回到已存在记录
+            return buildAlreadyJoinedResult(roomId, userId);
+        }
+    }
+
+    private Map<String, Object> buildAlreadyJoinedResult(Long roomId, Long userId) {
+        StudyRoomMember alreadyInRoom = memberRepository
+                .findByRoomIdAndUserIdAndLeftAtIsNull(roomId, userId)
+                .orElseThrow(() -> new BusinessException("加入房间失败，请稍后重试"));
+        StudyRoomSession session = sessionRepository
+                .findByUserIdAndRoomIdAndEndedAtIsNull(userId, roomId)
+                .orElse(null);
+        Map<String, Object> result = toMemberMap(alreadyInRoom);
+        result.put("sessionStartedAt", session != null
+                ? session.getStartedAt().toString()
+                : alreadyInRoom.getJoinedAt().toString());
         return result;
     }
 

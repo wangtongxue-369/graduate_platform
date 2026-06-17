@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@legacy/context/AuthContext.jsx'
 import { studyRoomApi } from '@legacy/lib/api.js'
@@ -37,6 +37,11 @@ export default function KaoyanStudyRoomPage() {
   const [sending, setSending] = useState(false)
   const [realtimeState, setRealtimeState] = useState('preview')
   const [showCloseConfirm, setShowCloseConfirm] = useState(false)
+  const [joinConflict, setJoinConflict] = useState(null)
+  // 进入房间页只 join 一次：loadRoomWorkspace 多次更新 state 会让
+  // canLeave/canUseRemote 等依赖项反复变化导致 useEffect 重跑，ref 标记
+  // 后只在首次进入页面对当前 roomId 调一次 joinRoom，避免并发/重复插入。
+  const joinAttemptedRef = useRef('')
 
   async function refreshMessages() {
     if (!canUseRemote || !roomId) return
@@ -102,14 +107,19 @@ export default function KaoyanStudyRoomPage() {
     loadRoomWorkspace(activePeriod)
   }, [activePeriod, canUseRemote, roomId, token])
 
-  // Auto-join when the page is opened by the room's creator so they don't
-  // need to click "加入房间" manually every time.
+  // 进入房间页即默认加入（参考 v1 handleEnterRoom 模式）。
+  // 仅在首次进入 roomId 时 join 一次，依赖 joinAttemptedRef + roomId，
+  // 不会因为 canLeave/canUseRemote 等 state 变化重跑。
+  // 已在别的房间时后端会抛「请先离开当前所在自习室，再加入新房间」，
+  // 弹确认 modal 让用户选择「去当前房间 / 取消」。
   useEffect(() => {
-    if (!loading && room.isOwner && canJoin) {
-      handleJoinRoom()
-    }
+    if (!canUseRemote || !token || !roomId) return
+    if (room.closed) return
+    if (joinAttemptedRef.current === String(roomId)) return
+    joinAttemptedRef.current = String(roomId)
+    handleJoinRoom()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, room.isOwner, canJoin])
+  }, [canUseRemote, token, roomId, room.closed])
 
   useEffect(() => {
     if (!canUseRemote || !roomId) return undefined
@@ -117,17 +127,69 @@ export default function KaoyanStudyRoomPage() {
     const eventSource = new EventSource(studyRoomApi.roomStreamUrl(roomId))
     setRealtimeState('connecting')
 
-    eventSource.addEventListener('message', async () => {
+    function sortMessagesByCreatedAt(rows) {
+      return [...rows].sort((a, b) => {
+        const aTime = new Date(a.createdAt || 0).getTime()
+        const bTime = new Date(b.createdAt || 0).getTime()
+        return aTime - bTime
+      })
+    }
+
+    eventSource.addEventListener('room-update', (event) => {
       setRealtimeState('live')
-      await Promise.all([
-        refreshMessages(),
-        refreshLeaderboard(),
-      ])
+      let payload = null
+      try {
+        payload = event?.data ? JSON.parse(event.data) : null
+      } catch {
+        payload = null
+      }
+      if (!payload) return
+
+      const data = payload.data || {}
+      if (payload.type === 'connected') return
+
+      if (payload.type === 'message') {
+        // 后端按时间顺序推送，新消息追加在末尾即可
+        setMessages((prev) => {
+          if (prev.some((item) => String(item.id) === String(data.id))) return prev
+          const next = normalizeRoomMessages({ content: [...prev, data] })
+          return sortMessagesByCreatedAt(next)
+        })
+        return
+      }
+
+      if (payload.type === 'member-joined') {
+        setRoom((current) => {
+          const members = Array.isArray(current.members) ? current.members : []
+          if (members.some((item) => String(item.userId || item.id) === String(data.member?.userId))) {
+            return current
+          }
+          return { ...current, members: [...members, data.member] }
+        })
+        return
+      }
+
+      if (payload.type === 'member-left') {
+        setRoom((current) => {
+          const members = Array.isArray(current.members) ? current.members : []
+          return { ...current, members: members.filter((item) => String(item.userId || item.id) !== String(data.userId)) }
+        })
+        return
+      }
+
+      if (payload.type === 'leaderboard-update') {
+        refreshLeaderboard()
+        return
+      }
+
+      if (payload.type === 'room-closed') {
+        navigate('/station/kaoyan/support/rooms')
+      }
     })
 
     eventSource.onerror = () => {
-      setRealtimeState('fallback')
-      eventSource.close()
+      // EventSource 会自动重连；标记为「重连中」即可，不主动 close
+      setRealtimeState('reconnecting')
     }
 
     return () => {
@@ -141,7 +203,17 @@ export default function KaoyanStudyRoomPage() {
       await studyRoomApi.joinRoom(roomId, token)
       await loadRoomWorkspace(activePeriod)
     } catch (error) {
-      setNotice(error.message || '加入房间失败')
+      const message = error?.message || '加入房间失败'
+      // 后端「请先离开当前所在自习室」 → 弹确认 modal
+      if (message.includes('请先离开') && currentRoom) {
+        setJoinConflict({
+          currentRoomId: currentRoom.roomId || currentRoom.id,
+          currentRoomName: currentRoom.name,
+          message,
+        })
+        return
+      }
+      setNotice(message)
     }
   }
 
@@ -173,7 +245,8 @@ export default function KaoyanStudyRoomPage() {
     try {
       await studyRoomApi.sendMessage(roomId, draft.trim(), token)
       setDraft('')
-      await refreshMessages()
+      // 不主动 refreshMessages：等 SSE room-update(message) 事件统一推送新消息，
+      // 与其它成员保持一致的消息顺序与时间戳。
     } catch (error) {
       setNotice(error.message || '发送房间消息失败')
     } finally {
@@ -215,7 +288,6 @@ export default function KaoyanStudyRoomPage() {
         <StudyRoomSidebar
           activePeriod={activePeriod}
           canClose={canClose}
-          canJoin={canJoin}
           canLeave={canLeave}
           createdRooms={createdRooms}
           currentRoom={currentRoom}
@@ -223,7 +295,6 @@ export default function KaoyanStudyRoomPage() {
           members={room.members || []}
           room={room}
           onCloseRoom={() => setShowCloseConfirm(true)}
-          onJoinRoom={handleJoinRoom}
           onLeaveRoom={handleLeaveRoom}
           onPeriodChange={setActivePeriod}
         />
@@ -242,6 +313,43 @@ export default function KaoyanStudyRoomPage() {
               </button>
               <button className="v2-segment-button is-active" type="button" onClick={handleCloseRoom}>
                 确认关闭
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {joinConflict ? (
+        <div className="v2-modal-overlay" onClick={() => setJoinConflict(null)}>
+          <div
+            className="v2-modal-card v2-room-join-conflict"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="v2-modal-head">
+              <h3>只能加入一个自习室</h3>
+              <button className="v2-segment-button" type="button" onClick={() => setJoinConflict(null)}>
+                关闭
+              </button>
+            </div>
+            <p>
+              {joinConflict.currentRoomName
+                ? `你当前已经加入「${joinConflict.currentRoomName}」，请先离开它，再加入新房间。`
+                : '你当前已加入其它自习室，请先离开它，再加入新房间。'}
+            </p>
+            <div className="v2-inline-actions">
+              <button className="v2-segment-button" type="button" onClick={() => setJoinConflict(null)}>
+                取消
+              </button>
+              <button
+                className="v2-segment-button is-active"
+                type="button"
+                onClick={() => {
+                  const target = joinConflict.currentRoomId
+                  setJoinConflict(null)
+                  if (target) navigate(`/station/kaoyan/support/rooms/${target}`)
+                }}
+              >
+                回到当前房间
               </button>
             </div>
           </div>
