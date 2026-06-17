@@ -17,8 +17,11 @@ public interface StudyRoomMemberRepository extends JpaRepository<StudyRoomMember
 
     List<StudyRoomMember> findByRoomId(Long roomId);
 
-    @Query("SELECT m FROM StudyRoomMember m WHERE m.user.id = :userId AND m.leftAt IS NULL")
-    Optional<StudyRoomMember> findCurrentMembership(@Param("userId") Long userId);
+    // 同一 user 在历史脏数据或并发竞争下可能存在多条 leftAt IS NULL 记录。
+    // 派生方法 + OrderByJoinedAtDesc 保证只取最近一条，避免 JPA
+    // IncorrectResultSizeDataAccessException（暴露成「Query did not return
+    // a unique result」）。
+    Optional<StudyRoomMember> findFirstByUserIdAndLeftAtIsNullOrderByJoinedAtDesc(Long userId);
 
     @Query("SELECT m FROM StudyRoomMember m WHERE m.user.id = :userId AND m.leftAt IS NULL ORDER BY m.joinedAt DESC")
     List<StudyRoomMember> findCurrentMemberships(@Param("userId") Long userId);
