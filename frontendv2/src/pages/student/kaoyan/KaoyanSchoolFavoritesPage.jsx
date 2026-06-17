@@ -10,8 +10,6 @@ import {
 import {
   canUseRemoteToken,
   fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 
 export default function KaoyanSchoolFavoritesPage() {
@@ -19,7 +17,7 @@ export default function KaoyanSchoolFavoritesPage() {
   const canUseRemote = canUseRemoteToken(token)
   const previewRows = createKaoyanFavoritePreviewRows()
   const [rows, setRows] = useState(previewRows)
-  const [notice, setNotice] = useState(previewDataNotice('收藏账本'))
+  const [notice, setNotice] = useState('')
   const [expandedRowIds, setExpandedRowIds] = useState(new Set())
 
   useEffect(() => {
@@ -30,7 +28,6 @@ export default function KaoyanSchoolFavoritesPage() {
         const nextRows = createKaoyanFavoritePreviewRows()
         if (!active) return
         setRows(nextRows)
-        setNotice(previewDataNotice('收藏账本'))
         return
       }
 
@@ -38,7 +35,6 @@ export default function KaoyanSchoolFavoritesPage() {
         const data = await kaoyanApi.favoriteScoreLines(token)
         if (!active) return
         setRows(normalizeFavoriteRows(data))
-        setNotice(remoteDataNotice('收藏账本'))
       } catch (error) {
         const nextRows = createKaoyanFavoritePreviewRows()
         if (!active) return

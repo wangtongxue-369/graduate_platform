@@ -49,7 +49,12 @@ public class StudyPlanService {
 
     public List<Map<String, Object>> getPlans(Long userId) {
         return planRepository.findByUserIdOrderByStartDateDesc(userId).stream()
-            .map(p -> toPlanMap(p, false))
+            .map(plan -> {
+                Map<String, Object> row = toPlanMap(plan, false);
+                List<StudyCheckIn> checkIns = checkInRepository.findByPlanIdAndUserIdOrderByCheckInDateAsc(plan.getId(), userId);
+                row.put("completionRate", calculateCompletionRate(plan, checkIns));
+                return row;
+            })
             .collect(Collectors.toList());
     }
 
@@ -74,19 +79,12 @@ public class StudyPlanService {
         int totalCheckInDays = checkedDates.size();
         int streak = calculateStreak(checkedDates, plan.getStartDate(), plan.getEndDate());
 
-        BigDecimal completionRate = BigDecimal.ZERO;
-        if (plan.getTotalDurationHours() != null && plan.getTotalDurationHours().compareTo(BigDecimal.ZERO) > 0) {
-            completionRate = totalDuration.divide(plan.getTotalDurationHours(), 4, RoundingMode.HALF_UP)
-                .multiply(BigDecimal.valueOf(100))
-                .setScale(1, RoundingMode.HALF_UP);
-        }
-
         result.put("totalDays", totalDays);
         result.put("checkedDays", totalCheckInDays);
         result.put("streak", streak);
         result.put("plannedDurationHours", plan.getTotalDurationHours());
         result.put("totalDurationHours", totalDuration);
-        result.put("completionRate", completionRate);
+        result.put("completionRate", calculateCompletionRate(plan, checkIns));
         result.put("checkIns", checkIns.stream().map(this::toCheckInMap).collect(Collectors.toList()));
 
         return result;
@@ -145,6 +143,23 @@ public class StudyPlanService {
             .orElseThrow(() -> new BusinessException("打卡记录不存在"));
         checkInRepository.delete(checkIn);
         return Map.of("id", checkInId);
+    }
+
+    private BigDecimal calculateCompletionRate(StudyPlan plan, List<StudyCheckIn> checkIns) {
+        if (plan.getTotalDurationHours() == null
+            || plan.getTotalDurationHours().compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal totalDuration = BigDecimal.ZERO;
+        for (StudyCheckIn c : checkIns) {
+            if (c.getDurationHours() != null) {
+                totalDuration = totalDuration.add(c.getDurationHours());
+            }
+        }
+        return totalDuration
+            .divide(plan.getTotalDurationHours(), 4, RoundingMode.HALF_UP)
+            .multiply(BigDecimal.valueOf(100))
+            .setScale(1, RoundingMode.HALF_UP);
     }
 
     private int calculateStreak(Set<LocalDate> checkedDates, LocalDate startDate, LocalDate endDate) {

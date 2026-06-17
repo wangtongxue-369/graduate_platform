@@ -29,7 +29,6 @@ export default function KaoyanOverviewPage() {
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [overview, setOverview] = useState(createKaoyanPreviewOverview())
-  const [notice, setNotice] = useState(previewDataNotice('考研主站'))
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -38,7 +37,6 @@ export default function KaoyanOverviewPage() {
     async function loadOverview() {
       if (!canUseRemote) {
         setOverview(createKaoyanPreviewOverview())
-        setNotice(previewDataNotice('考研主站'))
         return
       }
 
@@ -83,11 +81,9 @@ export default function KaoyanOverviewPage() {
           seniors: supportRows.mentors.slice(0, 2),
           rooms: supportRows.rooms.slice(0, 2),
         })
-        setNotice(remoteDataNotice('考研主站'))
       } catch (error) {
         if (!active) return
         setOverview(createKaoyanPreviewOverview())
-        setNotice(fallbackDataNotice('考研主站', error))
       } finally {
         if (active) setLoading(false)
       }
@@ -107,7 +103,6 @@ export default function KaoyanOverviewPage() {
         lead="研路漫漫，每一步都算数。"
       />
 
-      {notice ? <div className="v2-status-note">{notice}</div> : null}
       {loading ? <div className="v2-status-note">正在同步考研主站数据…</div> : null}
 
       <section className="v2-summary-strip" aria-label="考研主站摘要">

@@ -15,8 +15,6 @@ import {
 import {
   canUseRemoteToken,
   fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -64,7 +62,7 @@ export default function KaoyanSchoolsPage() {
     totalPages: previewPage.totalPages,
   })
   const [filterOptions, setFilterOptions] = useState(buildFilterOptions(previewRows))
-  const [notice, setNotice] = useState(previewDataNotice('择校账本'))
+  const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(0)
   const [favoriteIds, setFavoriteIds] = useState(
@@ -95,7 +93,6 @@ export default function KaoyanSchoolsPage() {
         })
         setFilterOptions(buildFilterOptions(nextPreviewRows))
         setFavoriteIds(new Set(nextPreviewRows.filter((item) => item.favorite).map((item) => item.id)))
-        setNotice(previewDataNotice('择校账本'))
         return
       }
 
@@ -139,7 +136,6 @@ export default function KaoyanSchoolsPage() {
           totalPages: nextPage.totalPages,
         })
         setFilterOptions(buildFilterOptions(merged.rows, schoolsData?.content || []))
-        setNotice(remoteDataNotice('择校账本'))
       } catch (error) {
         const nextPreviewRows = createKaoyanSchoolPreviewRows()
         const nextPage = paginateSchoolLedgerRows(nextPreviewRows, { page: 0, pageSize: 10 })

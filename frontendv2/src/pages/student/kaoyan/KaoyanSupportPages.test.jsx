@@ -544,7 +544,7 @@ describe('kaoyan support split pages', () => {
     await waitFor(() => {
       expect(apiMocks.mentorApi.sentSessions).toHaveBeenLastCalledWith({ page: 1, size: 10 }, 'remote-token')
     })
-    expect((await screen.findAllByText('调剂咨询')).length).toBeGreaterThan(0)
+    expect((await screen.findAllByText('周学长')).length).toBeGreaterThan(0)
 
     fireEvent.change(screen.getByLabelText('发送消息'), {
       target: { value: '收到，我先整理名单。' },
