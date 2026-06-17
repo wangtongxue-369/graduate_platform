@@ -1,11 +1,10 @@
 import { fireEvent, render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '@/App.jsx'
 import AdminKaoyanOverviewPage from '@/pages/admin/AdminKaoyanOverviewPage.jsx'
 import AdminKaoyanMaterialsPage from '@/pages/admin/AdminKaoyanMaterialsPage.jsx'
 import AdminKaoyanSchoolsPage from '@/pages/admin/AdminKaoyanSchoolsPage.jsx'
-import AdminKaoyanScoreLinesPage from '@/pages/admin/AdminKaoyanScoreLinesPage.jsx'
 
 const authState = vi.hoisted(() => ({
   user: {
@@ -124,16 +123,6 @@ vi.mock('@legacy/lib/api.js', () => ({
   ...apiMocks,
 }))
 
-function renderRoute(initialEntry, routePath, element) {
-  return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <Routes>
-        <Route path={routePath} element={element} />
-      </Routes>
-    </MemoryRouter>,
-  )
-}
-
 describe('admin kaoyan split pages', () => {
   beforeEach(() => {
     authState.user = {
@@ -178,7 +167,6 @@ describe('admin kaoyan split pages', () => {
   it('renders overview summary counts from backend data', async () => {
     apiMocks.adminMaterialApi.pending.mockResolvedValue({ content: [{ id: 1 }], totalElements: 12, totalPages: 2 })
     apiMocks.adminApi.kaoyanSchools.mockResolvedValue({ content: [{ id: 1, name: '浙江大学' }], totalElements: 36, totalPages: 5 })
-    apiMocks.adminApi.kaoyanScoreLines.mockResolvedValue({ content: [{ id: 8, schoolName: '浙江大学', totalScoreLine: 390 }], totalElements: 148, totalPages: 15 })
 
     render(
       <MemoryRouter>
@@ -189,11 +177,9 @@ describe('admin kaoyan split pages', () => {
     await waitFor(() => {
       expect(apiMocks.adminMaterialApi.pending).toHaveBeenCalled()
       expect(apiMocks.adminApi.kaoyanSchools).toHaveBeenCalled()
-      expect(apiMocks.adminApi.kaoyanScoreLines).toHaveBeenCalled()
     })
     expect(await screen.findByText('12')).toBeInTheDocument()
     expect(screen.getByText('36')).toBeInTheDocument()
-    expect(screen.getByText('148')).toBeInTheDocument()
   })
 
   it('renders materials queue tabs and cards', async () => {
@@ -326,28 +312,38 @@ describe('admin kaoyan split pages', () => {
     })
     expect(await screen.findByText('浙江大学')).toBeInTheDocument()
     expect(screen.getAllByLabelText('院校名称').length).toBeGreaterThan(0)
-    expect(screen.getByRole('button', { name: '新增院校' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: '新增院校' }).length).toBeGreaterThan(0)
   })
 
-  it('renders score lines while keeping school context', async () => {
+  it('opens school edit modal and shows score lines modal when requested', async () => {
     apiMocks.adminApi.kaoyanSchools.mockResolvedValue({
-      content: [{ id: 1, name: '浙江大学' }],
+      content: [{ id: 1, name: '浙江大学', region: '华东', province: '浙江', is985: true, is211: true, schoolType: '综合' }],
       totalElements: 1,
       totalPages: 1,
     })
     apiMocks.adminApi.kaoyanScoreLines.mockResolvedValue({
-      content: [{ id: 9, schoolId: 1, schoolName: '浙江大学', year: 2025, majorCategory: '工学', majorName: '计算机科学与技术', totalScoreLine: 390 }],
+      content: [{ id: 9, schoolId: 1, year: 2025, majorName: '计算机科学与技术', totalScoreLine: 390 }],
       totalElements: 1,
       totalPages: 1,
     })
 
-    renderRoute('/admin/kaoyan/score-lines', '/admin/kaoyan/score-lines', <AdminKaoyanScoreLinesPage />)
+    render(
+      <MemoryRouter>
+        <AdminKaoyanSchoolsPage />
+      </MemoryRouter>,
+    )
 
+    expect(await screen.findByText('浙江大学')).toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByRole('button', { name: '编辑院校' })[0])
+    expect(await screen.findByRole('heading', { name: '编辑院校' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '关闭' }))
+
+    fireEvent.click(screen.getByRole('button', { name: '分数线' }))
     await waitFor(() => {
-      expect(apiMocks.adminApi.kaoyanSchools).toHaveBeenCalled()
-      expect(apiMocks.adminApi.kaoyanScoreLines).toHaveBeenCalledWith({ schoolId: '1', page: 0, size: 12 }, 'remote-token')
+      expect(apiMocks.adminApi.kaoyanScoreLines).toHaveBeenCalled()
     })
-    expect(await screen.findAllByText('浙江大学')).toHaveLength(2)
+    expect(await screen.findByRole('heading', { name: '分数线维护' })).toBeInTheDocument()
     expect(screen.getByText('计算机科学与技术')).toBeInTheDocument()
   })
 })

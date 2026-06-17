@@ -190,10 +190,16 @@ export default function AdminKaoyanMaterialsPage() {
                 <span>{`下载 ${item.downloadCount || 0}`}</span>
               </div>
               <div className="v2-ledger-row__actions">
+                <Link
+                  className="v2-segment-button is-active"
+                  to={`/admin/kaoyan/materials/${item.id}`}
+                >
+                  查看详情
+                </Link>
                 {item.status === 'PENDING' ? (
                   <>
                     <button
-                      className="v2-segment-button is-active"
+                      className="v2-segment-button"
                       disabled={actingId === String(item.id)}
                       type="button"
                       onClick={() => handleReview(item.id, 'APPROVED')}

@@ -131,8 +131,8 @@ const AdminCommunityUsersPage = lazyNamed(loadAdminCommunityPages, 'AdminCommuni
 
 const AdminKaoyanOverviewPage = lazyDefault(() => import('@/pages/admin/AdminKaoyanOverviewPage.jsx'))
 const AdminKaoyanMaterialsPage = lazyDefault(() => import('@/pages/admin/AdminKaoyanMaterialsPage.jsx'))
+const AdminKaoyanMaterialDetailPage = lazyDefault(() => import('@/pages/admin/AdminKaoyanMaterialDetailPage.jsx'))
 const AdminKaoyanSchoolsPage = lazyDefault(() => import('@/pages/admin/AdminKaoyanSchoolsPage.jsx'))
-const AdminKaoyanScoreLinesPage = lazyDefault(() => import('@/pages/admin/AdminKaoyanScoreLinesPage.jsx'))
 
 const SettingsProfilePage = lazyDefault(loadSettingsProfilePage)
 const SettingsPostsPage = lazyDefault(loadSettingsPostsPage)
@@ -280,7 +280,7 @@ export default function App() {
           <Route path="/admin/kaoyan" element={<AdminKaoyanOverviewPage />} />
           <Route path="/admin/kaoyan/materials" element={<AdminKaoyanMaterialsPage />} />
           <Route path="/admin/kaoyan/schools" element={<AdminKaoyanSchoolsPage />} />
-          <Route path="/admin/kaoyan/score-lines" element={<AdminKaoyanScoreLinesPage />} />
+          <Route path="/admin/kaoyan/materials/:materialId" element={<AdminKaoyanMaterialDetailPage />} />
           <Route path="/admin/kaogong" element={<AdminKaogongPage />} />
           <Route path="/admin/employment" element={<AdminEmploymentPage />} />
           <Route path="/admin/studyabroad" element={<AdminStudyAbroadOverviewPage />} />
