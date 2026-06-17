@@ -5,6 +5,9 @@ import { AuthProvider } from '@legacy/context/AuthContext.jsx'
 import App from './App.jsx'
 import './index.css'
 import { ROUTER_FUTURE_FLAGS } from './routerFuture.js'
+import { applyStartupThemePreference } from './themeBootstrap.js'
+
+applyStartupThemePreference()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
