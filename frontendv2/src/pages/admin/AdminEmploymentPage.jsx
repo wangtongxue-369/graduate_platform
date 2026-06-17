@@ -105,6 +105,8 @@ export default function AdminEmploymentPage() {
   const [notice, setNotice] = useState(previewDataNotice('就业运营'))
   const [selectedFair, setSelectedFair] = useState(createFallbackFairs()[0])
   const [selectedJob, setSelectedJob] = useState(createFallbackJobs()[0])
+  const [creatingFair, setCreatingFair] = useState(false)
+  const [creatingJob, setCreatingJob] = useState(false)
   const [fairDraft, setFairDraft] = useState(() => createFairDraft(createFallbackFairs()[0]))
   const [jobDraft, setJobDraft] = useState(() => createJobDraft(createFallbackJobs()[0]))
   const [selectedTriggerSource, setSelectedTriggerSource] = useState({
@@ -128,6 +130,8 @@ export default function AdminEmploymentPage() {
         setResumes(fallbackResumes)
         setSelectedFair(fallbackFairs[0] || null)
         setSelectedJob(fallbackJobs[0] || null)
+        setCreatingFair(false)
+        setCreatingJob(false)
         setFairDraft(createFairDraft(fallbackFairs[0]))
         setJobDraft(createJobDraft(fallbackJobs[0]))
         setSelectedTriggerSource(buildTriggerSources(fallbackFairs, fallbackJobs)[0] || null)
@@ -159,6 +163,8 @@ export default function AdminEmploymentPage() {
         setResumes(nextResumes)
         setSelectedFair(nextFairs[0] || null)
         setSelectedJob(nextJobs[0] || null)
+        setCreatingFair(false)
+        setCreatingJob(false)
         setFairDraft(createFairDraft(nextFairs[0]))
         setJobDraft(createJobDraft(nextJobs[0]))
         setSelectedTriggerSource(buildTriggerSources(nextFairs, nextJobs)[0] || null)
@@ -184,36 +190,76 @@ export default function AdminEmploymentPage() {
 
   function handleSelectFair(item) {
     setSelectedFair(item)
+    setCreatingFair(false)
     setFairDraft(createFairDraft(item))
     setSelectedTriggerSource({ id: item.id, relatedType: 'FAIR', title: item.title })
   }
 
   function handleSelectJob(item) {
     setSelectedJob(item)
+    setCreatingJob(false)
     setJobDraft(createJobDraft(item))
     setSelectedTriggerSource({ id: item.id, relatedType: 'JOB', title: item.title })
   }
 
+  function handleCreateFair() {
+    setSelectedFair(null)
+    setCreatingFair(true)
+    setFairDraft(createFairDraft())
+  }
+
+  function handleCreateJob() {
+    setSelectedJob(null)
+    setCreatingJob(true)
+    setJobDraft(createJobDraft())
+  }
+
   async function handleSaveFair() {
-    if (canUseRemote && selectedFair?.id) {
-      await adminEmploymentApi.updateFair(selectedFair.id, fairDraft, token)
+    if (!creatingFair && selectedFair?.id) {
+      if (canUseRemote) {
+        await adminEmploymentApi.updateFair(selectedFair.id, fairDraft, token)
+      }
+
+      const nextItem = { ...selectedFair, ...fairDraft }
+      setFairs((current) => current.map((item) => (item.id === nextItem.id ? nextItem : item)))
+      setSelectedFair(nextItem)
+      setNotice('招聘会条目已保存。')
+      return
     }
 
-    const nextItem = { ...selectedFair, ...fairDraft }
-    setFairs((current) => current.map((item) => (item.id === nextItem.id ? nextItem : item)))
+    const created = canUseRemote
+      ? await adminEmploymentApi.createFair(fairDraft, token)
+      : { ...fairDraft, id: Date.now() }
+    const nextItem = { ...fairDraft, ...(created || {}) }
+    setFairs((current) => [nextItem, ...current])
     setSelectedFair(nextItem)
-    setNotice('招聘会条目已保存。')
+    setCreatingFair(false)
+    setSelectedTriggerSource({ id: nextItem.id, relatedType: 'FAIR', title: nextItem.title })
+    setNotice('招聘会条目已创建。')
   }
 
   async function handleSaveJob() {
-    if (canUseRemote && selectedJob?.id) {
-      await adminEmploymentApi.updateJob(selectedJob.id, jobDraft, token)
+    if (!creatingJob && selectedJob?.id) {
+      if (canUseRemote) {
+        await adminEmploymentApi.updateJob(selectedJob.id, jobDraft, token)
+      }
+
+      const nextItem = { ...selectedJob, ...jobDraft }
+      setJobs((current) => current.map((item) => (item.id === nextItem.id ? nextItem : item)))
+      setSelectedJob(nextItem)
+      setNotice('岗位条目已保存。')
+      return
     }
 
-    const nextItem = { ...selectedJob, ...jobDraft }
-    setJobs((current) => current.map((item) => (item.id === nextItem.id ? nextItem : item)))
+    const created = canUseRemote
+      ? await adminEmploymentApi.createJob(jobDraft, token)
+      : { ...jobDraft, id: Date.now() }
+    const nextItem = { ...jobDraft, ...(created || {}) }
+    setJobs((current) => [nextItem, ...current])
     setSelectedJob(nextItem)
-    setNotice('岗位条目已保存。')
+    setCreatingJob(false)
+    setSelectedTriggerSource({ id: nextItem.id, relatedType: 'JOB', title: nextItem.title })
+    setNotice('岗位条目已创建。')
   }
 
   async function confirmTrigger() {
@@ -259,7 +305,7 @@ export default function AdminEmploymentPage() {
           <AdminEmploymentSourceList
             title="招聘会源列表"
             items={fairs}
-            selectedId={selectedFair?.id}
+            selectedId={creatingFair ? null : selectedFair?.id}
             onSelect={handleSelectFair}
             variant="main"
           />
@@ -269,7 +315,7 @@ export default function AdminEmploymentPage() {
           <AdminEmploymentSourceList
             title="岗位源列表"
             items={jobs}
-            selectedId={selectedJob?.id}
+            selectedId={creatingJob ? null : selectedJob?.id}
             onSelect={handleSelectJob}
             variant="main"
           />
@@ -319,9 +365,11 @@ export default function AdminEmploymentPage() {
           <AdminEmploymentEditorPanel
             mode="fairs"
             draft={fairDraft}
+            isCreating={creatingFair}
             onChange={setFairDraft}
+            onCreate={handleCreateFair}
             onSave={handleSaveFair}
-            onReset={() => setFairDraft(createFairDraft(selectedFair))}
+            onReset={() => setFairDraft(createFairDraft(creatingFair ? null : selectedFair))}
           />
         ) : null}
 
@@ -329,9 +377,11 @@ export default function AdminEmploymentPage() {
           <AdminEmploymentEditorPanel
             mode="jobs"
             draft={jobDraft}
+            isCreating={creatingJob}
             onChange={setJobDraft}
+            onCreate={handleCreateJob}
             onSave={handleSaveJob}
-            onReset={() => setJobDraft(createJobDraft(selectedJob))}
+            onReset={() => setJobDraft(createJobDraft(creatingJob ? null : selectedJob))}
           />
         ) : null}
 

@@ -551,6 +551,8 @@ describe('student employment pages', () => {
     })
 
     fireEvent.click(screen.getByRole('button', { name: '查看详情' }))
+    expect(await screen.findByTestId('job-fair-detail-drawer')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '上海春招双选会' })).toBeInTheDocument()
     await waitFor(() => {
       expect(apiMocks.employmentApi.fairDetail).toHaveBeenCalledWith(51)
     })

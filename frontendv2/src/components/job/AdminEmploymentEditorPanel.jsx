@@ -47,11 +47,14 @@ export function createJobDraft(item) {
 export default function AdminEmploymentEditorPanel({
   mode,
   draft,
+  isCreating = false,
   onChange,
+  onCreate,
   onSave,
   onReset,
 }) {
   if (mode !== 'fairs' && mode !== 'jobs') return null
+  const subject = mode === 'fairs' ? '招聘会' : '岗位'
 
   function updateField(key, value) {
     onChange((current) => ({ ...current, [key]: value }))
@@ -62,9 +65,12 @@ export default function AdminEmploymentEditorPanel({
       <div className="v2-side-card__head">
         <div>
           <p className="v2-kicker">编辑工作台</p>
-          <h3>{mode === 'fairs' ? '招聘会编辑台' : '岗位编辑台'}</h3>
+          <h3>{isCreating ? `新增${subject}` : `${subject}编辑台`}</h3>
         </div>
-        <button className="v2-secondary-link" type="button" onClick={onReset}>重置</button>
+        <div className="v2-inline-actions">
+          <button className="v2-secondary-link" type="button" onClick={onCreate}>新增</button>
+          <button className="v2-secondary-link" type="button" onClick={onReset}>重置</button>
+        </div>
       </div>
 
       <form className="v2-filter-form" onSubmit={(event) => {
@@ -164,7 +170,7 @@ export default function AdminEmploymentEditorPanel({
         </label>
 
         <div className="v2-inline-actions">
-          <button className="v2-primary-link" type="submit">{mode === 'fairs' ? '保存招聘会' : '保存岗位'}</button>
+          <button className="v2-primary-link" type="submit">{isCreating ? `创建${subject}` : `保存${subject}`}</button>
         </div>
       </form>
     </section>
