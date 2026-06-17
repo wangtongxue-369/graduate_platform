@@ -231,7 +231,7 @@ export default function KaoyanPlanDetailPage() {
   }
 
   const metrics = buildPlanDetailMetrics(plan, checkIns, new Date())
-  const monthSeed = selectedDate || `${displayMonth.getFullYear()}-${String(displayMonth.getMonth() + 1).padStart(2, '0')}-01`
+  const monthSeed = `${displayMonth.getFullYear()}-${String(displayMonth.getMonth() + 1).padStart(2, '0')}-01`
   const calendarCells = buildPlanCalendarDays(monthSeed)
   const statusByDate = Object.fromEntries(
     calendarCells
