@@ -252,7 +252,13 @@ export default function KaoyanMessagesPage() {
     return () => {
       active = false
     }
-  }, [canUseRemote, refreshTick, selectedSessionId, token])
+    // 注意：故意不依赖 refreshTick。loadMessages 内部会调 markAsRead，
+    // 后端会 emit "read" 事件推回 SSE，handleCounselingUpdate 把
+    // refreshTick +1，再回到这里会形成 markAsRead → SSE → loadMessages
+    // 死循环，每 15s 把 /api/.../sessions/received|sent 打爆。
+    // loadSessions 那边依赖 refreshTick 已足够保证列表实时刷新；
+    // 消息本身的实时刷新走 SSE 推送。
+  }, [canUseRemote, selectedSessionId, token])
 
   async function handleSend(event) {
     event.preventDefault()
