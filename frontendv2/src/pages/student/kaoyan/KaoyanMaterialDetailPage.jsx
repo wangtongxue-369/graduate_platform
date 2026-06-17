@@ -11,8 +11,6 @@ import {
   canUseRemoteToken,
   fallbackDataNotice,
   formatBytes,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 
 export default function KaoyanMaterialDetailPage() {
@@ -21,7 +19,7 @@ export default function KaoyanMaterialDetailPage() {
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [detail, setDetail] = useState(createKaoyanMaterialDetailPreview(materialId))
-  const [notice, setNotice] = useState(previewDataNotice('资料详情'))
+  const [notice, setNotice] = useState('')
   const [downloadingId, setDownloadingId] = useState('')
 
   useEffect(() => {
@@ -30,7 +28,6 @@ export default function KaoyanMaterialDetailPage() {
     async function loadDetail() {
       if (!canUseRemote) {
         setDetail(createKaoyanMaterialDetailPreview(materialId))
-        setNotice(previewDataNotice('资料详情'))
         return
       }
 
@@ -38,7 +35,6 @@ export default function KaoyanMaterialDetailPage() {
         const data = await materialApi.detail(materialId, token)
         if (!active) return
         setDetail(normalizeMaterialDetail(data))
-        setNotice(remoteDataNotice('资料详情'))
       } catch (error) {
         if (!active) return
         setDetail(createKaoyanMaterialDetailPreview(materialId))

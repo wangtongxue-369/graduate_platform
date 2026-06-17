@@ -12,16 +12,29 @@ import {
   canUseRemoteToken,
   fallbackDataNotice,
   formatDateLabel,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
+
+function formatCompletionRate(value) {
+  const number = Number(value || 0)
+  if (!Number.isFinite(number)) return '0.0'
+  return number.toFixed(1)
+}
+
+function completionClassName(value) {
+  const number = Number(value || 0)
+  if (!Number.isFinite(number) || number <= 0) return 'v2-plan-completion is-empty'
+  if (number >= 100) return 'v2-plan-completion is-done'
+  if (number >= 60) return 'v2-plan-completion is-high'
+  if (number >= 30) return 'v2-plan-completion is-mid'
+  return 'v2-plan-completion is-low'
+}
 
 export default function KaoyanPlansPage() {
   const { token } = useAuth()
   const canUseRemote = canUseRemoteToken(token)
   const [plans, setPlans] = useState(createKaoyanPlanPreviewRows())
-  const [notice, setNotice] = useState(previewDataNotice('计划轨道'))
+  const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState(createEmptyPlanForm())
@@ -29,7 +42,6 @@ export default function KaoyanPlansPage() {
   async function loadPlans() {
     if (!canUseRemote) {
       setPlans(createKaoyanPlanPreviewRows())
-      setNotice(previewDataNotice('计划轨道'))
       return
     }
 
@@ -41,7 +53,6 @@ export default function KaoyanPlansPage() {
         '学习计划读取超时，请检查后端服务。',
       )
       setPlans(normalizePlanRows(data))
-      setNotice(remoteDataNotice('计划轨道'))
     } catch (error) {
       setPlans(createKaoyanPlanPreviewRows())
       setNotice(fallbackDataNotice('计划轨道', error))
@@ -132,7 +143,9 @@ export default function KaoyanPlansPage() {
                 <div className="v2-tag-row">
                   <span>{item.status}</span>
                   {item.totalDurationHours ? <span>{item.totalDurationHours} 小时</span> : null}
-                  <span>{item.completionRate}% 完成</span>
+                  <span className={completionClassName(item.completionRate)}>
+                    {`完成度 ${formatCompletionRate(item.completionRate)}%`}
+                  </span>
                 </div>
               </div>
             </Link>

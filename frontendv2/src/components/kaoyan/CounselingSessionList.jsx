@@ -75,7 +75,6 @@ export default function CounselingSessionList({
                 <strong>{counterpart}</strong>
                 {item.unreadCount ? <span className="v2-counseling-session-item__badge">{item.unreadCount}</span> : null}
               </div>
-              <p className="v2-counseling-session-item__subject">{item.subject || '未命名咨询'}</p>
               <div className="v2-counseling-session-item__meta">
                 <span>{formatDateTimeLabel(item.createdAt)}</span>
               </div>

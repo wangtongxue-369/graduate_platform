@@ -12,8 +12,6 @@ import {
 import {
   canUseRemoteToken,
   fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -83,7 +81,7 @@ export default function KaoyanMentorHallPage() {
   const pageSize = 10
   const [totalElements, setTotalElements] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
-  const [notice, setNotice] = useState(previewDataNotice('学长学姐咨询'))
+  const [notice, setNotice] = useState('')
   const [unreadCount, setUnreadCount] = useState(0)
   const [myProfile, setMyProfile] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -109,7 +107,6 @@ export default function KaoyanMentorHallPage() {
         setTotalPages(pagedRows.totalPages)
         setUnreadCount(0)
         setMyProfile(null)
-        setNotice(previewDataNotice('学长学姐咨询'))
         return
       }
 
@@ -156,7 +153,6 @@ export default function KaoyanMentorHallPage() {
         setTotalPages(Math.max(1, Math.ceil(adjustedTotalElements / pageSize)))
         setUnreadCount(Number(unreadData?.count || 0))
         setMyProfile(profileData || null)
-        setNotice(remoteDataNotice('学长学姐咨询'))
       } catch (error) {
         if (!active) return
         const filteredRows = filterMentors(previewMentors, appliedFilters)

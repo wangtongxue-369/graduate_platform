@@ -3064,6 +3064,36 @@ html[data-theme="dark"] [class*="_selectItem_"][data-state='checked'] {
   margin: 0;
 }
 
+.v2-plan-completion {
+  font-weight: 600;
+  border-color: transparent;
+}
+
+.v2-plan-completion.is-empty {
+  background: var(--v2-paper-soft);
+  color: var(--v2-muted);
+}
+
+.v2-plan-completion.is-low {
+  background: rgba(220, 90, 90, 0.12);
+  color: #c84a4a;
+}
+
+.v2-plan-completion.is-mid {
+  background: rgba(220, 160, 60, 0.16);
+  color: #b87a1f;
+}
+
+.v2-plan-completion.is-high {
+  background: rgba(70, 160, 100, 0.16);
+  color: #2f8a52;
+}
+
+.v2-plan-completion.is-done {
+  background: var(--v2-action);
+  color: #fff;
+}
+
 .v2-score-lines-modal {
   width: min(1080px, 100%);
 }
@@ -6040,15 +6070,7 @@ html[data-theme="dark"] .v2-kaogong-calendar-overview-subscription {
   min-width: 0;
 }
 
-.v2-counseling-session-item__subject {
-  margin: 0;
-  font-size: 0.92rem;
-  color: var(--v2-ink);
-  line-height: 1.45;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+
 
 .v2-counseling-session-item__meta {
   flex-wrap: wrap;
