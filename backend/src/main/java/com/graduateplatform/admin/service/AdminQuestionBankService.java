@@ -229,7 +229,7 @@ public class AdminQuestionBankService {
             for (CSVRecord row : parser) {
                 Map<String, Object> mapped = new HashMap<>();
                 mapped.put("stem", csvField(row, "stem", "题干"));
-                mapped.put("optionsJson", csvField(row, "optionsJson", "选项"));
+                mapped.put("optionsJson", normalizeOptions(csvField(row, "optionsJson", "选项")));
                 mapped.put("answer", csvField(row, "answer", "答案"));
                 mapped.put("analysis", csvField(row, "analysis", "解析"));
                 mapped.put("chapter", csvField(row, "chapter", "章节"));
@@ -245,6 +245,31 @@ public class AdminQuestionBankService {
             }
         }
         return result;
+    }
+
+    /** 将选项字段规范化为 JSON 数组字符串。
+     *  支持三种输入格式：
+     *  1. 已经是 JSON 数组  → 原样返回（如 ["A.1","B.2"]）
+     *  2. 管道分隔的纯文本  → 自动转为 JSON 数组（如 A.1|B.2|C.3|D.4）
+     *  3. 其他              → 原样返回
+     */
+    private String normalizeOptions(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String trimmed = raw.trim();
+        // 已经是 JSON 数组格式，直接返回
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) return trimmed;
+        // 管道分隔格式：A.选项1|B.选项2|C.选项3|D.选项4 → ["A.选项1","B.选项2","C.选项3","D.选项4"]
+        if (trimmed.contains("|") && !trimmed.startsWith("{")) {
+            String[] parts = trimmed.split("\\|");
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < parts.length; i++) {
+                if (i > 0) sb.append(",");
+                sb.append("\"").append(parts[i].trim().replace("\"", "\\\"")).append("\"");
+            }
+            sb.append("]");
+            return sb.toString();
+        }
+        return trimmed;
     }
 
     /** 从 CSV 行按主键名/中文别名取值；列不存在或为空返回 null。 */
