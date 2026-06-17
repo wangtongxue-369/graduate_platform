@@ -1099,7 +1099,7 @@ html[data-theme="dark"] .v2-glass-card {
 }
 
 .v2-summary-strip {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .v2-practice-sidebar,
@@ -1672,6 +1672,13 @@ html[data-theme="dark"] .v2-glass-card {
   background: var(--v2-paper-strong);
   color: var(--v2-soft-strong);
   cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .v2-segment-button.is-active {
@@ -3014,6 +3021,100 @@ html[data-theme="dark"] [class*="_selectItem_"][data-state='checked'] {
 
 .v2-employment-detail-modal {
   width: min(760px, 100%);
+}
+
+.v2-school-form-modal {
+  width: min(640px, 100%);
+}
+
+.v2-school-status-modal {
+  width: min(480px, 100%);
+}
+
+.v2-module-card.is-inactive {
+  opacity: 0.7;
+}
+
+.v2-module-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.v2-plan-status-pill.is-inactive {
+  background: var(--v2-paper-soft);
+  color: var(--v2-muted);
+}
+
+.v2-school-form-tags {
+  align-items: center;
+  gap: 18px;
+}
+
+.v2-school-form-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.v2-school-form-tag input[type='checkbox'] {
+  margin: 0;
+}
+
+.v2-plan-completion {
+  font-weight: 600;
+  border-color: transparent;
+}
+
+.v2-plan-completion.is-empty {
+  background: var(--v2-paper-soft);
+  color: var(--v2-muted);
+}
+
+.v2-plan-completion.is-low {
+  background: rgba(220, 90, 90, 0.12);
+  color: #c84a4a;
+}
+
+.v2-plan-completion.is-mid {
+  background: rgba(220, 160, 60, 0.16);
+  color: #b87a1f;
+}
+
+.v2-plan-completion.is-high {
+  background: rgba(70, 160, 100, 0.16);
+  color: #2f8a52;
+}
+
+.v2-plan-completion.is-done {
+  background: var(--v2-action);
+  color: #fff;
+}
+
+.v2-score-lines-modal {
+  width: min(1080px, 100%);
+}
+
+.v2-score-line-form-modal {
+  width: min(720px, 100%);
+  margin: 60px auto;
+}
+
+.v2-score-line-form-source {
+  grid-column: 1 / -1;
+}
+
+.v2-score-lines-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.v2-score-lines-grid .v2-field {
+  margin: 0;
 }
 
 .v2-compare-table-wrap {
@@ -5969,15 +6070,7 @@ html[data-theme="dark"] .v2-kaogong-calendar-overview-subscription {
   min-width: 0;
 }
 
-.v2-counseling-session-item__subject {
-  margin: 0;
-  font-size: 0.92rem;
-  color: var(--v2-ink);
-  line-height: 1.45;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+
 
 .v2-counseling-session-item__meta {
   flex-wrap: wrap;

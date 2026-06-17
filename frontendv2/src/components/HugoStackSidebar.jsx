@@ -104,15 +104,24 @@ export default function HugoStackSidebar({ mode = 'app' }) {
             <section className="v2-stack-menu v2-glass-card" key={group.title}>
               <p className="v2-stack-menu__title">{group.title}</p>
               <nav aria-label={group.title}>
-                {group.items.map((item) => (
-                  <NavLink
-                    className={({ isActive }) => `v2-stack-menu__link ${isActive ? 'is-active' : ''}`}
-                    key={item.to}
-                    to={item.to}
-                  >
-                    {item.label}
-                  </NavLink>
-                ))}
+                {group.items.map((item) => {
+                  // 当 nav item 是某 path 的根目录（如 /station/kaoyan 是 /station/kaoyan/* 的根）时，
+                  // 给 NavLink 加 end 让其只精确匹配自身，避免在子页面里依旧被点亮。
+                  const isTopLevelItem = /^\/station\/[^/]+$/.test(item.to)
+                    || /^\/admin\/[^/]+$/.test(item.to)
+                    || item.to === '/community'
+                    || item.to === '/practice'
+                  return (
+                    <NavLink
+                      className={({ isActive }) => `v2-stack-menu__link ${isActive ? 'is-active' : ''}`}
+                      end={isTopLevelItem}
+                      key={item.to}
+                      to={item.to}
+                    >
+                      {item.label}
+                    </NavLink>
+                  )
+                })}
               </nav>
             </section>
           ))}

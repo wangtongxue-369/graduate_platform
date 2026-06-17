@@ -14,8 +14,6 @@ import {
 import {
   canUseRemoteToken,
   fallbackDataNotice,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -57,7 +55,7 @@ export default function KaoyanMaterialsPage() {
   const [pageSize] = useState(10)
   const [totalElements, setTotalElements] = useState(previewMaterialRows.length)
   const [totalPages, setTotalPages] = useState(Math.max(1, Math.ceil(previewMaterialRows.length / 10)))
-  const [notice, setNotice] = useState(previewDataNotice('资料中枢'))
+  const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -71,7 +69,6 @@ export default function KaoyanMaterialsPage() {
         setRows(paged.pageRows)
         setTotalElements(paged.totalElements)
         setTotalPages(paged.totalPages)
-        setNotice(previewDataNotice('资料中枢'))
         return
       }
 
@@ -95,7 +92,6 @@ export default function KaoyanMaterialsPage() {
         setRows(normalizeMaterialRows(data))
         setTotalElements(Number(data?.totalElements || 0))
         setTotalPages(Math.max(1, Number(data?.totalPages || 1)))
-        setNotice(remoteDataNotice('资料中枢'))
       } catch (error) {
         if (!active) return
         const filtered = filterMaterialRows(previewMaterialRows, appliedFilters)

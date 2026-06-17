@@ -9,7 +9,6 @@ export default function AdminKaoyanOverviewPage() {
   const [summary, setSummary] = useState({
     pendingMaterials: 0,
     schoolCount: 0,
-    scoreLineCount: 0,
   })
   const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState('')
@@ -20,16 +19,14 @@ export default function AdminKaoyanOverviewPage() {
     async function loadSummary() {
       setLoading(true)
       try {
-        const [pending, schools, scoreLines] = await Promise.all([
+        const [pending, schools] = await Promise.all([
           adminMaterialApi.pending({ page: 0, size: 1 }, token),
           adminApi.kaoyanSchools({ page: 0, size: 1 }, token),
-          adminApi.kaoyanScoreLines({ page: 0, size: 1 }, token),
         ])
         if (!active) return
         setSummary({
           pendingMaterials: pending?.totalElements || 0,
           schoolCount: schools?.totalElements || 0,
-          scoreLineCount: scoreLines?.totalElements || 0,
         })
         setNotice('考研治理总览已连接后端。')
       } catch (error) {
@@ -37,7 +34,6 @@ export default function AdminKaoyanOverviewPage() {
         setSummary({
           pendingMaterials: 0,
           schoolCount: 0,
-          scoreLineCount: 0,
         })
         setNotice(error.message || '考研治理总览加载失败。')
       } finally {
@@ -76,12 +72,7 @@ export default function AdminKaoyanOverviewPage() {
           <article className="v2-summary-card">
             <span>院校档案</span>
             <strong>{summary.schoolCount}</strong>
-            <p>院校页负责维护基础档案和院校标签，不混入分数线表单。</p>
-          </article>
-          <article className="v2-summary-card">
-            <span>分数线记录</span>
-            <strong>{summary.scoreLineCount}</strong>
-            <p>分数线页保留院校上下文，减少跨校编辑时的错填风险。</p>
+            <p>院校页同时维护基础档案与分数线，在学校卡片上点击「分数线」即可弹窗管理。</p>
           </article>
         </section>
 
@@ -98,14 +89,7 @@ export default function AdminKaoyanOverviewPage() {
               <strong>院校维护</strong>
               <span className="v2-feed-action">进入</span>
             </div>
-            <p>集中管理考研院校基础资料、标签和院校可见状态。</p>
-          </Link>
-          <Link className="v2-preview-panel" to="/admin/kaoyan/score-lines">
-            <div className="v2-preview-panel__head">
-              <strong>分数线维护</strong>
-              <span className="v2-feed-action">进入</span>
-            </div>
-            <p>按院校上下文切换分数线记录，避免不同学校数据串改。</p>
+            <p>集中管理考研院校基础资料、标签和分数线；新增/编辑均改为弹窗形式。</p>
           </Link>
         </section>
       </div>
@@ -119,12 +103,8 @@ export default function AdminKaoyanOverviewPage() {
               <span>优先处理待审队列，避免学生上传后长期无反馈。</span>
             </div>
             <div className="v2-check-row">
-              <strong>再看院校档案</strong>
-              <span>确认院校标签和地域信息，给学生端筛选结果兜底。</span>
-            </div>
-            <div className="v2-check-row">
-              <strong>最后补分数线</strong>
-              <span>在明确院校上下文后再录入年度分数线，减少误操作。</span>
+              <strong>再进院校维护</strong>
+              <span>用弹窗维护院校基础信息，再从学校卡片的「分数线」入口维护分数线。</span>
             </div>
           </div>
         </section>

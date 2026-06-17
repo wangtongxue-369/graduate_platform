@@ -22,8 +22,6 @@ import {
   canUseRemoteToken,
   fallbackDataNotice,
   formatDateLabel,
-  previewDataNotice,
-  remoteDataNotice,
 } from '@/lib/stationData.js'
 import { withRequestTimeout } from '@/lib/withRequestTimeout.js'
 
@@ -47,7 +45,7 @@ export default function KaoyanPlanDetailPage() {
 
   const [plan, setPlan] = useState(normalizePlanDetail(preview))
   const [checkIns, setCheckIns] = useState(normalizeCheckInRows(preview.checkIns))
-  const [notice, setNotice] = useState(previewDataNotice('计划详情'))
+  const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
   const [savingPlan, setSavingPlan] = useState(false)
   const [savingCheckIn, setSavingCheckIn] = useState(false)
@@ -77,7 +75,6 @@ export default function KaoyanPlanDetailPage() {
       setPlan(nextPlan)
       setCheckIns(normalizeCheckInRows(nextPreview.checkIns))
       setPlanForm(buildPlanFormState(nextPlan))
-      setNotice(previewDataNotice('计划详情'))
       return
     }
 
@@ -95,7 +92,6 @@ export default function KaoyanPlanDetailPage() {
       setPlan(nextPlan)
       setCheckIns(normalizeCheckInRows(checkInData))
       setPlanForm(buildPlanFormState(nextPlan))
-      setNotice(remoteDataNotice('计划详情'))
     } catch (error) {
       const nextPreview = createKaoyanPlanDetailPreview(planId)
       const nextPlan = normalizePlanDetail(nextPreview)
